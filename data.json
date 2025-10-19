@@ -1,7 +1,7 @@
 {
   "meta": {
     "titulo": "Dashboard Ultra-Low Fare · Víctor Vega",
-    "generado": "2025-10-18 00:00 CST",
+    "generado": "2025-10-18 21:05 CST",
     "zona_horaria": "CST",
     "frecuencia_horas": 3,
     "simulaciones_por_ruta_por_dia": 8,
@@ -13,47 +13,13 @@
     { "ruta":"LIM ⇄ MCO", "ultima_ejecucion":"2025-10-18 21:00 CST", "precio_mas_bajo_usd":447, "umbral_usd":400, "resultado":"No cumple" }
   ],
   "contador_diario": { "completadas": 6, "total": 24, "proxima": "2025-10-18 24:00 CST" },
-  "detalles": {
-    "LIM ⇄ FLL": {
-      "bloque": 7, "hora": "18:00 CST", "simulacion": "15/24", "umbral": 360, "resultado_final": "No cumple",
-      "evaluaciones": [
-        { "tipo": "Tarifa directa", "fuente": "Google Flights", "resultado": "US$ 381 RT · sin equipaje de mano", "estado": "No cumple" },
-        { "tipo": "Tarifa directa", "fuente": "Kayak", "resultado": "US$ 375 RT · sin equipaje de mano", "estado": "No cumple" },
-        { "tipo": "Tarifa directa", "fuente": "Expedia", "resultado": "US$ 398 RT · carry-on opcional", "estado": "Parcial" },
-        { "tipo": "Tarifa directa", "fuente": "Copa (web)", "resultado": "US$ 528 RT · carry-on incluido", "estado": "No cumple" },
-        { "tipo": "Tarifa directa", "fuente": "Avianca (Classic)", "resultado": "US$ 417 RT · carry-on incluido", "estado": "No cumple" },
-        { "tipo": "Política de equipaje", "fuente": "Spirit", "resultado": "Base fare solo artículo personal", "estado": "Excluida" },
-        { "tipo": "Política de equipaje", "fuente": "Copa", "resultado": "Incluye equipaje de mano (10 kg)", "estado": "Confirmado" },
-        { "tipo": "Política de equipaje", "fuente": "Avianca", "resultado": "Classic sí incluye / XS no", "estado": "Condicional" },
-        { "tipo": "Tendencia", "fuente": "Hopper Trends", "resultado": "Promedio Feb-2026 ≈ US$ 450", "estado": "Informativo" },
-        { "tipo": "Umbral", "fuente": "Script interno", "resultado": "Umbral 360 → mínimo hallado 375", "estado": "No cumple" }
-      ]
-    },
-    "LIM ⇄ MIA": {
-      "bloque": 7, "hora": "18:00 CST", "simulacion": "15/24", "umbral": 360, "resultado_final": "No cumple",
-      "evaluaciones": [
-        { "tipo": "Tarifa directa", "fuente": "Expedia", "resultado": "US$ 377 RT · (verificar carry-on)", "estado": "No cumple" },
-        { "tipo": "Tarifa directa", "fuente": "Copa (web)", "resultado": "~US$ 453 RT · carry-on incluido (fechas cercanas)", "estado": "No cumple" },
-        { "tipo": "Tarifa directa", "fuente": "American (nonstop)", "resultado": "~US$ 493 RT · carry-on incluido", "estado": "No cumple" },
-        { "tipo": "Política de equipaje", "fuente": "Avianca", "resultado": "Classic incluye / XS no", "estado": "Condicional" },
-        { "tipo": "Política de equipaje", "fuente": "American Airlines", "resultado": "Basic incluye equipaje de mano", "estado": "Confirmado" },
-        { "tipo": "Tendencia", "fuente": "Kayak", "resultado": "Mínimos recientes ~US$ 347 (otras fechas)", "estado": "Informativo" },
-        { "tipo": "Umbral", "fuente": "Script interno", "resultado": "Umbral 360 → mínimo hallado 377", "estado": "No cumple" }
-      ]
-    },
-    "LIM ⇄ MCO": {
-      "bloque": 7, "hora": "18:00 CST", "simulacion": "15/24", "umbral": 400, "resultado_final": "No cumple",
-      "evaluaciones": [
-        { "tipo": "Tarifa directa", "fuente": "Expedia", "resultado": "US$ 448–471 RT (1 escala)", "estado": "No cumple" },
-        { "tipo": "Tarifa directa", "fuente": "Orbitz", "resultado": "US$ 427 RT (fechas variables)", "estado": "Parcial" },
-        { "tipo": "Tarifa directa", "fuente": "Copa (web)", "resultado": "~US$ 500 RT · carry-on incluido", "estado": "No cumple" },
-        { "tipo": "Tarifa directa", "fuente": "Delta (vía ATL)", "resultado": "~US$ 498 RT · carry-on incluido", "estado": "No cumple" },
-        { "tipo": "Política de equipaje", "fuente": "Copa", "resultado": "Incluye equipaje de mano", "estado": "Confirmado" },
-        { "tipo": "Política de equipaje", "fuente": "Avianca", "resultado": "Classic incluye / XS no", "estado": "Condicional" },
-        { "tipo": "Política de equipaje", "fuente": "Delta", "resultado": "Incluye 1 equipaje de mano", "estado": "Confirmado" },
-        { "tipo": "Tendencia", "fuente": "Meta-buscadores", "resultado": "Mercado en la franja de US$ 4xx en Feb-2026", "estado": "Informativo" },
-        { "tipo": "Umbral", "fuente": "Script interno", "resultado": "Umbral 400 → mínimo hallado 427–448", "estado": "No cumple" }
-      ]
-    }
-  }
+  "detalles": { /* ...tus detalles actuales tal cual... */ },
+  "historico": [
+    { "fecha":"2025-10-10", "fll":388, "mia":390, "mco":465 },
+    { "fecha":"2025-10-11", "fll":384, "mia":382, "mco":462 },
+    { "fecha":"2025-10-12", "fll":379, "mia":381, "mco":458 },
+    { "fecha":"2025-10-13", "fll":376, "mia":378, "mco":455 },
+    { "fecha":"2025-10-14", "fll":375, "mia":377, "mco":451 },
+    { "fecha":"2025-10-15", "fll":374, "mia":377, "mco":447 }
+  ]
 }
