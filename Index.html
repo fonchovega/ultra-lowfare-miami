@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Dashboard Ultra-Low Fare · Víctor Vega</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<header>
+  <h1>🛫 Dashboard Ultra-Low Fare · Víctor Vega</h1>
+  <div class="sub">Actualizado automáticamente cada 3 horas · Zona: CST</div>
+  <nav>
+    <button class="btn" onclick="mostrar('inicio')">Resumen</button>
+    <button class="btn" onclick="mostrar('detalle','LIM ⇄ FLL')">Detalle FLL</button>
+    <button class="btn" onclick="mostrar('detalle','LIM ⇄ MIA')">Detalle MIA</button>
+    <button class="btn" onclick="mostrar('detalle','LIM ⇄ MCO')">Detalle MCO</button>
+  </nav>
+</header>
+<main>
+  <section id="inicio" class="card">
+    <h2>Estado general</h2>
+    <div class="kpi">
+      <div class="item"><b>Simulaciones de hoy</b><span id="kpi-sims">—</span><div class="small">(reinicia a las 00:00 CST)</div></div>
+      <div class="item"><b>Última ejecución</b><span id="kpi-last">—</span></div>
+      <div class="item"><b>Próxima ejecución</b><span id="kpi-next">—</span></div>
+    </div>
+    <div class="card">
+      <h3>Rutas monitoreadas</h3>
+      <table id="tabla-resumen"><thead>
+        <tr><th>Ruta</th><th>Última ejecución</th><th>Precio más bajo</th><th>Umbral</th><th>Resultado</th><th>Acción</th></tr>
+      </thead><tbody></tbody></table>
+      <div class="footnote">Los precios son por pasajero (ida y vuelta) con impuestos/tasas. “Cumple” si ≤ umbral y respeta equipaje de mano y ≤ 1 escala.</div>
+    </div>
+  </section>
+
+  <section id="detalle" class="card hidden">
+    <h2 id="detalle-title">Detalle</h2>
+    <div class="muted" id="detalle-sub">—</div>
+    <table id="tabla-detalle"><thead>
+      <tr><th>Tipo</th><th>Fuente</th><th>Resultado</th><th>Estado</th></tr>
+    </thead><tbody></tbody></table>
+    <div class="actions">
+      <button class="primary" onclick="mostrar('inicio')">Volver al resumen</button>
+    </div>
+  </section>
+</main>
+
+<script>
+let DATA=null;
+function etiqueta(estado){
+  const e = estado.toLowerCase();
+  if(e.includes('cumple') && !e.includes('no')) return '<span class="pill ok">✅ Cumple</span>';
+  if(e.includes('parcial')||e.includes('condicional')||e.includes('informativo')) return '<span class="pill warn">⚠ '+estado+'</span>';
+  if(e.includes('confirmado')) return '<span class="pill ok">✅ Confirmado</span>';
+  if(e.includes('excluida')) return '<span class="pill no">🚫 Excluida</span>';
+  return '<span class="pill no">❌ No cumple</span>';
+}
+function mostrar(vista, ruta=null){
+  document.getElementById('inicio').classList.add('hidden');
+  document.getElementById('detalle').classList.add('hidden');
+  if(vista==='inicio'){
+    document.getElementById('inicio').classList.remove('hidden');
+  }else{
+    renderDetalle(ruta);
+    document.getElementById('detalle').classList.remove('hidden');
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+async function cargar(){
+  const res = await fetch('data.json?cache='+Date.now());
+  DATA = await res.json();
+
+  // KPIs
+  document.getElementById('kpi-sims').textContent = DATA.contador_diario.completadas + ' / ' + DATA.contador_diario.total;
+  document.getElementById('kpi-last').textContent = DATA.resumen[0].ultima_ejecucion;
+  document.getElementById('kpi-next').textContent = DATA.contador_diario.proxima;
+
+  // Tabla resumen
+  const tb = document.querySelector('#tabla-resumen tbody');
+  tb.innerHTML='';
+  DATA.resumen.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.ruta}</td>
+      <td>${r.ultima_ejecucion}</td>
+      <td>US$ ${r.precio_mas_bajo_usd}</td>
+      <td>US$ ${r.umbral_usd}</td>
+      <td>${etiqueta(r.resultado)}</td>
+      <td><a class="link" href="#" onclick="mostrar('detalle','${r.ruta}')">Ver detalle</a></td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+function renderDetalle(ruta){
+  const d = DATA.detalles[ruta];
+  document.getElementById('detalle-title').textContent = 'Detalle · ' + ruta;
+  document.getElementById('detalle-sub').textContent = `Bloque #${d.bloque} · ${d.hora} · Simulación ${d.simulacion} · Umbral ≤ US$ ${d.umbral} · Resultado: ${d.resultado_final}`;
+  const tb = document.querySelector('#tabla-detalle tbody');
+  tb.innerHTML='';
+  d.evaluaciones.forEach(e=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${e.tipo}</td><td>${e.fuente}</td><td>${e.resultado}</td><td>${etiqueta(e.estado)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+cargar(); mostrar('inicio');
+</script>
+</body>
+</html>
