@@ -5,8 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Dashboard Ultra-Low Fare · Víctor Vega</title>
 <link rel="stylesheet" href="style.css"/>
-<!-- Chart.js para el histórico (ligero y CDN) -->
+<!-- Chart.js para el histórico (gráfico comparativo diario) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* Pequeños estilos para filtros y tabla larga */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.filters label{font-size:12px;color:#5a6275;display:flex;flex-direction:column;gap:4px}
+.filters input,.filters select{padding:8px 10px;border:1px solid #e6e9f2;border-radius:8px;min-width:160px}
+.table-wrap{width:100%;overflow:auto;border-radius:10px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:#eef3ff}
+</style>
 </head>
 <body>
 <header>
@@ -19,6 +27,7 @@
     <button class="btn" onclick="mostrar('detalle','LIM ⇄ MIA')">Detalle MIA</button>
     <button class="btn" onclick="mostrar('detalle','LIM ⇄ MCO')">Detalle MCO</button>
     <button class="btn" onclick="mostrar('historico')">Histórico</button>
+    <button class="btn" onclick="mostrar('historico_det')">Histórico detallado</button>
   </nav>
 
   <div class="actions-header">
@@ -52,7 +61,7 @@
     </div>
   </section>
 
-  <!-- DETALLE -->
+  <!-- DETALLE POR RUTA -->
   <section id="detalle" class="card hidden">
     <h2 id="detalle-title">Detalle</h2>
     <div class="muted" id="detalle-sub">—</div>
@@ -66,13 +75,65 @@
     </div>
   </section>
 
-  <!-- HISTÓRICO -->
+  <!-- HISTÓRICO (GRÁFICO DIARIO) -->
   <section id="historico" class="card hidden">
     <h2>Evolución histórica (precio más bajo por día)</h2>
     <p class="muted">Muestra el menor precio encontrado por ruta en cada día. Sirve para ver tendencias y decidir compra.</p>
     <div class="card">
       <canvas id="histChart" height="120"></canvas>
     </div>
+    <div class="actions">
+      <button class="primary" onclick="mostrar('inicio')">Volver al resumen</button>
+    </div>
+  </section>
+
+  <!-- HISTÓRICO DETALLADO (TODAS LAS SIMULACIONES) -->
+  <section id="historico_det" class="card hidden">
+    <h2>Histórico detallado de simulaciones</h2>
+    <div class="filters">
+      <label>Ruta
+        <select id="f-ruta"></select>
+      </label>
+      <label>Desde
+        <input type="date" id="f-desde"/>
+      </label>
+      <label>Hasta
+        <input type="date" id="f-hasta"/>
+      </label>
+      <label>Fuente
+        <input type="text" id="f-fuente" placeholder="Google Flights, Kayak, Expedia…"/>
+      </label>
+      <label>Estado
+        <select id="f-estado">
+          <option value="">(todos)</option>
+          <option value="Cumple">Cumple</option>
+          <option value="Cumple parcialmente">Cumple parcialmente</option>
+          <option value="Parcial">Parcial</option>
+          <option value="Condicional">Condicional</option>
+          <option value="Confirmado">Confirmado</option>
+          <option value="Informativo">Informativo</option>
+          <option value="Excluida">Excluida</option>
+          <option value="No cumple">No cumple</option>
+        </select>
+      </label>
+      <button class="primary" onclick="aplicarFiltros()">Aplicar filtros</button>
+      <button class="secondary" onclick="limpiarFiltros()">Limpiar</button>
+      <!-- NUEVO: Exportar CSV -->
+      <button class="secondary" onclick="exportarCSV()">⬇️ Exportar CSV</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="tabla-histdet"><thead>
+        <tr>
+          <th>Fecha/hora</th>
+          <th>Ruta</th>
+          <th>Fuente</th>
+          <th>Precio (US$)</th>
+          <th>Estado</th>
+        </tr>
+      </thead><tbody></tbody></table>
+    </div>
+    <div class="footnote">Se listan todas las simulaciones registradas (minutos/horas exactos). Usa los filtros para afinar la vista.</div>
     <div class="actions">
       <button class="primary" onclick="mostrar('inicio')">Volver al resumen</button>
     </div>
@@ -86,21 +147,24 @@
 <script>
 let DATA=null, chart=null;
 const AUTO_MS = 5*60*1000; // 5 minutos
+let HIST_DET_FLAT = [];     // arreglo plano con todas las simulaciones
+let CURRENT_ROWS = [];      // lo que está actualmente filtrado en la tabla
 
 function etiqueta(estado){
   const e = (estado||'').toLowerCase();
-  if(e.includes('cumple') && !e.includes('no')) return '<span class="pill ok">✅ Cumple</span>';
+  if(e.includes('cumple') && !e.includes('no')) return '<span class="pill ok">✅ '+(estado||'Cumple')+'</span>';
   if(e.includes('parcial')||e.includes('condicional')||e.includes('informativo')) return '<span class="pill warn">⚠ '+estado+'</span>';
   if(e.includes('confirmado')) return '<span class="pill ok">✅ Confirmado</span>';
   if(e.includes('excluida')) return '<span class="pill no">🚫 Excluida</span>';
-  return '<span class="pill no">❌ No cumple</span>';
+  return '<span class="pill no">❌ '+(estado||'No cumple')+'</span>';
 }
 function mostrar(vista, ruta=null){
-  ['inicio','detalle','historico'].forEach(id=>{
+  ['inicio','detalle','historico','historico_det'].forEach(id=>{
     document.getElementById(id).classList.add('hidden');
   });
   if(vista==='detalle'){ renderDetalle(ruta); }
   if(vista==='historico'){ renderHistorico(); }
+  if(vista==='historico_det'){ renderHistoricoDet(); }
   document.getElementById(vista).classList.remove('hidden');
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -110,15 +174,15 @@ async function cargar(){
   DATA = await res.json();
 
   // KPIs
-  document.getElementById('kpi-sims').textContent = DATA.contador_diario.completadas + ' / ' + DATA.contador_diario.total;
-  document.getElementById('kpi-last').textContent = DATA.resumen[0].ultima_ejecucion;
-  document.getElementById('kpi-next').textContent = DATA.contador_diario.proxima;
-  document.getElementById('kpi-gen').textContent  = DATA.meta.generado || '—';
+  document.getElementById('kpi-sims').textContent = (DATA.contador_diario?.completadas ?? '—') + ' / ' + (DATA.contador_diario?.total ?? '—');
+  document.getElementById('kpi-last').textContent = DATA.resumen?.[0]?.ultima_ejecucion ?? '—';
+  document.getElementById('kpi-next').textContent = DATA.contador_diario?.proxima ?? '—';
+  document.getElementById('kpi-gen').textContent  = DATA.meta?.generado || '—';
 
   // Tabla resumen
   const tb = document.querySelector('#tabla-resumen tbody');
   tb.innerHTML='';
-  DATA.resumen.forEach(r=>{
+  (DATA.resumen||[]).forEach(r=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${r.ruta}</td>
@@ -131,16 +195,43 @@ async function cargar(){
     tb.appendChild(tr);
   });
 
+  // Preparar histórico detallado plano
+  HIST_DET_FLAT = [];
+  const rutas = Object.keys(DATA.historico_detallado||{});
+  rutas.forEach(ruta=>{
+    (DATA.historico_detallado[ruta]||[]).forEach(item=>{
+      HIST_DET_FLAT.push({
+        ruta,
+        fecha: item.fecha,        // "YYYY-MM-DD HH:mm"
+        fechaISO: (item.fecha||'').slice(0,10),
+        fuente: item.fuente,
+        precio: item.precio_usd,
+        estado: item.estado
+      });
+    });
+  });
+  // Poblamos select de rutas una sola vez
+  const selRuta = document.getElementById('f-ruta');
+  if(selRuta && selRuta.options.length===0){
+    const optTodos = document.createElement('option'); optTodos.value=''; optTodos.textContent='(todas)';
+    selRuta.appendChild(optTodos);
+    (Object.keys(DATA.historico_detallado||{})).forEach(r=>{
+      const o = document.createElement('option'); o.value=r; o.textContent=r;
+      selRuta.appendChild(o);
+    });
+  }
+
   // refrescar sello
   document.getElementById('last-refresh').textContent = 'Actualizado: ' + (new Date()).toLocaleString();
 }
 function renderDetalle(ruta){
-  const d = DATA.detalles[ruta];
+  const d = (DATA.detalles||{})[ruta];
+  if(!d){ return; }
   document.getElementById('detalle-title').textContent = 'Detalle · ' + ruta;
   document.getElementById('detalle-sub').textContent = `Bloque #${d.bloque} · ${d.hora} · Simulación ${d.simulacion} · Umbral ≤ US$ ${d.umbral} · Resultado: ${d.resultado_final}`;
   const tb = document.querySelector('#tabla-detalle tbody');
   tb.innerHTML='';
-  d.evaluaciones.forEach(e=>{
+  (d.evaluaciones||[]).forEach(e=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${e.tipo}</td><td>${e.fuente}</td><td>${e.resultado}</td><td>${etiqueta(e.estado)}</td>`;
     tb.appendChild(tr);
@@ -162,7 +253,7 @@ function renderHistorico(){
       datasets: [
         {label:'LIM ⇄ FLL', data:fll, tension:.25},
         {label:'LIM ⇄ MIA', data:mia, tension:.25},
-        {label:'LIM ⇄ MCO', data:mco, tension:.25},
+        {label:'LIM ⇄ MCO', data:mco, tension:.25}
       ]
     },
     options: {
@@ -173,13 +264,102 @@ function renderHistorico(){
     }
   });
 }
-function refrescarAhora(){
-  cargar().then(()=>{ /* ok */ });
+
+/* ---------- HISTÓRICO DETALLADO ---------- */
+function aplicarFiltros(){
+  const ruta   = document.getElementById('f-ruta').value || '';
+  const desde  = document.getElementById('f-desde').value || '';
+  const hasta  = document.getElementById('f-hasta').value || '';
+  const fuente = (document.getElementById('f-fuente').value || '').toLowerCase().trim();
+  const estado = document.getElementById('f-estado').value || '';
+
+  const rows = HIST_DET_FLAT.filter(x=>{
+    if(ruta && x.ruta!==ruta) return false;
+    if(desde && x.fechaISO <  desde) return false;
+    if(hasta && x.fechaISO >  hasta) return false;
+    if(fuente && !(x.fuente||'').toLowerCase().includes(fuente)) return false;
+    if(estado && !(x.estado||'').toLowerCase().includes(estado.toLowerCase())) return false;
+    return true;
+  });
+  pintarTablaHistDet(rows);
 }
-function descargarPDF(){
-  // usa el diálogo nativo de imprimir → guardar como PDF (funciona en móvil y PC)
-  window.print();
+function limpiarFiltros(){
+  ['f-ruta','f-desde','f-hasta','f-fuente','f-estado'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(el.tagName==='SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  pintarTablaHistDet(HIST_DET_FLAT);
 }
+function pintarTablaHistDet(rows){
+  const tb = document.querySelector('#tabla-histdet tbody');
+  tb.innerHTML = '';
+  CURRENT_ROWS = rows.slice(); // guardar vista actual para exportar CSV
+  (rows||[]).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="badge">${r.fecha}</span></td>
+      <td>${r.ruta}</td>
+      <td>${r.fuente}</td>
+      <td>US$ ${r.precio}</td>
+      <td>${etiqueta(r.estado)}</td>
+    `;
+    tb.appendChild(tr);
+  });
+  if(rows.length===0){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="5" class="muted">No hay resultados con los filtros aplicados.</td>`;
+    tb.appendChild(tr);
+  }
+}
+function renderHistoricoDet(){
+  if(HIST_DET_FLAT.length===0){ return; }
+  pintarTablaHistDet(HIST_DET_FLAT);
+}
+
+/* ---------- Exportar CSV (con BOM para Excel) ---------- */
+function exportarCSV(){
+  const rows = CURRENT_ROWS.length ? CURRENT_ROWS : HIST_DET_FLAT;
+  if(!rows.length){
+    alert('No hay datos para exportar.');
+    return;
+  }
+  // Encabezados
+  const header = ['fecha_hora','ruta','fuente','precio_usd','estado'];
+  const lines = [header.join(',')];
+
+  // Filas, escapando comas y comillas
+  rows.forEach(r=>{
+    const vals = [
+      r.fecha,
+      r.ruta,
+      r.fuente ? r.fuente.replace(/"/g,'""') : '',
+      (r.precio ?? '').toString(),
+      r.estado ? r.estado.replace(/"/g,'""') : ''
+    ].map(v=>{
+      const s = (v==null?'':v.toString());
+      return (/[",\n]/.test(s)) ? `"${s}"` : s;
+    });
+    lines.push(vals.join(','));
+  });
+
+  const csv = '\ufeff' + lines.join('\n'); // BOM para Excel
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const hoy = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `historico_simulaciones_${hoy}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- Refrescos y PDF ---------- */
+function refrescarAhora(){ cargar(); }
+function descargarPDF(){ window.print(); }
 
 // Carga inicial y auto-refresco
 cargar().then(()=>mostrar('inicio'));
