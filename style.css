@@ -3,23 +3,46 @@
   --texto:#1d2230; --ok:#12a150; --no:#c62828; --warn:#b8860b;
 }
 *{box-sizing:border-box}
+html,body{height:100%}
 body{margin:0;background:var(--gris);color:var(--texto);font-family:Inter,Arial,Helvetica,sans-serif}
-header{background:linear-gradient(135deg,var(--azul),var(--azul-osc));color:#fff;padding:16px 18px;position:sticky;top:0;z-index:10}
-h1{margin:0;font-size:18px} .sub{font-size:12px;opacity:.9;margin-top:4px}
-nav{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+header{background:linear-gradient(135deg,var(--azul),var(--azul-osc));color:#fff;padding:14px 16px;position:sticky;top:0;z-index:10}
+h1{margin:0;font-size:18px}
+.sub{font-size:12px;opacity:.9;margin-top:2px}
+.tabs{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+.actions-header{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .btn{border:1px solid rgba(255,255,255,.7);background:transparent;color:#fff;padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600}
 .btn:hover{background:rgba(255,255,255,.12)}
-main{max-width:1100px;margin:18px auto;padding:0 14px 40px}
-.card{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 6px 14px rgba(13,37,62,.06)}
-h2{margin:6px 0 12px;font-size:18px} h3{margin:10px 0 8px;font-size:16px}
-table{border-collapse:collapse;width:100%} th,td{border:1px solid var(--borde);padding:10px;text-align:left;vertical-align:top}
-th{background:#eef3ff} tr:nth-child(even) td{background:#fafcff}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.primary{background:#fff;color:var(--azul);border:none;padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:700}
+.primary:hover{background:#f2f6ff}
+.secondary{background:transparent;border:1px solid #fff;color:#fff;padding:8px 12px;border-radius:10px;font-weight:700}
+.secondary:hover{background:rgba(255,255,255,.12)}
+.link{color:var(--azul);text-decoration:none;font-weight:700;cursor:pointer}
+
+main{max-width:1100px;margin:14px auto;padding:0 12px 40px}
+.card{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 6px 14px rgba(13,37,62,.06)}
+h2{margin:6px 0 12px;font-size:18px} h3{margin:8px 0 8px;font-size:16px}
+
+.table-wrap{width:100%;overflow:auto;border-radius:10px}
+table{border-collapse:collapse;min-width:720px;width:100%}
+th,td{border:1px solid var(--borde);padding:10px;text-align:left;vertical-align:top}
+th{background:#eef3ff}
+tr:nth-child(even) td{background:#fafcff}
+
 .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-weight:700;font-size:12px}
 .ok{background:var(--ok);color:#fff} .no{background:var(--no);color:#fff} .warn{background:var(--warn);color:#fff}
-.actions{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap} .primary{background:var(--azul);color:#fff;border:none;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700}
-.primary:hover{background:var(--azul-osc)} .link{color:var(--azul);text-decoration:none;font-weight:700;cursor:pointer}
-.muted{color:#5a6275;font-size:13px} .hidden{display:none} .footnote{font-size:12px;color:#6c7486;margin-top:6px}
-.kpi{display:flex;gap:10px;flex-wrap:wrap} .kpi .item{background:#ffffff;border:1px solid var(--borde);border-radius:12px;padding:12px 14px;min-width:240px}
-.kpi .item b{display:block;font-size:14px;margin-bottom:4px} .kpi .item span{font-size:18px}
-.small{font-size:12px;color:#6c7486;margin-top:4px}
+.muted{color:#5a6275;font-size:13px} .small{font-size:12px;color:#6c7486}
+.hidden{display:none}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .item{background:#ffffff;border:1px solid var(--borde);border-radius:12px;padding:12px 14px;min-width:240px}
+.kpi .item b{display:block;font-size:14px;margin-bottom:4px}
+.kpi .item span{font-size:18px}
+
+footer{max-width:1100px;margin:0 auto 20px;padding:0 12px;color:#6c7486}
+
+/* 🔎 Vista de impresión (para PDF) */
+@media print{
+  header .actions-header, header .tabs, .actions, .link{display:none !important}
+  body{background:#fff}
+  .card{box-shadow:none;border-color:#ddd}
+  .table-wrap{overflow:visible}
+}
