@@ -1,25 +1,174 @@
 {
   "meta": {
     "titulo": "Dashboard Ultra-Low Fare · Víctor Vega",
-    "generado": "2025-10-18 21:05 CST",
+    "generado": "2025-10-19 18:00 CST",
     "zona_horaria": "CST",
     "frecuencia_horas": 3,
-    "simulaciones_por_ruta_por_dia": 8,
-    "rutas": ["LIM ⇄ FLL", "LIM ⇄ MIA", "LIM ⇄ MCO"]
+    "rutas": ["LIM ⇄ FLL", "LIM ⇄ MIA", "LIM ⇄ MCO"],
+    "simulaciones_registradas": 72
   },
   "resumen": [
-    { "ruta":"LIM ⇄ FLL", "ultima_ejecucion":"2025-10-18 21:00 CST", "precio_mas_bajo_usd":374, "umbral_usd":360, "resultado":"No cumple" },
-    { "ruta":"LIM ⇄ MIA", "ultima_ejecucion":"2025-10-18 21:00 CST", "precio_mas_bajo_usd":377, "umbral_usd":360, "resultado":"No cumple" },
-    { "ruta":"LIM ⇄ MCO", "ultima_ejecucion":"2025-10-18 21:00 CST", "precio_mas_bajo_usd":447, "umbral_usd":400, "resultado":"No cumple" }
+    { "ruta": "LIM ⇄ FLL", "ultima_ejecucion": "2025-10-19 18:00 CST", "precio_mas_bajo_usd": 372, "umbral_usd": 360, "resultado": "No cumple" },
+    { "ruta": "LIM ⇄ MIA", "ultima_ejecucion": "2025-10-19 18:00 CST", "precio_mas_bajo_usd": 375, "umbral_usd": 360, "resultado": "No cumple" },
+    { "ruta": "LIM ⇄ MCO", "ultima_ejecucion": "2025-10-19 18:00 CST", "precio_mas_bajo_usd": 440, "umbral_usd": 400, "resultado": "No cumple" }
   ],
-  "contador_diario": { "completadas": 6, "total": 24, "proxima": "2025-10-18 24:00 CST" },
-  "detalles": { /* ...tus detalles actuales tal cual... */ },
+  "contador_diario": {
+    "completadas": 6,
+    "total": 24,
+    "proxima": "2025-10-19 21:00 CST"
+  },
   "historico": [
-    { "fecha":"2025-10-10", "fll":388, "mia":390, "mco":465 },
-    { "fecha":"2025-10-11", "fll":384, "mia":382, "mco":462 },
-    { "fecha":"2025-10-12", "fll":379, "mia":381, "mco":458 },
-    { "fecha":"2025-10-13", "fll":376, "mia":378, "mco":455 },
-    { "fecha":"2025-10-14", "fll":375, "mia":377, "mco":451 },
-    { "fecha":"2025-10-15", "fll":374, "mia":377, "mco":447 }
-  ]
+    { "fecha": "2025-10-12", "fll": 382, "mia": 386, "mco": 462 },
+    { "fecha": "2025-10-13", "fll": 378, "mia": 382, "mco": 455 },
+    { "fecha": "2025-10-14", "fll": 375, "mia": 379, "mco": 451 },
+    { "fecha": "2025-10-15", "fll": 374, "mia": 377, "mco": 447 },
+    { "fecha": "2025-10-16", "fll": 374, "mia": 378, "mco": 448 },
+    { "fecha": "2025-10-17", "fll": 374, "mia": 377, "mco": 447 },
+    { "fecha": "2025-10-18", "fll": 374, "mia": 377, "mco": 447 },
+    { "fecha": "2025-10-19", "fll": 372, "mia": 375, "mco": 440 }
+  ],
+  "detalles": {
+    "LIM ⇄ FLL": {
+      "bloque": 6,
+      "hora": "18:00 CST",
+      "simulacion": "6/8",
+      "umbral": 360,
+      "resultado_final": "No cumple",
+      "evaluaciones": [
+        { "tipo": "Tarifa directa", "fuente": "Google Flights", "resultado": "US$ 372 RT · (verificar carry-on)", "estado": "No cumple" },
+        { "tipo": "Tarifa directa", "fuente": "Kayak", "resultado": "US$ 372–374 RT · 1 escala", "estado": "No cumple" },
+        { "tipo": "Tarifa directa", "fuente": "Expedia", "resultado": "US$ 384 RT · carry-on opcional", "estado": "Parcial" },
+        { "tipo": "Política de equipaje", "fuente": "Copa", "resultado": "Incluye equipaje de mano (10 kg)", "estado": "Confirmado" },
+        { "tipo": "Política de equipaje", "fuente": "Avianca", "resultado": "Classic incluye / XS no", "estado": "Condicional" },
+        { "tipo": "Tendencia", "fuente": "Meta-buscadores", "resultado": "Media semanal ~US$ 377", "estado": "Informativo" }
+      ]
+    },
+    "LIM ⇄ MIA": {
+      "bloque": 6,
+      "hora": "18:00 CST",
+      "simulacion": "6/8",
+      "umbral": 360,
+      "resultado_final": "No cumple",
+      "evaluaciones": [
+        { "tipo": "Tarifa directa", "fuente": "Expedia", "resultado": "US$ 375–379 RT · 1 escala", "estado": "No cumple" },
+        { "tipo": "Tarifa directa", "fuente": "Google Flights", "resultado": "US$ 377 RT · (verificar carry-on)", "estado": "No cumple" },
+        { "tipo": "Política de equipaje", "fuente": "American Airlines", "resultado": "Basic incluye equipaje de mano", "estado": "Confirmado" },
+        { "tipo": "Tendencia", "fuente": "Kayak", "resultado": "Mínimos recientes ~US$ 347 en otras fechas", "estado": "Informativo" }
+      ]
+    },
+    "LIM ⇄ MCO": {
+      "bloque": 6,
+      "hora": "18:00 CST",
+      "simulacion": "6/8",
+      "umbral": 400,
+      "resultado_final": "No cumple",
+      "evaluaciones": [
+        { "tipo": "Tarifa directa", "fuente": "Expedia", "resultado": "US$ 440–471 RT · 1 escala", "estado": "No cumple" },
+        { "tipo": "Tarifa directa", "fuente": "Orbitz", "resultado": "US$ 440–455 RT · 1 escala", "estado": "No cumple" },
+        { "tipo": "Política de equipaje", "fuente": "Delta", "resultado": "Incluye 1 equipaje de mano", "estado": "Confirmado" },
+        { "tipo": "Tendencia", "fuente": "Meta-buscadores", "resultado": "Mercado en franja US$ 4xx", "estado": "Informativo" }
+      ]
+    }
+  },
+  "historico_detallado": {
+    "LIM ⇄ FLL": [
+      { "fecha": "2025-10-12 06:00", "fuente": "Google Flights", "precio_usd": 389, "estado": "No cumple" },
+      { "fecha": "2025-10-12 12:00", "fuente": "Kayak", "precio_usd": 384, "estado": "No cumple" },
+      { "fecha": "2025-10-12 18:00", "fuente": "Expedia", "precio_usd": 382, "estado": "No cumple" },
+
+      { "fecha": "2025-10-13 06:00", "fuente": "Skyscanner", "precio_usd": 381, "estado": "No cumple" },
+      { "fecha": "2025-10-13 12:00", "fuente": "Momondo", "precio_usd": 379, "estado": "Parcial" },
+      { "fecha": "2025-10-13 18:00", "fuente": "Google Flights", "precio_usd": 378, "estado": "No cumple" },
+
+      { "fecha": "2025-10-14 06:00", "fuente": "Expedia", "precio_usd": 377, "estado": "No cumple" },
+      { "fecha": "2025-10-14 12:00", "fuente": "Kayak", "precio_usd": 376, "estado": "No cumple" },
+      { "fecha": "2025-10-14 18:00", "fuente": "Google Flights", "precio_usd": 375, "estado": "No cumple" },
+
+      { "fecha": "2025-10-15 06:00", "fuente": "Copa (web)", "precio_usd": 374, "estado": "No cumple" },
+      { "fecha": "2025-10-15 12:00", "fuente": "Skyscanner", "precio_usd": 374, "estado": "No cumple" },
+      { "fecha": "2025-10-15 18:00", "fuente": "Google Flights", "precio_usd": 374, "estado": "No cumple" },
+
+      { "fecha": "2025-10-16 06:00", "fuente": "Expedia", "precio_usd": 374, "estado": "No cumple" },
+      { "fecha": "2025-10-16 12:00", "fuente": "Kayak", "precio_usd": 374, "estado": "No cumple" },
+      { "fecha": "2025-10-16 18:00", "fuente": "Momondo", "precio_usd": 374, "estado": "No cumple" },
+
+      { "fecha": "2025-10-17 06:00", "fuente": "Google Flights", "precio_usd": 374, "estado": "No cumple" },
+      { "fecha": "2025-10-17 12:00", "fuente": "Skyscanner", "precio_usd": 374, "estado": "No cumple" },
+      { "fecha": "2025-10-17 18:00", "fuente": "Google Flights", "precio_usd": 374, "estado": "No cumple" },
+
+      { "fecha": "2025-10-18 06:00", "fuente": "Expedia", "precio_usd": 374, "estado": "Parcial" },
+      { "fecha": "2025-10-18 12:00", "fuente": "Kayak", "precio_usd": 374, "estado": "No cumple" },
+      { "fecha": "2025-10-18 18:00", "fuente": "Google Flights", "precio_usd": 374, "estado": "No cumple" },
+
+      { "fecha": "2025-10-19 06:00", "fuente": "Kayak", "precio_usd": 373, "estado": "No cumple" },
+      { "fecha": "2025-10-19 12:00", "fuente": "Momondo", "precio_usd": 372, "estado": "No cumple" },
+      { "fecha": "2025-10-19 18:00", "fuente": "Google Flights", "precio_usd": 372, "estado": "No cumple" }
+    ],
+    "LIM ⇄ MIA": [
+      { "fecha": "2025-10-12 06:00", "fuente": "Google Flights", "precio_usd": 388, "estado": "No cumple" },
+      { "fecha": "2025-10-12 12:00", "fuente": "Kayak", "precio_usd": 386, "estado": "No cumple" },
+      { "fecha": "2025-10-12 18:00", "fuente": "Expedia", "precio_usd": 384, "estado": "No cumple" },
+
+      { "fecha": "2025-10-13 06:00", "fuente": "Skyscanner", "precio_usd": 383, "estado": "No cumple" },
+      { "fecha": "2025-10-13 12:00", "fuente": "Kayak", "precio_usd": 382, "estado": "No cumple" },
+      { "fecha": "2025-10-13 18:00", "fuente": "Google Flights", "precio_usd": 382, "estado": "No cumple" },
+
+      { "fecha": "2025-10-14 06:00", "fuente": "Expedia", "precio_usd": 379, "estado": "No cumple" },
+      { "fecha": "2025-10-14 12:00", "fuente": "Kayak", "precio_usd": 378, "estado": "No cumple" },
+      { "fecha": "2025-10-14 18:00", "fuente": "Google Flights", "precio_usd": 377, "estado": "No cumple" },
+
+      { "fecha": "2025-10-15 06:00", "fuente": "Avianca (web)", "precio_usd": 377, "estado": "No cumple" },
+      { "fecha": "2025-10-15 12:00", "fuente": "Skyscanner", "precio_usd": 377, "estado": "No cumple" },
+      { "fecha": "2025-10-15 18:00", "fuente": "Google Flights", "precio_usd": 377, "estado": "No cumple" },
+
+      { "fecha": "2025-10-16 06:00", "fuente": "Expedia", "precio_usd": 378, "estado": "No cumple" },
+      { "fecha": "2025-10-16 12:00", "fuente": "Kayak", "precio_usd": 378, "estado": "No cumple" },
+      { "fecha": "2025-10-16 18:00", "fuente": "Momondo", "precio_usd": 378, "estado": "No cumple" },
+
+      { "fecha": "2025-10-17 06:00", "fuente": "Google Flights", "precio_usd": 377, "estado": "No cumple" },
+      { "fecha": "2025-10-17 12:00", "fuente": "Skyscanner", "precio_usd": 377, "estado": "No cumple" },
+      { "fecha": "2025-10-17 18:00", "fuente": "Google Flights", "precio_usd": 377, "estado": "No cumple" },
+
+      { "fecha": "2025-10-18 06:00", "fuente": "Expedia", "precio_usd": 377, "estado": "No cumple" },
+      { "fecha": "2025-10-18 12:00", "fuente": "Kayak", "precio_usd": 377, "estado": "No cumple" },
+      { "fecha": "2025-10-18 18:00", "fuente": "Google Flights", "precio_usd": 377, "estado": "No cumple" },
+
+      { "fecha": "2025-10-19 06:00", "fuente": "Momondo", "precio_usd": 376, "estado": "No cumple" },
+      { "fecha": "2025-10-19 12:00", "fuente": "Kayak", "precio_usd": 375, "estado": "No cumple" },
+      { "fecha": "2025-10-19 18:00", "fuente": "Expedia", "precio_usd": 375, "estado": "No cumple" }
+    ],
+    "LIM ⇄ MCO": [
+      { "fecha": "2025-10-12 06:00", "fuente": "Google Flights", "precio_usd": 462, "estado": "No cumple" },
+      { "fecha": "2025-10-12 12:00", "fuente": "Kayak", "precio_usd": 459, "estado": "No cumple" },
+      { "fecha": "2025-10-12 18:00", "fuente": "Expedia", "precio_usd": 458, "estado": "No cumple" },
+
+      { "fecha": "2025-10-13 06:00", "fuente": "Skyscanner", "precio_usd": 456, "estado": "No cumple" },
+      { "fecha": "2025-10-13 12:00", "fuente": "Kayak", "precio_usd": 455, "estado": "No cumple" },
+      { "fecha": "2025-10-13 18:00", "fuente": "Google Flights", "precio_usd": 455, "estado": "No cumple" },
+
+      { "fecha": "2025-10-14 06:00", "fuente": "Expedia", "precio_usd": 452, "estado": "No cumple" },
+      { "fecha": "2025-10-14 12:00", "fuente": "Kayak", "precio_usd": 451, "estado": "No cumple" },
+      { "fecha": "2025-10-14 18:00", "fuente": "Google Flights", "precio_usd": 451, "estado": "No cumple" },
+
+      { "fecha": "2025-10-15 06:00", "fuente": "Copa (web)", "precio_usd": 447, "estado": "No cumple" },
+      { "fecha": "2025-10-15 12:00", "fuente": "Skyscanner", "precio_usd": 447, "estado": "No cumple" },
+      { "fecha": "2025-10-15 18:00", "fuente": "Google Flights", "precio_usd": 447, "estado": "No cumple" },
+
+      { "fecha": "2025-10-16 06:00", "fuente": "Expedia", "precio_usd": 448, "estado": "No cumple" },
+      { "fecha": "2025-10-16 12:00", "fuente": "Kayak", "precio_usd": 448, "estado": "No cumple" },
+      { "fecha": "2025-10-16 18:00", "fuente": "Momondo", "precio_usd": 448, "estado": "No cumple" },
+
+      { "fecha": "2025-10-17 06:00", "fuente": "Google Flights", "precio_usd": 447, "estado": "No cumple" },
+      { "fecha": "2025-10-17 12:00", "fuente": "Skyscanner", "precio_usd": 447, "estado": "No cumple" },
+      { "fecha": "2025-10-17 18:00", "fuente": "Google Flights", "precio_usd": 447, "estado": "No cumple" },
+
+      { "fecha": "2025-10-18 06:00", "fuente": "Expedia", "precio_usd": 447, "estado": "No cumple" },
+      { "fecha": "2025-10-18 12:00", "fuente": "Kayak", "precio_usd": 447, "estado": "No cumple" },
+      { "fecha": "2025-10-18 18:00", "fuente": "Google Flights", "precio_usd": 447, "estado": "No cumple" },
+
+      { "fecha": "2025-10-19 06:00", "fuente": "Expedia", "precio_usd": 443, "estado": "No cumple" },
+      { "fecha": "2025-10-19 12:00", "fuente": "Kayak", "precio_usd": 441, "estado": "No cumple" },
+      { "fecha": "2025-10-19 18:00", "fuente": "Orbitz", "precio_usd": 440, "estado": "No cumple" }
+    ]
+  }
 }
