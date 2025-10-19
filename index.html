@@ -5,51 +5,90 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Dashboard Ultra-Low Fare · Víctor Vega</title>
 <link rel="stylesheet" href="style.css"/>
+<!-- Chart.js para el histórico (ligero y CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <header>
   <h1>🛫 Dashboard Ultra-Low Fare · Víctor Vega</h1>
   <div class="sub">Actualizado automáticamente cada 3 horas · Zona: CST</div>
-  <nav>
+
+  <nav class="tabs">
     <button class="btn" onclick="mostrar('inicio')">Resumen</button>
     <button class="btn" onclick="mostrar('detalle','LIM ⇄ FLL')">Detalle FLL</button>
     <button class="btn" onclick="mostrar('detalle','LIM ⇄ MIA')">Detalle MIA</button>
     <button class="btn" onclick="mostrar('detalle','LIM ⇄ MCO')">Detalle MCO</button>
+    <button class="btn" onclick="mostrar('historico')">Histórico</button>
   </nav>
+
+  <div class="actions-header">
+    <button class="primary" onclick="refrescarAhora()">🔄 Actualizar ahora</button>
+    <button class="secondary" onclick="descargarPDF()">⬇️ Descargar informe PDF</button>
+    <span id="auto-status" class="muted">Auto-refresco: cada 5 min</span>
+  </div>
 </header>
-<main>
+
+<main id="print-area">
+  <!-- RESUMEN -->
   <section id="inicio" class="card">
     <h2>Estado general</h2>
     <div class="kpi">
       <div class="item"><b>Simulaciones de hoy</b><span id="kpi-sims">—</span><div class="small">(reinicia a las 00:00 CST)</div></div>
       <div class="item"><b>Última ejecución</b><span id="kpi-last">—</span></div>
       <div class="item"><b>Próxima ejecución</b><span id="kpi-next">—</span></div>
+      <div class="item"><b>Generado</b><span id="kpi-gen">—</span></div>
     </div>
+
     <div class="card">
       <h3>Rutas monitoreadas</h3>
-      <table id="tabla-resumen"><thead>
-        <tr><th>Ruta</th><th>Última ejecución</th><th>Precio más bajo</th><th>Umbral</th><th>Resultado</th><th>Acción</th></tr>
-      </thead><tbody></tbody></table>
-      <div class="footnote">Los precios son por pasajero (ida y vuelta) con impuestos/tasas. “Cumple” si ≤ umbral y respeta equipaje de mano y ≤ 1 escala.</div>
+      <div class="table-wrap">
+        <table id="tabla-resumen"><thead>
+          <tr><th>Ruta</th><th>Última ejecución</th><th>Precio más bajo</th><th>Umbral</th><th>Resultado</th><th>Acción</th></tr>
+        </thead><tbody></tbody></table>
+      </div>
+      <div class="footnote">
+        Los precios son por pasajero (ida y vuelta) con impuestos y tasas. “Cumple” si ≤ umbral y respeta equipaje de mano y ≤ 1 escala.
+      </div>
     </div>
   </section>
 
+  <!-- DETALLE -->
   <section id="detalle" class="card hidden">
     <h2 id="detalle-title">Detalle</h2>
     <div class="muted" id="detalle-sub">—</div>
-    <table id="tabla-detalle"><thead>
-      <tr><th>Tipo</th><th>Fuente</th><th>Resultado</th><th>Estado</th></tr>
-    </thead><tbody></tbody></table>
+    <div class="table-wrap">
+      <table id="tabla-detalle"><thead>
+        <tr><th>Tipo</th><th>Fuente</th><th>Resultado</th><th>Estado</th></tr>
+      </thead><tbody></tbody></table>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="mostrar('inicio')">Volver al resumen</button>
+    </div>
+  </section>
+
+  <!-- HISTÓRICO -->
+  <section id="historico" class="card hidden">
+    <h2>Evolución histórica (precio más bajo por día)</h2>
+    <p class="muted">Muestra el menor precio encontrado por ruta en cada día. Sirve para ver tendencias y decidir compra.</p>
+    <div class="card">
+      <canvas id="histChart" height="120"></canvas>
+    </div>
     <div class="actions">
       <button class="primary" onclick="mostrar('inicio')">Volver al resumen</button>
     </div>
   </section>
 </main>
 
+<footer>
+  <span id="last-refresh" class="muted">—</span>
+</footer>
+
 <script>
-let DATA=null;
+let DATA=null, chart=null;
+const AUTO_MS = 5*60*1000; // 5 minutos
+
 function etiqueta(estado){
-  const e = estado.toLowerCase();
+  const e = (estado||'').toLowerCase();
   if(e.includes('cumple') && !e.includes('no')) return '<span class="pill ok">✅ Cumple</span>';
   if(e.includes('parcial')||e.includes('condicional')||e.includes('informativo')) return '<span class="pill warn">⚠ '+estado+'</span>';
   if(e.includes('confirmado')) return '<span class="pill ok">✅ Confirmado</span>';
@@ -57,16 +96,15 @@ function etiqueta(estado){
   return '<span class="pill no">❌ No cumple</span>';
 }
 function mostrar(vista, ruta=null){
-  document.getElementById('inicio').classList.add('hidden');
-  document.getElementById('detalle').classList.add('hidden');
-  if(vista==='inicio'){
-    document.getElementById('inicio').classList.remove('hidden');
-  }else{
-    renderDetalle(ruta);
-    document.getElementById('detalle').classList.remove('hidden');
-  }
+  ['inicio','detalle','historico'].forEach(id=>{
+    document.getElementById(id).classList.add('hidden');
+  });
+  if(vista==='detalle'){ renderDetalle(ruta); }
+  if(vista==='historico'){ renderHistorico(); }
+  document.getElementById(vista).classList.remove('hidden');
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
 async function cargar(){
   const res = await fetch('data.json?cache='+Date.now());
   DATA = await res.json();
@@ -75,6 +113,7 @@ async function cargar(){
   document.getElementById('kpi-sims').textContent = DATA.contador_diario.completadas + ' / ' + DATA.contador_diario.total;
   document.getElementById('kpi-last').textContent = DATA.resumen[0].ultima_ejecucion;
   document.getElementById('kpi-next').textContent = DATA.contador_diario.proxima;
+  document.getElementById('kpi-gen').textContent  = DATA.meta.generado || '—';
 
   // Tabla resumen
   const tb = document.querySelector('#tabla-resumen tbody');
@@ -91,6 +130,9 @@ async function cargar(){
     `;
     tb.appendChild(tr);
   });
+
+  // refrescar sello
+  document.getElementById('last-refresh').textContent = 'Actualizado: ' + (new Date()).toLocaleString();
 }
 function renderDetalle(ruta){
   const d = DATA.detalles[ruta];
@@ -104,7 +146,44 @@ function renderDetalle(ruta){
     tb.appendChild(tr);
   });
 }
-cargar(); mostrar('inicio');
+function renderHistorico(){
+  const hx = DATA.historico || []; // [{fecha, fll, mia, mco}]
+  const labels = hx.map(d=>d.fecha);
+  const fll = hx.map(d=>d.fll ?? null);
+  const mia = hx.map(d=>d.mia ?? null);
+  const mco = hx.map(d=>d.mco ?? null);
+
+  if(chart){ chart.destroy(); }
+  const ctx = document.getElementById('histChart');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {label:'LIM ⇄ FLL', data:fll, tension:.25},
+        {label:'LIM ⇄ MIA', data:mia, tension:.25},
+        {label:'LIM ⇄ MCO', data:mco, tension:.25},
+      ]
+    },
+    options: {
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{ legend:{position:'bottom'} },
+      scales:{ y:{ title:{display:true,text:'US$'}, beginAtZero:false } }
+    }
+  });
+}
+function refrescarAhora(){
+  cargar().then(()=>{ /* ok */ });
+}
+function descargarPDF(){
+  // usa el diálogo nativo de imprimir → guardar como PDF (funciona en móvil y PC)
+  window.print();
+}
+
+// Carga inicial y auto-refresco
+cargar().then(()=>mostrar('inicio'));
+setInterval(()=>cargar(), AUTO_MS);
 </script>
 </body>
 </html>
