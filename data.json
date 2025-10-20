@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generado": "2025-10-20T13:38:34.080Z"
+    "generado": "2025-10-20T15:34:19.498Z"
   },
   "resumen": [
     {
@@ -8,7 +8,7 @@
       "salida": "2026-02-15",
       "retorno": "2026-02-20",
       "umbral": 360,
-      "precio": 440,
+      "precio": 402,
       "cumple": "No cumple"
     },
     {
@@ -16,16 +16,16 @@
       "salida": "2026-02-15",
       "retorno": "2026-02-20",
       "umbral": 360,
-      "precio": 425,
-      "cumple": "No cumple"
+      "precio": 380,
+      "cumple": "Cumple"
     },
     {
       "ruta": "LIM ⇄ MCO",
       "salida": "2026-02-15",
       "retorno": "2026-02-20",
       "umbral": 400,
-      "precio": 416,
-      "cumple": "Cumple"
+      "precio": 366,
+      "cumple": "No cumple"
     }
   ]
 }
