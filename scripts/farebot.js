@@ -18,20 +18,58 @@ const EQUIPAJE = {
   "Delta":  { Basic:{carryOn:true}, Main:{carryOn:true} }
 };
 
+// --- CARRIERS: deeplinks a aerolíneas (con backticks correctos)
 const CARRIERS = {
-  CM: { name:"Copa Airlines", build:(dst,d1,d2)=>https://book.copaair.com/booking/flights?tripType=roundtrip&origin=LIM&destination=${dst}&departureDate=${d1}&returnDate=${d2}&adt=1&cabin=economy },
-  AV: { name:"Avianca", build:(dst,d1,d2)=>https://www.avianca.com/en/?from=LIM&to=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&cabins=economy },
-  LA: { name:"LATAM", build:(dst,d1,d2)=>https://www.latamairlines.com/pe/es/oferta-vuelos?origin=LIM&destination=${dst}&outbound=${d1}&inbound=${d2}&adt=1&cabin=economy },
-  AA: { name:"American Airlines", build:(dst,d1,d2)=>https://www.aa.com/booking/flights/choose-flights?tripType=roundTrip&origin=LIM&destination=${dst}&departDate=${d1}&returnDate=${d2}&cabin=coach&passengerCount=1 },
-  B6: { name:"JetBlue", build:(dst,d1,d2)=>https://www.jetblue.com/booking/flights?from=LIM&to=${dst}&depart=${d1}&return=${d2}&type=rt&adult=1 },
-  NK: { name:"Spirit", build:(dst,d1,d2)=>https://booking.spirit.com/Flight-Search?trip=roundtrip&origin=LIM&destination=${dst}&departing=${d1}&returning=${d2}&ADT=1&cabin=Economy },
-  UA: { name:"United", build:(dst,d1,d2)=>https://www.united.com/en-us/flights/results?f=LIM&t=${dst}&d=${d1}&r=${d2}&sc=7,7&px=1&taxng=1 },
-  DL: { name:"Delta", build:(dst,d1,d2)=>https://www.delta.com/flight-search/search?tripType=RT&fromCity=LIM&toCity=${dst}&departureDate=${d1}&returnDate=${d2}&passengers=1&cabinClass=MAIN }
+  CM: { // Copa
+    name: "Copa Airlines",
+    build: (dst, d1, d2) =>
+      https://book.copaair.com/booking/entry?tripType=roundtrip&origin=LIM&destination=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&cabin=economy
+  },
+  AV: { // Avianca
+    name: "Avianca",
+    build: (dst, d1, d2) =>
+      https://www.avianca.com/en/?from=LIM&to=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&cabins=economy
+  },
+  LA: { // LATAM
+    name: "LATAM",
+    build: (dst, d1, d2) =>
+      https://www.latamairlines.com/pe/es/oferta-vuelos?origin=LIM&destination=${dst}&outbound=${d1}&inbound=${d2}&adt=1&cabin=economy
+  },
+  AA: { // American
+    name: "American Airlines",
+    build: (dst, d1, d2) =>
+      https://www.aa.com/booking/flights/choose-flights?tripType=roundTrip&origin=LIM&destination=${dst}&departDate=${d1}&returnDate=${d2}&cabin=coach&passengerCount=1
+  },
+  B6: { // JetBlue
+    name: "JetBlue",
+    build: (dst, d1, d2) =>
+      https://www.jetblue.com/booking/flights?from=LIM&to=${dst}&depart=${d1}&return=${d2}&type=rt&adult=1
+  },
+  NK: { // Spirit
+    name: "Spirit",
+    build: (dst, d1, d2) =>
+      https://booking.spirit.com/Flight-Search?trip=roundtrip&origin=LIM&destination=${dst}&departing=${d1}&returning=${d2}&ADT=1&cabin=Economy
+  },
+  UA: { // United
+    name: "United",
+    build: (dst, d1, d2) =>
+      https://www.united.com/en-us/flights/results?f=LIM&t=${dst}&d=${d1}&r=${d2}&sc=7,7&px=1&taxng=1
+  },
+  DL: { // Delta
+    name: "Delta",
+    build: (dst, d1, d2) =>
+      https://www.delta.com/flight-search/search?tripType=RT&fromCity=LIM&toCity=${dst}&departureDate=${d1}&returnDate=${d2}&passengers=1&cabinClass=MAIN
+  }
 };
+
+// --- META: deeplinks a metabuscadores (con backticks correctos)
 const META = {
-  kayak:(dst,d1,d2)=>https://www.kayak.com/flights/LIM-${dst}/${d1}/${d2}?sort=bestflight_a&stops=~1,
-  skyscanner:(dst,d1,d2)=>https://www.skyscanner.com/transport/flights/lim/${dst.toLowerCase()}/${d1.replaceAll('-','').slice(2)}/${d2.replaceAll('-','').slice(2)}/?adults=1&stops=1&cabinclass=economy,
-  expedia:(dst,d1,d2)=>https://www.expedia.com/Flights-Search?trip=roundtrip&leg1=from:LIM,to:${dst},departure:${d1.replaceAll('-','/')}TANYT&leg2=from:${dst},to:LIM,departure:${d2.replaceAll('-','/')}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1
+  kayak: (dst, d1, d2) =>
+    https://www.kayak.com/flights/LIM-${dst}/${d1}/${d2}?sort=bestflight_a&stops=~1,
+  skyscanner: (dst, d1, d2) =>
+    https://www.skyscanner.com/transport/flights/lim/${dst.toLowerCase()}/${d1.replaceAll('-','').slice(2)}/${d2.replaceAll('-','').slice(2)}/?adults=1&stops=1&cabinclass=economy,
+  expedia: (dst, d1, d2) =>
+    https://www.expedia.com/Flights-Search?trip=roundtrip&leg1=from:LIM,to:${dst},departure:${d1.replaceAll('-','/')}TANYT&leg2=from:${dst},to:LIM,departure:${d2.replaceAll('-','/')}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1
 };
 
 const carrierCodeFromOperador = (txt='')=>{
