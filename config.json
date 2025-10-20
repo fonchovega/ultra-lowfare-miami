@@ -1,22 +1,14 @@
 {
-  "origen": "LIM",
-  "rutas": [
-    { "dst": "FLL", "umbral": 360 },
-    { "dst": "MIA", "umbral": 360 },
-    { "dst": "MCO", "umbral": 400 }
+  "timezone": "America/Chicago",
+  "auto_runs_per_day": 8,
+  "max_stops": 1,
+  "carry_on_required": true,
+  "routes": [
+    { "label": "LIM ⇄ FLL", "dst": "FLL", "depart": "2026-02-15", "return": ["2026-02-20","2026-02-21"], "umbral": 360 },
+    { "label": "LIM ⇄ MIA", "dst": "MIA", "depart": "2026-02-15", "return": ["2026-02-20","2026-02-21"], "umbral": 360 },
+    { "label": "LIM ⇄ MCO", "dst": "MCO", "depart": "2026-02-15", "return": ["2026-02-20","2026-02-21"], "umbral": 400 }
   ],
-  "fechas": {
-    "salida": "15/02/2026",
-    "retorno_desde": "20/02/2026",
-    "retorno_hasta": "21/02/2026"
-  },
-  "moneda": "USD",
-  "maxEscalas": 1,
-  "proveedores": {
-    "orden": ["tequila", "amadeus"],
-    "confirmar_con_amadeus_si": {
-      "precio_menor_igual_umbral": true,
-      "dentro_porcentaje_umbral": 5
-    }
-  }
+  "providers_prefer": ["kayak","skyscanner","expedia"],
+  "providers_airlines": ["avianca","copa","latam","aa","jetblue","spirit"],
+  "use_real_apis": false
 }
