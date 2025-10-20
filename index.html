@@ -8,12 +8,29 @@
 <!-- Chart.js para el histórico (gráfico comparativo diario) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-/* Pequeños estilos para filtros y tabla larga */
+/* Ajustes ligeros para filtros y tablas */
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .filters label{font-size:12px;color:#5a6275;display:flex;flex-direction:column;gap:4px}
 .filters input,.filters select{padding:8px 10px;border:1px solid #e6e9f2;border-radius:8px;min-width:160px}
 .table-wrap{width:100%;overflow:auto;border-radius:10px}
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:#eef3ff}
+.hidden{display:none}
+.link{color:#2463eb;text-decoration:underline;cursor:pointer}
+.pill{padding:2px 8px;border-radius:999px;font-size:12px}
+.pill.ok{background:#e8f7ee}
+.pill.warn{background:#fff6e6}
+.pill.no{background:#ffecec}
+.sub{color:#6b7280;margin-top:4px}
+.muted{color:#6b7280}
+.card{background:#fff;border:1px solid #eef1f5;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04);padding:16px;margin:16px 0}
+.actions-header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.btn,.primary,.secondary{padding:8px 12px;border-radius:10px;border:1px solid #e6e9f2;background:#f8fafc;cursor:pointer}
+.primary{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
+.secondary{background:#fff}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px}
+.kpi .item{background:#f8fafc;border:1px solid #eef1f5;border-radius:12px;padding:12px}
+.footnote{font-size:12px;color:#6b7280;margin-top:8px}
 </style>
 </head>
 <body>
@@ -59,6 +76,44 @@
         Los precios son por pasajero (ida y vuelta) con impuestos y tasas. “Cumple” si ≤ umbral y respeta equipaje de mano y ≤ 1 escala.
       </div>
     </div>
+
+    <!-- BUSCADORES REALES -->
+    <div class="card">
+      <h3>🔎 Buscar ahora (sitios reales)</h3>
+      <p class="muted">Abre múltiples buscadores con tu ruta y fechas. Si un sitio no aplica “≤1 escala” por URL, actívalo manualmente en su filtro.</p>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <!-- MIA -->
+        <button class="secondary" onclick="openAll('MIA','2026-02-15','2026-02-20')">MIA · 15→20 feb</button>
+        <button class="secondary" onclick="openAll('MIA','2026-02-15','2026-02-21')">MIA · 15→21 feb</button>
+
+        <!-- FLL -->
+        <button class="secondary" onclick="openAll('FLL','2026-02-15','2026-02-20')">FLL · 15→20 feb</button>
+        <button class="secondary" onclick="openAll('FLL','2026-02-15','2026-02-21')">FLL · 15→21 feb</button>
+
+        <!-- MCO -->
+        <button class="secondary" onclick="openAll('MCO','2026-02-15','2026-02-20')">MCO · 15→20 feb</button>
+        <button class="secondary" onclick="openAll('MCO','2026-02-15','2026-02-21')">MCO · 15→21 feb</button>
+      </div>
+
+      <!-- Presets + checkboxes -->
+      <div style="margin-top:10px">
+        <label style="font-size:12px; color:#5a6275">Selecciona fuentes a abrir:</label>
+
+        <!-- Presets -->
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 4px 0">
+          <button class="secondary" onclick="preset('rapido')">⚡ Rápido</button>
+          <button class="secondary" onclick="preset('afondo')">🧭 A fondo</button>
+          <button class="secondary" onclick="preset('confirmacion')">✅ Confirmación</button>
+          <span style="width:8px"></span>
+          <button class="secondary" onclick="preset('todos')">☑️ Todos</button>
+          <button class="secondary" onclick="preset('ninguno')">🚫 Ninguno</button>
+        </div>
+
+        <!-- Checkboxes -->
+        <div id="providers" style="display:flex; gap:12px; flex-wrap:wrap; margin-top:6px"></div>
+      </div>
+    </div>
   </section>
 
   <!-- DETALLE POR RUTA -->
@@ -75,7 +130,7 @@
     </div>
   </section>
 
-  <!-- HISTÓRICO (GRÁFICO DIARIO) -->
+  <!-- HISTÓRICO (GRÁFICO) -->
   <section id="historico" class="card hidden">
     <h2>Evolución histórica (precio más bajo por día)</h2>
     <p class="muted">Muestra el menor precio encontrado por ruta en cada día. Sirve para ver tendencias y decidir compra.</p>
@@ -87,7 +142,7 @@
     </div>
   </section>
 
-  <!-- HISTÓRICO DETALLADO (TODAS LAS SIMULACIONES) -->
+  <!-- HISTÓRICO DETALLADO -->
   <section id="historico_det" class="card hidden">
     <h2>Histórico detallado de simulaciones</h2>
     <div class="filters">
@@ -118,7 +173,6 @@
       </label>
       <button class="primary" onclick="aplicarFiltros()">Aplicar filtros</button>
       <button class="secondary" onclick="limpiarFiltros()">Limpiar</button>
-      <!-- NUEVO: Exportar CSV -->
       <button class="secondary" onclick="exportarCSV()">⬇️ Exportar CSV</button>
     </div>
 
@@ -146,15 +200,16 @@
 
 <script>
 let DATA=null, chart=null;
-const AUTO_MS = 5*60*1000; // 5 minutos
-let HIST_DET_FLAT = [];     // arreglo plano con todas las simulaciones
-let CURRENT_ROWS = [];      // lo que está actualmente filtrado en la tabla
+const AUTO_MS = 5*60*1000; // 5 min
+let HIST_DET_FLAT = [];     // arreglo plano de simulaciones
+let CURRENT_ROWS = [];      // vista filtrada actual
 
+/* ---------- Utilidades UI ---------- */
 function etiqueta(estado){
   const e = (estado||'').toLowerCase();
+  if(e.includes('confirmado')) return '<span class="pill ok">✅ Confirmado</span>';
   if(e.includes('cumple') && !e.includes('no')) return '<span class="pill ok">✅ '+(estado||'Cumple')+'</span>';
   if(e.includes('parcial')||e.includes('condicional')||e.includes('informativo')) return '<span class="pill warn">⚠ '+estado+'</span>';
-  if(e.includes('confirmado')) return '<span class="pill ok">✅ Confirmado</span>';
   if(e.includes('excluida')) return '<span class="pill no">🚫 Excluida</span>';
   return '<span class="pill no">❌ '+(estado||'No cumple')+'</span>';
 }
@@ -169,6 +224,7 @@ function mostrar(vista, ruta=null){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+/* ---------- Carga de datos ---------- */
 async function cargar(){
   const res = await fetch('data.json?cache='+Date.now());
   DATA = await res.json();
@@ -195,14 +251,14 @@ async function cargar(){
     tb.appendChild(tr);
   });
 
-  // Preparar histórico detallado plano
+  // Histórico detallado plano
   HIST_DET_FLAT = [];
   const rutas = Object.keys(DATA.historico_detallado||{});
   rutas.forEach(ruta=>{
     (DATA.historico_detallado[ruta]||[]).forEach(item=>{
       HIST_DET_FLAT.push({
         ruta,
-        fecha: item.fecha,        // "YYYY-MM-DD HH:mm"
+        fecha: item.fecha,
         fechaISO: (item.fecha||'').slice(0,10),
         fuente: item.fuente,
         precio: item.precio_usd,
@@ -210,7 +266,8 @@ async function cargar(){
       });
     });
   });
-  // Poblamos select de rutas una sola vez
+
+  // Select de rutas (una sola vez)
   const selRuta = document.getElementById('f-ruta');
   if(selRuta && selRuta.options.length===0){
     const optTodos = document.createElement('option'); optTodos.value=''; optTodos.textContent='(todas)';
@@ -221,22 +278,25 @@ async function cargar(){
     });
   }
 
-  // refrescar sello
   document.getElementById('last-refresh').textContent = 'Actualizado: ' + (new Date()).toLocaleString();
 }
+
+/* ---------- Detalle ---------- */
 function renderDetalle(ruta){
   const d = (DATA.detalles||{})[ruta];
   if(!d){ return; }
   document.getElementById('detalle-title').textContent = 'Detalle · ' + ruta;
-  document.getElementById('detalle-sub').textContent = `Bloque #${d.bloque} · ${d.hora} · Simulación ${d.simulacion} · Umbral ≤ US$ ${d.umbral} · Resultado: ${d.resultado_final}`;
+  document.getElementById('detalle-sub').textContent = Bloque #${d.bloque} · ${d.hora} · Simulación ${d.simulacion} · Umbral ≤ US$ ${d.umbral} · Resultado: ${d.resultado_final};
   const tb = document.querySelector('#tabla-detalle tbody');
   tb.innerHTML='';
   (d.evaluaciones||[]).forEach(e=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${e.tipo}</td><td>${e.fuente}</td><td>${e.resultado}</td><td>${etiqueta(e.estado)}</td>`;
+    tr.innerHTML = <td>${e.tipo}</td><td>${e.fuente}</td><td>${e.resultado}</td><td>${etiqueta(e.estado)}</td>;
     tb.appendChild(tr);
   });
 }
+
+/* ---------- Histórico (gráfico) ---------- */
 function renderHistorico(){
   const hx = DATA.historico || []; // [{fecha, fll, mia, mco}]
   const labels = hx.map(d=>d.fecha);
@@ -265,7 +325,7 @@ function renderHistorico(){
   });
 }
 
-/* ---------- HISTÓRICO DETALLADO ---------- */
+/* ---------- Histórico detallado (tabla + filtros + CSV) ---------- */
 function aplicarFiltros(){
   const ruta   = document.getElementById('f-ruta').value || '';
   const desde  = document.getElementById('f-desde').value || '';
@@ -295,7 +355,7 @@ function limpiarFiltros(){
 function pintarTablaHistDet(rows){
   const tb = document.querySelector('#tabla-histdet tbody');
   tb.innerHTML = '';
-  CURRENT_ROWS = rows.slice(); // guardar vista actual para exportar CSV
+  CURRENT_ROWS = rows.slice();
   (rows||[]).forEach(r=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -309,7 +369,7 @@ function pintarTablaHistDet(rows){
   });
   if(rows.length===0){
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="5" class="muted">No hay resultados con los filtros aplicados.</td>`;
+    tr.innerHTML = <td colspan="5" class="muted">No hay resultados con los filtros aplicados.</td>;
     tb.appendChild(tr);
   }
 }
@@ -317,19 +377,11 @@ function renderHistoricoDet(){
   if(HIST_DET_FLAT.length===0){ return; }
   pintarTablaHistDet(HIST_DET_FLAT);
 }
-
-/* ---------- Exportar CSV (con BOM para Excel) ---------- */
 function exportarCSV(){
   const rows = CURRENT_ROWS.length ? CURRENT_ROWS : HIST_DET_FLAT;
-  if(!rows.length){
-    alert('No hay datos para exportar.');
-    return;
-  }
-  // Encabezados
+  if(!rows.length){ alert('No hay datos para exportar.'); return; }
   const header = ['fecha_hora','ruta','fuente','precio_usd','estado'];
   const lines = [header.join(',')];
-
-  // Filas, escapando comas y comillas
   rows.forEach(r=>{
     const vals = [
       r.fecha,
@@ -339,22 +391,114 @@ function exportarCSV(){
       r.estado ? r.estado.replace(/"/g,'""') : ''
     ].map(v=>{
       const s = (v==null?'':v.toString());
-      return (/[",\n]/.test(s)) ? `"${s}"` : s;
+      return (/[",\n]/.test(s)) ? "${s}" : s;
     });
     lines.push(vals.join(','));
   });
-
   const csv = '\ufeff' + lines.join('\n'); // BOM para Excel
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const hoy = new Date().toISOString().slice(0,10);
-  a.href = url;
-  a.download = `historico_simulaciones_${hoy}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href = url; a.download = historico_simulaciones_${hoy}.csv;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/* ---------- BUSCADORES REALES (multi-fuente) ---------- */
+const providers = {
+  // Metas
+  kayak:     {name:'KAYAK',     build:(dst,d1,d2)=>https://www.kayak.com/flights/LIM-${dst}/${d1}/${d2}?sort=bestflight_a&stops=~1},
+  skyscanner:{name:'Skyscanner',build:(dst,d1,d2)=>https://www.skyscanner.com/transport/flights/lim/${dst.toLowerCase()}/${d1.replaceAll('-','').slice(2)}/${d2.replaceAll('-','').slice(2)}/?adults=1&stops=1&cabinclass=economy},
+  momondo:   {name:'Momondo',   build:(dst,d1,d2)=>https://www.momondo.com/flight-search/LIM-${dst}/${d1}/${d2}?sort=bestflight_a}, // stops en UI
+  kiwi:      {name:'Kiwi',      build:(dst,d1,d2)=>https://www.kiwi.com/en/search/results/lim/${dst.toLowerCase()}/${d1}/${d2}?sort=best&stopsNumber=0%2C1},
+  gflights:  {name:'Google Flights', build:(dst,d1,d2)=>https://www.google.com/travel/flights?q=Flights%20to%20${dst}%20from%20LIM%20on%20${d1}%20return%20${d2}},
+
+  // OTAs globales
+  expedia:   {name:'Expedia',   build:(dst,d1,d2)=>https://www.expedia.com/Flights-Search?trip=roundtrip&leg1=from:LIM,to:${dst},departure:${d1.replaceAll('-','/')}TANYT&leg2=from:${dst},to:LIM,departure:${d2.replaceAll('-','/')}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1},
+  orbitz:    {name:'Orbitz',    build:(dst,d1,d2)=>https://www.orbitz.com/Flights-Search?trip=roundtrip&leg1=from:LIM,to:${dst},departure:${d1.replaceAll('-','/')}TANYT&leg2=from:${dst},to:LIM,departure:${d2.replaceAll('-','/')}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1},
+  travelocity:{name:'Travelocity',build:(dst,d1,d2)=>https://www.travelocity.com/Flights-Search?trip=roundtrip&leg1=from:LIM,to:${dst},departure:${d1.replaceAll('-','/')}TANYT&leg2=from:${dst},to:LIM,departure:${d2.replaceAll('-','/')}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1},
+  priceline: {name:'Priceline', build:(dst,d1,d2)=>https://www.priceline.com/m/fly/search/#/searches/itineraries?cabin-class=ECO&legs=2&leg1=LIM-${dst}-${d1}&leg2=${dst}-LIM-${d2}&num-adults=1}, // stops en UI
+  tripcom:   {name:'Trip.com',  build:(dst,d1,d2)=>https://us.trip.com/flights/lim-to-${dst.toLowerCase()}/tickets?depdate=${d1}&retdate=${d2}&dcity=LIM&acity=${dst}&type=roundtrip&cabin=economy&adult=1},
+  opodo:     {name:'Opodo',     build:(dst,d1,d2)=>https://www.opodo.com/flights/lim-${dst.toLowerCase()}/${d1}/${d2}/?roundTrip=true&adults=1&class=economy},
+  edreams:   {name:'eDreams',   build:(dst,d1,d2)=>https://www.edreams.net/flights/lim-${dst.toLowerCase()}/${d1}/${d2}/?roundTrip=true&adults=1&class=economy},
+  cheapoair: {name:'CheapOair', build:(dst,d1,d2)=>https://www.cheapoair.com/fpnext/Air/Listing?d1=LIM&a1=${dst}&d2=${dst}&a2=LIM&dd1=${d1}&dd2=${d2}&trip=R&class=E&adt=1},
+
+  // LATAM región
+  despegar:  {name:'Despegar',  build:(dst,d1,d2)=>https://www.despegar.com.pe/vuelos/${d1}/${d2}/LIM/${dst}/1/0/0?from=SB},
+  viajanet:  {name:'Viajanet',  build:(dst,d1,d2)=>https://www.viajanet.com.br/passagens-aereas/resultados?iata_from=LIM&iata_to=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&tripType=RT&cabinType=ECO},
+  atrapalo:  {name:'Atrápalo',  build:(dst,d1,d2)=>https://www.atrapalo.pe/viajes/buscador/#/vuelos/ida_y_vuelta/LIM/${dst}/${d1}/${d2}/1/0/0/0/Economica},
+  bestday:   {name:'BestDay',   build:(dst,d1,d2)=>https://www.bestday.com.mx/vuelos/#/search/flight/LIM/${dst}/${d1}/${d2}/1/0/0/Economy},
+
+  // Aerolíneas (confirmación de equipaje y precio final)
+  copa:      {name:'Copa',      build:(dst,d1,d2)=>https://book.copaair.com/booking/flights?tripType=roundtrip&origin=LIM&destination=${dst}&departureDate=${d1}&returnDate=${d2}&adt=1&chd=0&inf=0&cabin=economy},
+  avianca:   {name:'Avianca',   build:(dst,d1,d2)=>https://www.avianca.com/en/?from=LIM&to=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&cabins=economy},
+  latam:     {name:'LATAM',     build:(dst,d1,d2)=>https://www.latamairlines.com/pe/es/oferta-vuelos?origin=LIM&destination=${dst}&outbound=${d1}&inbound=${d2}&adt=1&chd=0&inf=0&cabin=economy},
+  aa:        {name:'American',  build:(dst,d1,d2)=>https://www.aa.com/booking/flights/choose-flights?tripType=roundTrip&destination=${dst}&origin=LIM&departDate=${d1}&returnDate=${d2}&cabin=coach&passengerCount=1},
+  jetblue:   {name:'JetBlue',   build:(dst,d1,d2)=>https://www.jetblue.com/booking/flights?from=LIM&to=${dst}&depart=${d1}&return=${d2}&type=rt&adult=1},
+  spirit:    {name:'Spirit',    build:(dst,d1,d2)=>https://booking.spirit.com/Flight-Search?trip=roundtrip&origin=LIM&destination=${dst}&departing=${d1}&returning=${d2}&ADT=1&cabin=Economy}
+};
+
+// --- Presets de selección ---
+const PRESETS = {
+  rapido: ['gflights','kayak','skyscanner','expedia'],
+  afondo: [
+    'gflights','kayak','skyscanner','momondo','kiwi',
+    'expedia','orbitz','travelocity','priceline','tripcom','opodo','edreams','cheapoair',
+    'despegar','viajanet','atrapalo','bestday'
+  ],
+  confirmacion: ['copa','avianca','latam','aa','jetblue','spirit'],
+  todos: null,      // se evaluará como todas las claves
+  ninguno: []
+};
+function setChecked(keys, value){
+  keys.forEach(k=>{
+    const cb = document.getElementById('pv_'+k);
+    if(cb) cb.checked = value;
+  });
+}
+function preset(name){
+  const allKeys = Object.keys(providers);
+  if(name === 'todos'){ setChecked(allKeys, true); return; }
+  if(name === 'ninguno'){ setChecked(allKeys, false); return; }
+  setChecked(allKeys, false);
+  const keys = PRESETS[name] || [];
+  setChecked(keys, true);
+}
+
+// Render checkboxes para elegir fuentes
+(function renderProviderChecks(){
+  const cont = document.getElementById('providers');
+  const order = [
+    'gflights','kayak','skyscanner','momondo','kiwi',
+    'expedia','orbitz','travelocity','priceline','tripcom','opodo','edreams','cheapoair',
+    'despegar','viajanet','atrapalo','bestday',
+    'copa','avianca','latam','aa','jetblue','spirit'
+  ];
+  order.forEach(key=>{
+    const p = providers[key];
+    const id = 'pv_'+key;
+    const label = document.createElement('label');
+    label.style = 'display:flex;align-items:center;gap:6px;font-size:13px;';
+    const pre = ['kayak','skyscanner','expedia','copa','avianca'].includes(key)?'checked':'';
+    label.innerHTML = <input type="checkbox" id="${id}" ${pre}/> ${p.name};
+    cont.appendChild(label);
+  });
+  // Preseleccionar preset "Rápido" al cargar
+  preset('rapido');
+})();
+
+// Abre varias pestañas (respetando bloqueadores: ráfaga escalonada)
+function openAll(dst, d1, d2){
+  const keys = Object.keys(providers);
+  let delay = 0;
+  keys.forEach(k=>{
+    const cb = document.getElementById('pv_'+k);
+    if (!cb || !cb.checked) return;
+    const url = providers[k].build(dst, d1, d2);
+    setTimeout(()=> window.open(url, '_blank'), delay);
+    delay += 120; // aumenta si tu navegador bloquea pop-ups
+  });
 }
 
 /* ---------- Refrescos y PDF ---------- */
