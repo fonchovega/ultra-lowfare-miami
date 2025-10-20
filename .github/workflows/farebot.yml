@@ -9,8 +9,9 @@ permissions:
   contents: write
 
 jobs:
-  run-farebot:
+  run-fareBot:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,16 +20,18 @@ jobs:
         run: |
           echo "Repo tree:"
           ls -la
-          echo "scripts/:"
+          echo "scripts/"
           ls -la scripts || true
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
-      # 👇 NO npm ci / NO installs (no dependencias)
-      - name: Run FareBot (sin dependencias)
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar FareBot
         run: node scripts/farebot.js
 
       - name: Commit & push data.json
