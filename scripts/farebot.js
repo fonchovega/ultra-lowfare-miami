@@ -1,303 +1,149 @@
 // scripts/farebot.js
-// Bot dual (Tequila + Amadeus). Node 18+.
-// Lee parámetros desde config.json y actualiza data.json.
-// Requiere: TEQUILA_API_KEY, AMADEUS_CLIENT_ID, AMADEUS_CLIENT_SECRET (secrets).
-
 import fs from 'fs';
-import path from 'path';
-import process from 'process';
+const CONFIG = JSON.parse(fs.readFileSync('./config.json','utf8'));
+const DATA_PATH = './data.json';
 
-// ---------- Utiles ----------
-const nowISO = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
-const selloCST = () => nowISO() + ' CST';
-const todayYMD = () => new Date().toISOString().slice(0,10);
-const readJson = p => JSON.parse(fs.readFileSync(p, 'utf-8'));
-const writeJson = (p, o) => fs.writeFileSync(p, JSON.stringify(o, null, 2), 'utf-8');
-
-function ddmmyyyy_to_yyyy_mm_dd(s) {
-  const [dd, mm, yyyy] = s.split('/').map(x=>x.trim());
-  return ${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')};
-}
-function pushIfUnique(arr, obj) {
-  const key = JSON.stringify([obj.fecha, obj.fuente, obj.precio_usd, obj.estado]);
-  if (!arr._set) arr._set = new Set();
-  if (arr.__set.has(key)) return;
-  arr.__set.add(key);
-  arr.push(obj);
-}
-
-// ---------- Paths ----------
-const ROOT = process.cwd();
-const CFG_PATH = path.join(ROOT, 'config.json');
-const DATA_PATH = path.join(ROOT, 'data.json');
-
-// ---------- Cargar config / data ----------
-if (!fs.existsSync(CFG_PATH)) {
-  console.error('[ERROR] Falta config.json en la raíz.');
-  process.exit(1);
-}
-const CFG = readJson(CFG_PATH);
-const DATA = fs.existsSync(DATA_PATH) ? readJson(DATA_PATH) : {
-  meta: {
-    titulo: "Dashboard Ultra-Low Fare · Víctor Vega",
-    generado: selloCST(),
-    zona_horaria: "CST",
-    frecuencia_horas: 3,
-    rutas: CFG.rutas.map(r=>LIM ⇄ ${r.dst}),
-    simulaciones_registradas: 0
-  },
-  resumen: [],
-  contador_diario: { completadas: 0, total: 24, proxima: "—" },
-  detalles: {},
-  historico: [],
-  historico_detallado: {}
+/* === Tabla equipaje por aerolínea y tarifa (simplificada) === */
+const EQUIPAJE = {
+  'Avianca': { XS:{carryOn:false,checked:false}, S:{carryOn:true,checked:false}, M:{carryOn:true,checked:true}, L:{carryOn:true,checked:true} },
+  'LATAM':   { Basic:{carryOn:false,checked:false}, Light:{carryOn:true,checked:false}, Plus:{carryOn:true,checked:true}, Top:{carryOn:true,checked:true} },
+  'Copa Airlines': { Promo:{carryOn:true,checked:false}, Classic:{carryOn:true,checked:true}, Full:{carryOn:true,checked:true} },
+  'American Airlines': { Basic:{carryOn:true,checked:false}, Main:{carryOn:true,checked:true} },
+  'JetBlue': { BlueBasic:{carryOn:false,checked:false}, Blue:{carryOn:true,checked:false}, BluePlus:{carryOn:true,checked:true} },
+  'Spirit': { Standard:{carryOn:false,checked:false}, Bundle:{carryOn:true,checked:true} },
+  'United': { Basic:{carryOn:false,checked:false}, Econ:{carryOn:true,checked:false}, Flex:{carryOn:true,checked:true} },
+  'Delta':  { Basic:{carryOn:true,checked:false}, Main:{carryOn:true,checked:true} }
 };
 
-// Asegurar estructuras por ruta
-for (const r of CFG.rutas) {
-  const ruta = ${CFG.origen} ⇄ ${r.dst};
-  if (!DATA.resumen.find(x=>x.ruta===ruta)) {
-    DATA.resumen.push({ ruta, ultima_ejecucion: "—", precio_mas_bajo_usd: null, umbral_usd: r.umbral, resultado: "—" });
-  } else {
-    DATA.resumen.find(x=>x.ruta===ruta).umbral_usd = r.umbral;
-  }
-  if (!DATA.detalles[ruta]) DATA.detalles[ruta] = { bloque: 0, hora: "—", simulacion: "—", umbral: r.umbral, resultado_final: "—", evaluaciones: [] };
-  if (!DATA.historico_detallado[ruta]) DATA.historico_detallado[ruta] = [];
-}
-
-const SELLO = selloCST();
-
-// ---------- Proveedor: Tequila (Kiwi) ----------
-const TEQUILA_API_KEY = process.env.TEQUILA_API_KEY || '';
-const TEQUILA_URL = 'https://api.tequila.kiwi.com/v2/search';
-
-async function tequilaSearch({ from, to, depart, retFrom, retTo, currency, maxStopovers=1 }) {
-  if (!TEQUILA_API_KEY) return null;
-  const url = new URL(TEQUILA_URL);
-  url.searchParams.set('fly_from', from);
-  url.searchParams.set('fly_to', to);
-  url.searchParams.set('date_from', depart);
-  url.searchParams.set('date_to', depart);
-  url.searchParams.set('return_from', retFrom);
-  url.searchParams.set('return_to', retTo);
-  url.searchParams.set('curr', currency);
-  url.searchParams.set('adults', '1');
-  url.searchParams.set('max_stopovers', String(maxStopovers));
-  url.searchParams.set('limit', '20');
-  url.searchParams.set('sort', 'price');
-
-  const res = await fetch(url.toString(), { headers: { apikey: TEQUILA_API_KEY } });
-  if (!res.ok) return null;
-  const json = await res.json();
-  const best = (json.data || [])[0];
-  if (!best) return null;
-
-  // Filtrar por segmentos totales (<= 2 por trayecto ⇒ 1 escala max). Tequila ya respeta max_stopovers.
+/* === Mapeo de carriers para deeplink directo === */
+const CARRIERS = {
+  CM: { name: 'Copa Airlines', build:(dst,d1,d2)=>https://book.copaair.com/booking/flights?tripType=roundtrip&origin=LIM&destination=${dst}&departureDate=${d1}&returnDate=${d2}&adt=1&cabin=economy },
+  AV: { name: 'Avianca', build:(dst,d1,d2)=>https://www.avianca.com/en/?from=LIM&to=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&cabins=economy },
+  LA: { name: 'LATAM', build:(dst,d1,d2)=>https://www.latamairlines.com/pe/es/oferta-vuelos?origin=LIM&destination=${dst}&outbound=${d1}&inbound=${d2}&adt=1&cabin=economy },
+  AA: { name: 'American Airlines', build:(dst,d1,d2)=>https://www.aa.com/booking/flights/choose-flights?tripType=roundTrip&origin=LIM&destination=${dst}&departDate=${d1}&returnDate=${d2}&cabin=coach&passengerCount=1 },
+  B6: { name: 'JetBlue', build:(dst,d1,d2)=>https://www.jetblue.com/booking/flights?from=LIM&to=${dst}&depart=${d1}&return=${d2}&type=rt&adult=1 },
+  NK: { name: 'Spirit', build:(dst,d1,d2)=>https://booking.spirit.com/Flight-Search?trip=roundtrip&origin=LIM&destination=${dst}&departing=${d1}&returning=${d2}&ADT=1&cabin=Economy },
+  UA: { name: 'United', build:(dst,d1,d2)=>https://www.united.com/en-us/flights/results?f=LIM&t=${dst}&d=${d1}&r=${d2}&sc=7,7&px=1&taxng=1 },
+  DL: { name: 'Delta', build:(dst,d1,d2)=>https://www.delta.com/flight-search/search?tripType=RT&fromCity=LIM&toCity=${dst}&departureDate=${d1}&returnDate=${d2}&passengers=1&cabinClass=MAIN }
+};
+function buildMetaLink(dst, d1, d2){
   return {
-    source: 'Tequila (Kiwi)',
-    currency,
-    price: best.price,
-    airline: best.route?.[0]?.airline || '',
-    routeSummary: best.route?.map(s => ${s.cityFrom||s.flyFrom}→${s.cityTo||s.flyTo}).join(' / ') || ''
+    kayak:https://www.kayak.com/flights/LIM-${dst}/${d1}/${d2}?sort=bestflight_a&stops=~1,
+    skyscanner:https://www.skyscanner.com/transport/flights/lim/${dst.toLowerCase()}/${d1.replaceAll('-','').slice(2)}/${d2.replaceAll('-','').slice(2)}/?adults=1&stops=1&cabinclass=economy,
+    expedia:https://www.expedia.com/Flights-Search?trip=roundtrip&leg1=from:LIM,to:${dst},departure:${d1.replaceAll('-','/')}TANYT&leg2=from:${dst},to:LIM,departure:${d2.replaceAll('-','/')}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1
   };
 }
-
-// ---------- Proveedor: Amadeus ----------
-const AMA_ID = process.env.AMADEUS_CLIENT_ID || '';
-const AMA_SECRET = process.env.AMADEUS_CLIENT_SECRET || '';
-const AMA_ENV = (process.env.AMADEUS_ENV || 'test').toLowerCase(); // 'test' | 'prod'
-const AMA_BASE = AMA_ENV === 'prod' ? 'https://api.amadeus.com' : 'https://test.api.amadeus.com';
-
-async function amadeusToken() {
-  if (!AMA_ID || !AMA_SECRET) return null;
-  const res = await fetch(${AMA_BASE}/v1/security/oauth2/token, {
-    method: 'POST',
-    headers: { 'Content-Type':'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: AMA_ID,
-      client_secret: AMA_SECRET
-    })
-  });
-  if (!res.ok) return null;
-  return await res.json(); // { access_token, ... }
+function buildDeeplinkByCarrierOrMeta({ carrierCode, dst, d1, d2, preferMeta='kayak' }){
+  if (carrierCode && CARRIERS[carrierCode]) {
+    return { url: CARRIERS[carrierCode].build(dst, d1, d2), operador: CARRIERS[carrierCode].name };
+  }
+  const meta = buildMetaLink(dst,d1,d2);
+  const key = meta[preferMeta] ? preferMeta : 'kayak';
+  return { url: meta[key], operador: 'Múltiples (metabuscador)' };
+}
+function incluyeCarryOn(aerolinea, tarifa){
+  if(!aerolinea || !tarifa) return false;
+  const i = EQUIPAJE[aerolinea]?.[tarifa];
+  return !!(i && i.carryOn);
 }
 
-async function amadeusSearch({ from, to, departYMD, returnYMD, currency, max=20, maxStops=1 }) {
-  const tok = await amadeusToken();
-  if (!tok?.access_token) return null;
+/* === Utilidades de datos === */
+function readData(){
+  if(!fs.existsSync(DATA_PATH)) return null;
+  return JSON.parse(fs.readFileSync(DATA_PATH,'utf8'));
+}
+function writeData(obj){
+  fs.writeFileSync(DATA_PATH, JSON.stringify(obj, null, 2));
+}
 
-  const url = new URL(${AMA_BASE}/v2/shopping/flight-offers);
-  url.searchParams.set('originLocationCode', from);
-  url.searchParams.set('destinationLocationCode', to);
-  url.searchParams.set('departureDate', departYMD);
-  url.searchParams.set('returnDate', returnYMD);
-  url.searchParams.set('adults', '1');
-  url.searchParams.set('currencyCode', currency);
-  url.searchParams.set('max', String(max));
+/* === Simulador “sin APIs” para correr y actualizar data.json ===
+   - Aquí NO buscamos en vivo. Tomamos el fichero actual, ajustamos timestamps,
+     y aplicamos reglas (equipaje/umbral) y deeplinks.
+   - Cuando quieras APIs, cambiamos este bloque.
+*/
+function simulateRun(){
+  const now = new Date();
+  const hh = now.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false});
+  const gen = now.toLocaleString('es-PE',{hour12:false});
 
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: Bearer ${tok.access_token} }
-  });
-  if (!res.ok) return null;
-
-  const json = await res.json();
-  const offers = json.data || [];
-  if (!offers.length) return null;
-
-  // Filtrar por escalas (<=1): cada itinerary debe tener segments.length <= 2
-  const filtered = offers.filter(o =>
-    (o.itineraries||[]).every(it => (it.segments||[]).length <= (maxStops+1))
-  );
-
-  const best = (filtered.length ? filtered : offers).sort((a,b)=> (a.price?.grandTotal||1e9) - (b.price?.grandTotal||1e9))[0];
-  if (!best) return null;
-
-  // Amadeus price grandTotal es string, conviértelo
-  const price = Number(best.price?.grandTotal || '0');
-
-  // Arma resumen de ruta
-  const segs = (best.itineraries?.[0]?.segments||[]).concat(best.itineraries?.[1]?.segments||[]);
-  const routeSummary = segs.map(s => ${s.departure?.iataCode}→${s.arrival?.iataCode}).join(' / ');
-  const airline = segs?.[0]?.carrierCode || '';
-
-  return {
-    source: Amadeus (${AMA_ENV}),
-    currency,
-    price,
-    airline,
-    routeSummary
+  const cfg = CONFIG;
+  const data = readData() || {
+    meta:{}, contador_diario:{completadas:0,total:cfg.auto_runs_per_day,proxima:""},
+    resumen:[], detalles:{}, historico:[], historico_detallado:{}
   };
-}
 
-// ---------- Lógica “Dual Inteligente” ----------
-function necesitaConfirmacionAmadeus(price, umbral, reglas) {
-  if (!price || !umbral) return false;
-  if (reglas.precio_menor_igual_umbral && price <= umbral) return true;
-  const margen = (reglas.dentro_porcentaje_umbral ?? 0) / 100;
-  return price <= (umbral * (1 + margen));
-}
+  data.meta.generado = gen;
 
-function actualizarHistoricoDiario(data, minsPorRuta) {
-  const hoy = todayYMD();
-  const row = data.historico.find(x=>x.fecha === hoy);
-  if (row) {
-    for (const k of Object.keys(minsPorRuta)) {
-      const v = minsPorRuta[k];
-      if (v != null) row[k] = Math.min(row[k] ?? Infinity, v);
+  // Actualiza “última ejecución” conservando precios simulados
+  (data.resumen||[]).forEach(r=>{
+    r.ultima_ejecucion = gen.slice(0,16);
+    // Si cumple, asegúrate que haya best_url
+    if((r.resultado||'').toLowerCase().includes('cumple') && !r.best_url){
+      const routeKey = r.ruta;
+      const d = data.detalles?.[routeKey];
+      const ok = d?.evaluaciones?.find(x=>/(Confirmado|Cumple)/.test(x.estado) && x.url);
+      if(ok) r.best_url = ok.url;
     }
-  } else {
-    data.historico.push({ fecha: hoy, ...minsPorRuta });
-  }
-}
+  });
 
-// ---------- MAIN ----------
-(async () => {
-  const departYMD = ddmmyyyy_to_yyyy_mm_dd(CFG.fechas.salida);
-  const retFromYMD = ddmmyyyy_to_yyyy_mm_dd(CFG.fechas.retorno_desde);
-  const retToYMD   = ddmmyyyy_to_yyyy_mm_dd(CFG.fechas.retorno_hasta);
+  // Ajusta detalle: añade íconos lógicos + “Confirmado” si carry-on cumple
+  Object.keys(data.detalles||{}).forEach(routeKey=>{
+    const det = data.detalles[routeKey];
+    det.hora = hh;
+    det.resultado_final = det.resultado_final || 'Informativo';
+    (det.evaluaciones||[]).forEach(e=>{
+      // Deducir carrierCode simple desde operador
+      let carrierCode = '';
+      if(/avianca/i.test(e.operador)) carrierCode='AV';
+      else if(/copa/i.test(e.operador)) carrierCode='CM';
+      else if(/latam/i.test(e.operador)) carrierCode='LA';
+      else if(/american/i.test(e.operador)) carrierCode='AA';
+      else if(/jetblue/i.test(e.operador)) carrierCode='B6';
+      else if(/spirit/i.test(e.operador)) carrierCode='NK';
 
-  DATA.meta.generado = SELLO;
-  DATA.meta.rutas = CFG.rutas.map(r=>${CFG.origen} ⇄ ${r.dst});
+      // Detectar tarifa por texto (si existe)
+      let tarifa = '';
+      const m = /Tarifa:\s*([A-Za-z0-9+]+)/.exec(e.resultado||'');
+      if(m) tarifa = m[1];
 
-  const mins = { fll:null, mia:null, mco:null };
-  let sims = 0;
+      // Promover a Confirmado si corresponde
+      if(/cumple/i.test(e.estado) && !/confirmado/i.test(e.estado)){
+        const opName = carrierCode && CARRIERS[carrierCode]?.name || e.operador || '';
+        if(CONFIG.carry_on_required && incluyeCarryOn(opName, tarifa)){
+          e.estado = 'Confirmado';
+        }
+      }
 
-  for (const r of CFG.rutas) {
-    const ruta = ${CFG.origen} ⇄ ${r.dst};
-    const det = DATA.detalles[ruta];
-    det.bloque = (det.bloque||0) + 1;
-    det.hora = SELLO.split(' ')[1]?.slice(0,5) + ' CST';
-    det.simulacion = ${det.bloque}/8;
-    det.umbral = r.umbral;
-
-    // 1) Tequila primero (descubrimiento)
-    let resT = null;
-    try {
-      resT = await tequilaSearch({
-        from: CFG.origen, to: r.dst,
-        depart: CFG.fechas.salida,
-        retFrom: CFG.fechas.retorno_desde,
-        retTo: CFG.fechas.retorno_hasta,
-        currency: CFG.moneda,
-        maxStopovers: CFG.maxEscalas
-      });
-    } catch { /* noop */ }
-
-    // 2) Decidir si confirmamos con Amadeus
-    let resA = null;
-    if (resT && necesitaConfirmacionAmadeus(resT.price, r.umbral, CFG.proveedores.confirmar_con_amadeus_si)) {
-      try {
-        // Usamos retorno superior (más estricto) para evitar sesgos
-        resA = await amadeusSearch({
-          from: CFG.origen, to: r.dst,
-          departYMD,
-          returnYMD: retToYMD,
-          currency: CFG.moneda,
-          maxStops: CFG.maxEscalas
-        });
-      } catch { /* noop */ }
-    }
-
-    // 3) Elegir precio final y estado
-    const candidatos = [resT, resA].filter(Boolean);
-    if (!candidatos.length) {
-      det.evaluaciones.unshift({
-        tipo: "Búsqueda",
-        fuente: "Tequila/Amadeus",
-        resultado: "Sin resultados válidos en esta corrida",
-        estado: "Informativo"
-      });
-      continue;
-    }
-    sims++;
-
-    // Mejor (mínimo) y etiqueta
-    const best = candidatos.sort((a,b)=> (a.price||1e9) - (b.price||1e9))[0];
-    const estado = best.price <= r.umbral
-      ? (resA ? "Confirmado" : "Cumple")
-      : (resA ? (Math.abs((resA.price - resT.price) / (resT.price||1)) <= 0.03 ? "Parcial" : "No cumple") : "No cumple");
-
-    // Actualiza resumen
-    const row = DATA.resumen.find(x=>x.ruta===ruta);
-    row.ultima_ejecucion = SELLO;
-    row.precio_mas_bajo_usd = row.precio_mas_bajo_usd == null ? best.price : Math.min(row.precio_mas_bajo_usd, best.price);
-    row.resultado = (best.price <= r.umbral) ? "Cumple" : "No cumple";
-
-    // Detalle (guardamos ambas fuentes si existen)
-    if (resT) det.evaluaciones.unshift({
-      tipo: "Tarifa directa",
-      fuente: resT.source,
-      resultado: US$ ${resT.price} RT · ≤ ${CFG.maxEscalas} escala(s) · ${resT.airline||''} · ${resT.routeSummary||''},
-      estado: resA ? (resT.price <= r.umbral ? "Confirmado" : "Parcial") : (resT.price <= r.umbral ? "Cumple" : "No cumple")
+      // Completar deeplink si falta
+      if(!e.url){
+        const ruta = /LIM ⇄ (\w{3})/.test(routeKey) ? RegExp.$1 : '';
+        const d1 = findRouteDepart(routeKey) || CONFIG.routes[0].depart;
+        const d2 = findAnyReturnForRoute(routeKey) || CONFIG.routes[0].return[0];
+        const { url } = buildDeeplinkByCarrierOrMeta({ carrierCode, dst:ruta, d1, d2, preferMeta:CONFIG.providers_prefer?.[0]||'kayak' });
+        e.url = url;
+      }
     });
-    if (resA) det.evaluaciones.unshift({
-      tipo: "Verificación",
-      fuente: resA.source,
-      resultado: US$ ${resA.price} RT · ≤ ${CFG.maxEscalas} escala(s) · ${resA.airline||''} · ${resA.routeSummary||''},
-      estado: (resA.price <= r.umbral) ? "Confirmado" : "No cumple"
-    });
-    det.resultado_final = estado;
+  });
 
-    // Histórico diario (mínimo por ruta)
-    const key = r.dst.toLowerCase();
-    if (['fll','mia','mco'].includes(key)) {
-      mins[key] = (mins[key]==null) ? best.price : Math.min(mins[key], best.price);
-    }
+  // KPIs demo
+  data.contador_diario.completadas = Math.min((data.contador_diario.completadas||0)+1, cfg.auto_runs_per_day);
+  data.contador_diario.total = cfg.auto_runs_per_day;
+  data.contador_diario.proxima = ''; // (si usas Actions, el schedule ya está definido)
 
-    // Histórico detallado
-    const arr = DATA.historico_detallado[ruta];
-    pushIfUnique(arr, { fecha: SELLO.replace(' CST',''), fuente: resT?.source || resA?.source || 'N/A', precio_usd: best.price, estado });
-  }
+  writeData(data);
+}
 
-  // KPIs + histórico diario
-  DATA.contador_diario.completadas = (DATA.contador_diario.completadas||0) + sims;
-  DATA.meta.simulaciones_registradas = (DATA.meta.simulaciones_registradas||0) + sims;
-  actualizarHistoricoDiario(DATA, mins);
+function findRouteDepart(routeKey){
+  const label = routeKey.trim();
+  const r = CONFIG.routes.find(x=>x.label===label);
+  return r?.depart || null;
+}
+function findAnyReturnForRoute(routeKey){
+  const label = routeKey.trim();
+  const r = CONFIG.routes.find(x=>x.label===label);
+  return (r?.return?.[0]) || null;
+}
 
-  writeJson(DATA_PATH, DATA);
-  console.log([OK] data.json actualizado @ ${SELLO} · simulaciones: ${sims});
-})().catch(e=>{
-  console.error('[ERROR] farebot:', e.message);
-  process.exit(1);
-});
+/* === Main === */
+simulateRun();
+console.log('Simulación terminada (sin APIs). data.json actualizado.');
