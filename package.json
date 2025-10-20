@@ -1,15 +1,20 @@
 {
   "name": "ultra-lowfare-miami",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Sistema automatizado de monitoreo de tarifas ultra-low fare entre Lima y Florida (FLL, MIA, MCO).",
   "type": "module",
   "private": true,
   "scripts": {
     "farebot": "node scripts/farebot.js"
   },
-  "dependencies": {},
-  "engines": { "node": "20.x" },
-  "packageManager": "npm@10.8.1",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "fs-extra": "^11.2.0"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "packageManager": "npm@10.8.2",
   "author": "Victor Vega",
   "license": "MIT"
 }
