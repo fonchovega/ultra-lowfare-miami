@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generado": "2025-10-20T18:53:43.402Z"
+    "generado": "2025-10-20T21:30:32.674Z"
   },
   "resumen": [
     {
@@ -8,7 +8,7 @@
       "salida": "2026-02-15",
       "retorno": "2026-02-20",
       "umbral": 360,
-      "precio": 382,
+      "precio": 384,
       "cumple": "Cumple"
     },
     {
@@ -16,7 +16,7 @@
       "salida": "2026-02-15",
       "retorno": "2026-02-20",
       "umbral": 360,
-      "precio": 447,
+      "precio": 429,
       "cumple": "No cumple"
     },
     {
@@ -24,7 +24,7 @@
       "salida": "2026-02-15",
       "retorno": "2026-02-20",
       "umbral": 400,
-      "precio": 386,
+      "precio": 399,
       "cumple": "No cumple"
     }
   ]
