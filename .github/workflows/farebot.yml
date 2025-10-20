@@ -1,4 +1,4 @@
-name: FareBot (cada 3 horas)
+[01:33, 10/20/2025] VAVH: name: FareBot (cada 3 horas)
 
 on:
   schedule:
@@ -33,11 +33,51 @@ jobs:
 
       - name: Commit & push
         run: |
+          if [[ -n "$(git stat…
+[01:42, 10/20/2025] VAVH: name: FareBot (cada 3 horas)
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run-farebot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Verify npm version
+        run: npm --version && node --version
+
+      - name: Install (clean, reproducible)
+        run: npm ci
+
+      - name: Run bot
+        env:
+          TEQUILA_API_KEY: ${{ secrets.TEQUILA_API_KEY }}
+          AMADEUS_CLIENT_ID: ${{ secrets.AMADEUS_CLIENT_ID }}
+          AMADEUS_CLIENT_SECRET: ${{ secrets.AMADEUS_CLIENT_SECRET }}
+          AMADEUS_ENV: test
+        run: npm run farebot
+
+      - name: Commit & push cambios
+        run: |
           if [[ -n "$(git status --porcelain)" ]]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add data.json
-            git commit -m "chore: update data.json (farebot dual Tequila+Amadeus)"
+            git commit -m "chore: update data.json (farebot dual) [ci]"
             git push
           else
             echo "Sin cambios que commitear."
