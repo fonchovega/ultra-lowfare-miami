@@ -1,31 +1,36 @@
 {
   "meta": {
-    "generado": "2025-10-21T06:51:57.083Z"
+    "generado": "2025-10-21T15:00:00Z",
+    "origen": "LIM",
+    "moneda": "USD"
   },
   "resumen": [
     {
-      "ruta": "LIM ⇄ FLL",
-      "salida": "2026-02-15",
-      "retorno": "2026-02-20",
-      "umbral": 360,
-      "precio": 400,
-      "cumple": "Cumple"
+      "fecha": "2025-10-21",
+      "destino": "MIA",
+      "aerolinea": "Avianca",
+      "precio": 349,
+      "escala": 1,
+      "equipaje": "solo equipaje de mano",
+      "duracion_vuelo": "7h 45m"
     },
     {
-      "ruta": "LIM ⇄ MIA",
-      "salida": "2026-02-15",
-      "retorno": "2026-02-20",
-      "umbral": 360,
-      "precio": 416,
-      "cumple": "Cumple"
+      "fecha": "2025-10-21",
+      "destino": "FLL",
+      "aerolinea": "Spirit",
+      "precio": 358,
+      "escala": 1,
+      "equipaje": "solo equipaje de mano",
+      "duracion_vuelo": "7h 30m"
     },
     {
-      "ruta": "LIM ⇄ MCO",
-      "salida": "2026-02-15",
-      "retorno": "2026-02-20",
-      "umbral": 400,
-      "precio": 370,
-      "cumple": "Cumple"
+      "fecha": "2025-10-21",
+      "destino": "MCO",
+      "aerolinea": "Copa Airlines",
+      "precio": 372,
+      "escala": 1,
+      "equipaje": "solo equipaje de mano",
+      "duracion_vuelo": "8h 15m"
     }
   ]
 }
