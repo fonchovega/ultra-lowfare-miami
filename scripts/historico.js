@@ -1,22 +1,25 @@
-// Script para reconstruir historico.json combinando data.json y commits previos
+// =============================================================
+// Script: historico.js
+// Función: Combina data.json actual con historico.json acumulado
+// =============================================================
 import fs from "fs";
 
 const DATA_PATH = "./data.json";
 const HIST_PATH = "./historico.json";
 
 try {
-  // Leer el archivo data.json actual
+  // Leer data.json
   const dataRaw = fs.readFileSync(DATA_PATH, "utf8");
   const data = JSON.parse(dataRaw);
 
-  // Si no existe historico.json, crearlo vacío
+  // Leer o inicializar histórico
   let historico = [];
   if (fs.existsSync(HIST_PATH)) {
     const histRaw = fs.readFileSync(HIST_PATH, "utf8");
     historico = JSON.parse(histRaw);
   }
 
-  // Evita duplicados según fecha
+  // Evita duplicados por fecha
   const yaExiste = historico.some(
     (item) => item.meta?.generado === data.meta?.generado
   );
@@ -26,10 +29,10 @@ try {
     fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
     console.log("✅ Histórico actualizado correctamente.");
   } else {
-    console.log("⚠️ Los datos ya estaban en el histórico, no se duplicaron.");
+    console.log("⚠️ Registro ya existente, no se agregó duplicado.");
   }
 
-  // Recorta a 200 entradas máximo (opcional)
+  // Mantener máximo 200 registros (opcional)
   if (historico.length > 200) {
     historico = historico.slice(-200);
     fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
