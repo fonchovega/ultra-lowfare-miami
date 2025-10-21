@@ -1,0 +1,3 @@
+git add package.json .gitignore
+git commit -m "chore: add package.json and .gitignore"
+git push
