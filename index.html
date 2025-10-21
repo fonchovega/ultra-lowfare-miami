@@ -1,260 +1,396 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Ultra-Low Fare · Víctor Vega</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ultra-Low Fare · Victor Vega</title>
 
-<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <!-- Estilos existentes -->
+  <link rel="stylesheet" href="style.css" />
 
-<style>
-:root{--azul:#0d5bd7;--azul2:#003d9e;--ok:#1cb26b;--no:#e63b3b;--gris:#f5f7fb;--borde:#e5e9f2;--txt:#0f172a;}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;background:var(--gris);color:var(--txt)}
-header{background:linear-gradient(90deg,var(--azul),var(--azul2));color:#fff;padding:18px 16px}
-h1{margin:0;font-size:20px;font-weight:700}
-.sub{font-size:12px;opacity:.9}
-.wrap{max-width:1100px;margin:18px auto;padding:0 12px}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.btn{padding:10px 12px;border-radius:10px;border:1px solid var(--borde);cursor:pointer;font-weight:600;background:#fff}
-.btn.primary{background:var(--azul);color:#fff;border-color:var(--azul)}
-.btn.ghost{background:transparent;color:#fff;border-color:#ffffff55}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.card{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:14px;box-shadow:0 4px 14px rgba(0,0,0,.05)}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700}
-.ok{background:#eaf8f1;color:var(--ok);border:1px solid #c6efd9}
-.no{background:#fdecec;color:var(--no);border:1px solid #f5b5b5}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{padding:10px 12px;border-bottom:1px solid var(--borde);text-align:left;vertical-align:top}
-thead{background:#eef4ff}
-.row-actions{display:flex;gap:8px;flex-wrap:wrap}
-.hidden{display:none}
-canvas{max-width:100%}
-.badge{display:inline-flex;gap:6px;align-items:center;background:#eef2ff;border:1px solid #dbe2ff;border-radius:8px;padding:4px 8px;font-size:12px}
-.grid{overflow:auto;border:1px solid var(--borde);border-radius:12px;background:#fff}
-.heat td,.heat th{border:1px solid #e5e9f2;text-align:center}
-.small{font-size:12px;color:#64748b}
-</style>
+  <!-- Iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Chart.js para gráficas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* Pequeños retoques visuales (el resto lo toma de style.css) */
+    header { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:#1e49b6; color:#fff; }
+    header .title { font-weight:700; }
+    header .sub { font-size:.85rem; opacity:.9 }
+    nav { display:flex; gap:8px; padding:10px 16px; background:#f7f9fc; border-bottom:1px solid #e5edf7; }
+    .btn { border:1px solid #d6e2ff; background:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; }
+    .btn.active { background:#e9f1ff; border-color:#bcd1ff; }
+    .actions { display:flex; gap:8px; align-items:center; margin-left:auto; }
+    .primary { background:#1e49b6; color:#fff; border-color:#1e49b6; }
+    main { padding:16px; }
+    .muted { color:#777; font-size:.9rem; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td { border-bottom:1px solid #eee; padding:8px 10px; text-align:left; }
+    .badge { padding:2px 8px; border-radius:999px; font-size:.8rem; }
+    .ok { background:#eafaf0; color:#177245; border:1px solid #bfe6cc; }
+    .bad { background:#fff2f2; color:#a12626; border:1px solid #f0c2c2; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    .card { padding:14px; border:1px solid #e9eef9; border-radius:14px; background:#fff; }
+    .card h4 { margin:0 0 6px }
+    .right { text-align:right; }
+    .tiny { font-size:.8rem; color:#666 }
+    canvas { max-height:380px; }
+  </style>
 </head>
 <body>
-<header>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <i class="fa-solid fa-plane-departure"></i>
-    <h1>Ultra-Low Fare · Víctor Vega</h1>
-    <span class="sub" id="tz"></span>
-    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn ghost" id="refreshNow"><i class="fa-solid fa-rotate"></i> Actualizar</button>
-      <button class="btn ghost" id="toggleAuto"><i class="fa-solid fa-clock"></i> Auto: <span id="autoState">off</span></button>
-      <button class="btn ghost" id="btnCsv"><i class="fa-solid fa-file-csv"></i> CSV</button>
-      <button class="btn ghost" id="btnPdf"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-      <a class="btn ghost" href="data.json" target="_blank"><i class="fa-solid fa-file-lines"></i> JSON</a>
+  <header>
+    <div>
+      <div class="title">✈ Ultra-Low Fare · Victor Vega</div>
+      <div class="sub">Actualizado automáticamente · Zona: <span id="tz">CST</span></div>
     </div>
-  </div>
-</header>
+    <div class="actions">
+      <button id="btnRefresh" class="btn primary"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
+    </div>
+  </header>
 
-<div class="wrap">
-  <div class="toolbar">
-    <button class="btn primary" data-view="resumen"><i class="fa-solid fa-gauge-high"></i> Resumen</button>
-    <button class="btn" data-view="detalle-fll"><i class="fa-solid fa-location-dot"></i> FLL</button>
-    <button class="btn" data-view="detalle-mia"><i class="fa-solid fa-location-dot"></i> MIA</button>
-    <button class="btn" data-view="detalle-mco"><i class="fa-solid fa-location-dot"></i> MCO</button>
+  <nav>
+    <button class="btn active" data-view="inicio"><i class="fa-regular fa-circle"></i> Resumen</button>
+    <button class="btn" data-view="detalle" data-route="FLL"><i class="fa-solid fa-location-dot"></i> FLL</button>
+    <button class="btn" data-view="detalle" data-route="MIA"><i class="fa-solid fa-location-dot"></i> MIA</button>
+    <button class="btn" data-view="detalle" data-route="MCO"><i class="fa-solid fa-location-dot"></i> MCO</button>
     <button class="btn" data-view="historico"><i class="fa-solid fa-chart-line"></i> Histórico</button>
-    <button class="btn" data-view="heatmap"><i class="fa-solid fa-border-all"></i> Heatmap</button>
-  </div>
+    <button class="btn" data-view="heatmap"><i class="fa-solid fa-fire"></i> Heatmap</button>
+    <span class="muted" id="stamp" style="margin-left:auto"></span>
+  </nav>
 
-  <div id="stateBar" class="sub">Cargando datos…</div>
+  <main id="app">
+    <p class="muted">Cargando datos…</p>
+  </main>
 
-  <section id="view-resumen" class="view">
-    <div class="cards" id="summary"></div>
-  </section>
+  <script>
+    // ------- utilidades
+    const $ = (sel, ctx=document)=>ctx.querySelector(sel);
+    const $$ = (sel, ctx=document)=>[...ctx.querySelectorAll(sel)];
+    const nowISO = ()=>new Date().toISOString();
+    const CF = new Intl.NumberFormat('en-US',{style:'currency', currency:'USD'});
 
-  <section id="view-detalle-fll" class="view hidden">
-    <h2>LIM ⇄ FLL</h2>
-    <div class="grid"><table id="tbl-fll"><thead>
-      <tr><th>Proveedor</th><th>Tipo</th><th>Resultado</th><th>Estado</th><th>Acciones</th></tr>
-    </thead><tbody></tbody></table></div>
-  </section>
+    // cache-busting para evitar caché en Vercel
+    const fetchJSON = async (path)=> {
+      const res = await fetch(${path}?t=${Date.now()}, {cache:'no-store'});
+      if(!res.ok) throw new Error(HTTP ${res.status} al cargar ${path});
+      return res.json();
+    };
 
-  <section id="view-detalle-mia" class="view hidden">
-    <h2>LIM ⇄ MIA</h2>
-    <div class="grid"><table id="tbl-mia"><thead>
-      <tr><th>Proveedor</th><th>Tipo</th><th>Resultado</th><th>Estado</th><th>Acciones</th></tr>
-    </thead><tbody></tbody></table></div>
-  </section>
+    // ------- estado
+    let DATA = null;        // data.json
+    let HIST = null;        // historico.json
+    let heatChart = null;
 
-  <section id="view-detalle-mco" class="view hidden">
-    <h2>LIM ⇄ MCO</h2>
-    <div class="grid"><table id="tbl-mco"><thead>
-      <tr><th>Proveedor</th><th>Tipo</th><th>Resultado</th><th>Estado</th><th>Acciones</th></tr>
-    </thead><tbody></tbody></table></div>
-  </section>
+    async function loadAll() {
+      const [d, h] = await Promise.allSettled([
+        fetchJSON('./data.json'),
+        fetchJSON('./historico.json')
+      ]);
 
-  <section id="view-historico" class="view hidden">
-    <h2>Histórico (mínimos diarios por ruta)</h2>
-    <div class="small" id="histNote"></div>
-    <canvas id="chartHist" height="140"></canvas>
-  </section>
+      DATA = d.status === 'fulfilled' ? d.value : null;
+      HIST = h.status === 'fulfilled' ? h.value : null;
 
-  <section id="view-heatmap" class="view hidden">
-    <h2>Heatmap ruta × fecha (últimos 30 días)</h2>
-    <div class="small">Color según precio mínimo; celdas vacías = sin dato.</div>
-    <div class="grid" style="margin-top:8px;overflow:auto">
-      <table class="heat" id="tbl-heat" style="min-width:700px">
-        <thead><tr id="heat-head"><th>Fecha</th><th>FLL</th><th>MIA</th><th>MCO</th></tr></thead>
-        <tbody id="heat-body"></tbody>
-      </table>
-    </div>
-  </section>
+      $('#stamp').textContent = DATA?.meta?.generado
+        ? Generado: ${new Date(DATA.meta.generado).toLocaleString()}
+        : 'Sin marca de tiempo';
 
-</div>
+      renderInicio();
+    }
 
-<script>
-const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
-const esc=s=>String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
-const fmtUSD=v=>'$'+Number(v||0).toLocaleString('en-US',{maximumFractionDigits:0});
-let DATA=null,AUTO=false,timer=null,chart=null;
+    // ------- renders
+    function renderInicio() {
+      setActive('inicio');
+      const app = $('#app');
+      if (!DATA?.resumen?.length) {
+        app.innerHTML = <p class="muted">No hay datos en <code>data.json</code>.</p>;
+        return;
+      }
 
-$$('.toolbar .btn').forEach(b=>b.onclick=()=>{ $$('.toolbar .btn').forEach(x=>x.classList.remove('primary')); b.classList.add('primary'); $$('.view').forEach(v=>v.classList.add('hidden')); $('#view-'+b.dataset.view).classList.remove('hidden'); });
+      const cards = DATA.resumen.map(r => {
+        const ok = r.precio <= r.umbral;
+        return `
+          <div class="card">
+            <h4>${r.ruta}</h4>
+            <div class="tiny">Salida: <b>${r.salida}</b> · Retorno: <b>${r.retorno}</b></div>
+            <div style="display:flex;justify-content:space-between;align-items:end;margin-top:8px">
+              <div>
+                <div>Precio más bajo: <b>${CF.format(r.precio)}</b></div>
+                <div>Umbral: <b>${CF.format(r.umbral)}</b></div>
+              </div>
+              <span class="badge ${ok?'ok':'bad'}">${ok?'Cumple':'No cumple'}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
 
-$('#toggleAuto').onclick=()=>{AUTO=!AUTO;$('#autoState').textContent=AUTO?'on':'off';clearInterval(timer);if(AUTO)timer=setInterval(load,600000);}
-$('#refreshNow').onclick=()=>load();
-$('#btnCsv').onclick=exportCSV;
-$('#btnPdf').onclick=exportPDF;
+      app.innerHTML = `
+        <div class="cards">${cards}</div>
+        <p class="tiny" style="margin-top:10px">Los precios son por pasajero, ida y vuelta, con impuestos/tasas.</p>
+      `;
+    }
 
-async function load(){
-  const r=await fetch('data.json?ts='+Date.now());
-  if(!r.ok){ $('#stateBar').textContent='No se pudo cargar data.json'; return;}
-  DATA=await r.json();
-  renderAll();
-}
+    function renderDetalle(dest) {
+      setActive('detalle', dest);
+      const app = $('#app');
 
-function renderAll(){
-  const meta=DATA.meta||{};
-  $('#tz').textContent='Zona: '+(meta.zona||'—');
-  $('#stateBar').textContent='Última generación: '+(meta.generado||'—');
+      // Busca la ruta en DATA
+      const row = DATA?.resumen?.find(x => x.ruta.includes(dest));
+      if (!row) {
+        app.innerHTML = <p class="muted">No encontré datos para ${dest} en <code>data.json</code>.</p>;
+        return;
+      }
 
-  renderSummary();
-  renderDetalle('LIM ⇄ FLL','#tbl-fll');
-  renderDetalle('LIM ⇄ MIA','#tbl-mia');
-  renderDetalle('LIM ⇄ MCO','#tbl-mco');
-  renderHistorico();
-  renderHeatmap();
-}
+      const metaURLs = buildMetaURLs(dest, row.salida, row.retorno);
+      const airlineURLs = buildAirlineURLs(dest, row.salida, row.retorno);
 
-function renderSummary(){
-  const wrap=$('#summary'); wrap.innerHTML='';
-  (DATA.resumen||[]).forEach(r=>{
-    const ok=/cumple/i.test(r.resultado||'');
-    const card=document.createElement('div'); card.className='card';
-    card.innerHTML=`
-      <h3><i class="fa-solid fa-route"></i> ${esc(r.ruta||'-')}</h3>
-      <p><span class="pill ${ok?'ok':'no'}">${esc(r.resultado||'-')}</span></p>
-      <p><span class="badge"><i class="fa-solid fa-dollar-sign"></i> Mín: ${fmtUSD(r.precio_mas_bajo_usd)}</span>
-         <span class="badge"><i class="fa-solid fa-bullseye"></i> Umbral: ${fmtUSD(r.umbral_usd)}</span></p>
-      <div class="row-actions">
-        <button class="btn" data-go="${r.ruta.includes('FLL')?'detalle-fll':r.ruta.includes('MIA')?'detalle-mia':'detalle-mco'}"><i class="fa-solid fa-eye"></i> Ver detalle</button>
-        ${r.best_url?<a class="btn" target="_blank" href="${esc(r.best_url)}"><i class="fa-solid fa-up-right-from-square"></i> Ver oferta</a>:''}
-      </div>`;
-    wrap.appendChild(card);
-  });
-  $$('#summary .btn[data-go]').forEach(b=>b.onclick=()=>{ $(.toolbar .btn[data-view="${b.dataset.go}"]).click(); });
-}
-
-function renderDetalle(key, tableSel){
-  const det=DATA.detalles?.[key]; const tbody=$(${tableSel} tbody);
-  if(!det){ tbody.innerHTML='<tr><td colspan="5">Sin datos.</td></tr>'; return;}
-  tbody.innerHTML=(det.evaluaciones||[]).map(e=>`
-    <tr>
-      <td>${esc(e.fuente||'-')}</td>
-      <td>${esc(e.tipo||'-')}</td>
-      <td>${esc(e.resultado||'-')}</td>
-      <td><span class="pill ${/cumple/i.test(e.estado)?'ok':'no'}">${esc(e.estado||'-')}</span></td>
-      <td>
-        <div class="row-actions">
-          ${e.url?<a class="btn" target="_blank" href="${esc(e.url)}"><i class="fa-solid fa-up-right-from-square"></i> Ver oferta</a>:''}
-          ${e.url?<button class="btn" onclick="navigator.clipboard.writeText('${e.url.replace(/'/g,"&#39;")}')"><i class="fa-solid fa-link"></i> Copiar</button>:''}
+      app.innerHTML = `
+        <div class="card">
+          <h4>Resumen ${row.ruta}</h4>
+          <div class="tiny">Salida: <b>${row.salida}</b> · Retorno: <b>${row.retorno}</b></div>
+          <table>
+            <tr><th>Precio más bajo</th><td>${CF.format(row.precio)}</td></tr>
+            <tr><th>Umbral</th><td>${CF.format(row.umbral)}</td></tr>
+            <tr><th>Resultado</th><td><span class="badge ${row.precio<=row.umbral?'ok':'bad'}">${row.precio<=row.umbral?'Cumple':'No cumple'}</span></td></tr>
+          </table>
         </div>
-      </td>
-    </tr>
-  `).join('') || '<tr><td colspan="5">Sin resultados.</td></tr>';
-}
 
-function renderHistorico(){
-  const hist = DATA.historico || []; // [{fecha:'YYYY-MM-DD', fll, mia, mco}]
-  $('#histNote').textContent = Entradas: ${hist.length||0};
-  const labels = hist.map(h=>h.fecha);
-  const fll = hist.map(h=>h.fll ?? null);
-  const mia = hist.map(h=>h.mia ?? null);
-  const mco = hist.map(h=>h.mco ?? null);
+        <div class="card">
+          <h4><i class="fa-solid fa-magnifying-glass"></i> Abrir en metabuscadores</h4>
+          <div class="cards">
+            ${metaURLs.map(u => linkCard(u.name, u.url)).join('')}
+          </div>
+        </div>
 
-  const sma = (arr, n=7)=>arr.map((_,i)=>{
-    const slice=arr.slice(Math.max(0,i-n+1), i+1).filter(x=>typeof x==='number');
-    if(!slice.length) return null;
-    return Math.round(slice.reduce((a,b)=>a+b,0)/slice.length);
-  });
+        <div class="card">
+          <h4><i class="fa-solid fa-plane-departure"></i> Ir directo a aerolíneas</h4>
+          <div class="cards">
+            ${airlineURLs.map(u => linkCard(u.name, u.url)).join('')}
+          </div>
+        </div>
+      `;
+    }
 
-  const datasets = [
-    {label:'FLL', data:fll, borderColor:'#0d5bd7', tension:.2},
-    {label:'MIA', data:mia, borderColor:'#18a957', tension:.2},
-    {label:'MCO', data:mco, borderColor:'#e63b3b', tension:.2},
-    {label:'Media 7 días (global)', data:sma(hist.map(h=>Math.min(...[h.fll,h.mia,h.mco].filter(x=>typeof x==='number')))), borderDash:[5,5], borderColor:'#555', tension:.2}
-  ].map(d=>({...d, spanGaps:true, fill:false}));
+    function renderHistorico() {
+      setActive('historico');
+      const app = $('#app');
 
-  const ctx = $('#chartHist');
-  if(chart) chart.destroy();
-  chart = new Chart(ctx,{type:'line',data:{labels,datasets},options:{plugins:{legend:{position:'bottom'}}, scales:{y:{beginAtZero:false}}}});
-}
+      if (!HIST?.historial?.length) {
+        const msg = (!HIST) 
+          ? 'No se pudo cargar <code>historico.json</code> (¿falta el archivo?).'
+          : 'Aún no hay registros en el histórico.';
+        app.innerHTML = <p class="muted">${msg}</p>;
+        return;
+      }
 
-function renderHeatmap(){
-  const hist = (DATA.historico||[]).slice(-30); // últimos 30
-  const body = $('#heat-body'); body.innerHTML='';
-  if(!hist.length){ body.innerHTML='<tr><td colspan="4">Sin datos.</td></tr>'; return; }
-  const flat = hist.flatMap(h=>[h.fll,h.mia,h.mco].filter(x=>typeof x==='number'));
-  const min = Math.min(...flat), max = Math.max(...flat);
-  const color = v=>{
-    if(v==null) return '#fff';
-    const t = (v-min)/Math.max(1,(max-min));
-    const r = Math.round(255*(t)), g = Math.round(255*(1-t));
-    return rgb(${r},${g},140);
-  };
-  hist.forEach(h=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td class="small">${esc(h.fecha)}</td>
-      <td style="background:${color(h.fll)}">${h.fll?fmtUSD(h.fll):''}</td>
-      <td style="background:${color(h.mia)}">${h.mia?fmtUSD(h.mia):''}</td>
-      <td style="background:${color(h.mco)}">${h.mco?fmtUSD(h.mco):''}</td>
-    `;
-    body.appendChild(tr);
-  });
-}
+      // Tabla + gráfica (promedio por ruta)
+      const rows = HIST.historial
+        .slice() // copia
+        .sort((a,b)=> new Date(b.meta.generado) - new Date(a.meta.generado))
+        .map((h,i)=> {
+          return `
+            <tr>
+              <td>${new Date(h.meta.generado).toLocaleString()}</td>
+              <td>${h.ruta}</td>
+              <td class="right">${CF.format(h.precio)}</td>
+              <td class="right">${CF.format(h.umbral)}</td>
+              <td class="right">${h.stops ?? '-'}</td>
+              <td>${h.fuente ?? '-'}</td>
+              <td><span class="badge ${h.precio<=h.umbral?'ok':'bad'}">${h.precio<=h.umbral?'Cumple':'No cumple'}</span></td>
+            </tr>
+          `;
+        }).join('');
 
-function exportCSV(){
-  const rows = [];
-  (DATA.resumen||[]).forEach(r=>{
-    rows.push([r.ruta, r.resultado, r.precio_mas_bajo_usd, r.umbral_usd, r.ultima_ejecucion||'']);
-  });
-  const csv = 'Ruta,Resultado,Min USD,Umbral USD,Última ejecución\n' + rows.map(r=>r.join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='resumen.csv'; a.click();
-}
+      // Datos para chart
+      const byRoute = {};
+      HIST.historial.forEach(h=>{
+        byRoute[h.ruta] ??= [];
+        byRoute[h.ruta].push(h.precio);
+      });
+      const labels = Object.keys(byRoute);
+      const data = labels.map(k => Math.round(byRoute[k].reduce((a,b)=>a+b,0)/byRoute[k].length));
 
-async function exportPDF(){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(14); doc.text('Ultra-Low Fare · Resumen', 14, 16);
-  let y=26;
-  (DATA.resumen||[]).forEach(r=>{
-    doc.setFontSize(11);
-    doc.text(${r.ruta} — ${r.resultado} — Min: ${r.precio_mas_bajo_usd} — Umbral: ${r.umbral_usd}, 14, y);
-    y+=7; if(y>280){ doc.addPage(); y=20; }
-  });
-  doc.save('resumen.pdf');
-}
+      app.innerHTML = `
+        <div class="card">
+          <h4><i class="fa-solid fa-table"></i> Histórico de simulaciones</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Ruta</th><th class="right">Precio</th><th class="right">Umbral</th><th class="right">Escalas</th><th>Fuente</th><th>Resultado</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
 
-load();
-</script>
+        <div class="card">
+          <h4><i class="fa-solid fa-chart-column"></i> Promedio histórico por ruta</h4>
+          <canvas id="histChart"></canvas>
+        </div>
+      `;
+
+      // Render chart
+      const ctx = $('#histChart');
+      if (heatChart) { heatChart.destroy(); }
+      heatChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ label: 'USD promedio', data }]
+        },
+        options: {
+          responsive:true,
+          plugins:{ legend:{ display:false } },
+          scales:{ y:{ beginAtZero:true } }
+        }
+      });
+    }
+
+    function renderHeatmap() {
+      setActive('heatmap');
+      const app = $('#app');
+
+      // Si no hay histórico, mostramos aviso
+      if (!HIST?.historial?.length) {
+        app.innerHTML = <p class="muted">Aún no hay suficiente histórico para el heatmap.</p>;
+        return;
+      }
+
+      // Calcular frecuencia de “cumple” por ruta
+      const tally = {};
+      HIST.historial.forEach(h=>{
+        tally[h.ruta] ??= { ok:0, total:0 };
+        tally[h.ruta].total++;
+        if (h.precio <= h.umbral) tally[h.ruta].ok++;
+      });
+
+      const labels = Object.keys(tally);
+      const data = labels.map(k => Math.round(100 * tally[k].ok / tally[k].total));
+
+      app.innerHTML = `
+        <div class="card">
+          <h4><i class="fa-solid fa-fire"></i> % de corridas que cumplieron umbral</h4>
+          <canvas id="heatChart"></canvas>
+          <p class="tiny">Mayor porcentaje = ruta más “caliente”.</p>
+        </div>
+      `;
+
+      const ctx = $('#heatChart');
+      if (heatChart) { heatChart.destroy(); }
+      heatChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ label: '% que cumple', data }]
+        },
+        options: {
+          responsive:true,
+          plugins:{ legend:{ display:false } },
+          scales:{
+            y:{ beginAtZero:true, max:100, ticks:{callback:(v)=>v+'%'} }
+          }
+        }
+      });
+    }
+
+    // ------- helpers de links
+    function linkCard(name, url) {
+      return `
+        <a class="card" href="${url}" target="_blank" rel="noopener">
+          <h4 style="display:flex;align-items:center;gap:8px">
+            <i class="fa-solid fa-up-right-from-square"></i> ${name}
+          </h4>
+          <div class="tiny">Abrir en nueva pestaña</div>
+        </a>
+      `;
+    }
+
+    function buildMetaURLs(dst, d1, d2) {
+      // Metabuscadores (links parametrizados como usamos antes)
+      const from = 'LIM';
+      return [
+        {
+          name: 'Kayak',
+          url: https://www.kayak.com/flights/${from}-${dst}/${d1}/${d2}?sort=bestflight_a&stops=1
+        },
+        {
+          name: 'Skyscanner',
+          url: https://www.skyscanner.com/transport/flights/${from.toLowerCase()}/${dst.toLowerCase()}/${d1.replaceAll('-','')}/${d2.replaceAll('-','')}/?adults=1&stops=1&cabinclass=economy
+        },
+        {
+          name: 'Expedia',
+          url: https://www.expedia.com/Flights-Search?trip=roundtrip&leg1=from:${from},to:${dst},departure:${d1}TANYT&leg2=from:${dst},to:${from},departure:${d2}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1
+        }
+      ];
+    }
+
+    function buildAirlineURLs(dst, d1, d2) {
+      const from = 'LIM';
+      return [
+        {
+          name:'LATAM',
+          url:https://www.latamairlines.com/pe/es/oferta-vuelos?origin=${from}&destination=${dst}&outbound=${d1}&inbound=${d2}&adt=1&cabin=economy
+        },
+        {
+          name:'Avianca',
+          url:https://www.avianca.com/en/?from=${from}&to=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&cabins=economy
+        },
+        {
+          name:'Copa Airlines',
+          url:https://book.copaair.com/booking/entry?tripType=roundtrip&origin=${from}&destination=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&cabin=economy
+        },
+        {
+          name:'JetBlue',
+          url:https://www.jetblue.com/book/flight?from=${from}&to=${dst}&depart=${d1}&return=${d2}&adult=1
+        },
+        {
+          name:'American Airlines',
+          url:https://www.aa.com/booking/find-flights?tripType=roundTrip&origin=${from}&destination=${dst}&departDate=${d1}&returnDate=${d2}&adult=1&cabin=coach
+        },
+        {
+          name:'Spirit',
+          url:https://www.spirit.com/booking?journey=RT&from=${from}&to=${dst}&depart=${d1}&return=${d2}&adult=1
+        },
+        {
+          name:'United',
+          url:https://www.united.com/en/us/fsr/choose-flights?f=${from}&t=${dst}&d=${d1}&r=${d2}&sc=7,0&px=1&c=ECONOMY
+        },
+        {
+          name:'Delta',
+          url:https://www.delta.com/flight-search/search?trip=RT&fromCity=LIM&toCity=${dst}&departureDate=${d1}&returnDate=${d2}&passengers=1&cabinClass=MAIN
+        }
+      ];
+    }
+
+    // ------- navegación
+    function setActive(view, route) {
+      $$('.btn').forEach(b => b.classList.remove('active'));
+      if (view==='detalle') {
+        $(.btn[data-view="detalle"][data-route="${route}"])?.classList.add('active');
+      } else {
+        $(.btn[data-view="${view}"])?.classList.add('active');
+      }
+    }
+
+    // Eventos
+    $('#btnRefresh').addEventListener('click', loadAll);
+
+    $$('.btn[data-view]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const view = btn.dataset.view;
+        if (view==='inicio') return renderInicio();
+        if (view==='historico') return renderHistorico();
+        if (view==='heatmap') return renderHeatmap();
+        if (view==='detalle') return renderDetalle(btn.dataset.route);
+      });
+    });
+
+    // Go!
+    loadAll().catch(err=>{
+      $('#app').innerHTML = <p class="muted">Error cargando datos: ${err.message}</p>;
+      console.error(err);
+    });
+  </script>
 </body>
 </html>
