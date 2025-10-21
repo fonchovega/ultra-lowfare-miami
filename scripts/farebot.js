@@ -1,88 +1,87 @@
-// 🛫 FareBot – Victor Vega Edition (actualiza data.json y anexa al histórico)
-
 import fs from "fs";
-import fetch from "node-fetch";
+import axios from "axios";
 
 const DATA_PATH = "./data.json";
-const HIST_PATH = "./historico.json";
 
-// --- Histórico: utilidades ---
-function loadHistorico() {
-  try {
-    const raw = fs.readFileSync(HIST_PATH, "utf8");
-    const j = JSON.parse(raw);
-    j.meta ??= {};
-    j.historial ??= [];
-    return j;
-  } catch {
-    // si no existe o está corrupto, lo iniciamos vacío
-    return { meta: { generado: new Date().toISOString() }, historial: [] };
-  }
-}
+// Función principal
+async function main() {
+  console.log("🔍 Iniciando búsqueda de tarifas...");
 
-function buildHistoryItems(results, meta) {
-  return results.map((r) => ({
-    meta: { generado: meta.generado },
-    ruta: r.ruta,
-    salida: r.salida,
-    retorno: r.retorno,
-    precio: r.precio,
-    umbral: r.umbral,
-    cumple: r.precio <= r.umbral,
-    fuente: r.fuente || "auto",
-    stops: r.stops ?? 1,
-  }));
-}
-
-function appendHistorico(results, meta) {
-  const hist = loadHistorico();
-  hist.meta.generado = meta.generado;
-  const items = buildHistoryItems(results, meta);
-  hist.historial.push(...items);
-  fs.writeFileSync(HIST_PATH, JSON.stringify(hist, null, 2), "utf8");
-}
-
-// --- simulador de búsqueda (debes reemplazar por tu lógica real o API) ---
-async function buscarVuelos(origen, destino, salida, retorno, umbral) {
-  // Simulación de precios
-  const precio = 350 + Math.floor(Math.random() * 120);
-  return {
-    ruta: ${origen}→${destino},
-    salida,
-    retorno,
-    precio,
-    umbral,
-    cumple: precio <= umbral,
-    stops: 1,
-    fuente: "simulada",
-  };
-}
-
-// --- flujo principal ---
-async function runSim() {
-  const meta = { generado: new Date().toISOString() };
-  const origen = "LIM";
-  const salida = "2026-02-15";
-  const retorno = "2026-02-20";
-
-  const destinos = [
-    { code: "MIA", umbral: 360 },
-    { code: "FLL", umbral: 360 },
-    { code: "MCO", umbral: 400 },
+  // Ejemplo de parámetros de búsqueda (ajustables)
+  const routes = [
+    { origin: "LIM", destination: "MIA", price_limit: 360 },
+    { origin: "LIM", destination: "FLL", price_limit: 360 },
+    { origin: "LIM", destination: "MCO", price_limit: 400 }
   ];
 
   const results = [];
-  for (const d of destinos) {
-    results.push(await buscarVuelos(origen, d.code, salida, retorno, d.umbral));
+
+  for (const route of routes) {
+    try {
+      console.log(
+        🛫 Buscando ${route.origin} → ${route.destination} (tope $${route.price_limit})
+      );
+
+      // Simulación de búsqueda: en tu implementación real iría la llamada API
+      const simulatedPrice = Math.floor(Math.random() * 550) + 250;
+
+      const cumple = simulatedPrice <= route.price_limit;
+      const timestamp = new Date().toISOString();
+
+      const record = {
+        ruta: ${route.origin} ⇄ ${route.destination},
+        fecha: timestamp,
+        precio_encontrado: simulatedPrice,
+        cumple: cumple ? "✅ Sí cumple" : "❌ No cumple",
+        limite: route.price_limit,
+        fuente: "simulación interna (mock)",
+        detalles: {
+          equipaje: "carry-on only",
+          escalas_max: 1
+        }
+      };
+
+      results.push(record);
+
+      console.log(
+        ➡️ ${route.origin}→${route.destination}: $${simulatedPrice} → ${cumple ? "Cumple" : "No cumple"}
+      );
+    } catch (err) {
+      console.error(❗ Error buscando ${route.origin}-${route.destination}:, err);
+    }
   }
 
-  const salidaJSON = { meta, resumen: results };
-  fs.writeFileSync(DATA_PATH, JSON.stringify(salidaJSON, null, 2), "utf8");
+  // Guardar resultados en data.json
+  try {
+    let existingData = [];
 
-  // 👇 Apéndice automático al histórico
-  appendHistorico(results, meta);
+    if (fs.existsSync(DATA_PATH)) {
+      const raw = fs.readFileSync(DATA_PATH, "utf8");
+      existingData = JSON.parse(raw);
+    }
 
-  console.log("✅ data.json actualizado y histórico ampliado correctamente.");
+    // Agregar nueva corrida
+    existingData.push({
+      meta: { generado: new Date().toISOString() },
+      resultados: results
+    });
+
+    // 🔧 NUEVO BLOQUE → Limitar a 600 registros
+    const MAX_RECORDS = 600;
+    if (existingData.length > MAX_RECORDS) {
+      existingData = existingData.slice(-MAX_RECORDS);
+      console.log(📉 Data recortada a las últimas ${MAX_RECORDS} ejecuciones.);
+    }
+
+    // Escribir data.json actualizado
+    fs.writeFileSync(DATA_PATH, JSON.stringify(existingData, null, 2), "utf8");
+    console.log("💾 Data guardada correctamente en data.json");
+
+  } catch (err) {
+    console.error("❗ Error guardando data.json:", err);
+  }
+
+  console.log("✅ Búsqueda finalizada correctamente.");
 }
 
-runSim();
+main();
