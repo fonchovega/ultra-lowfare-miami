@@ -1,3 +1,11 @@
-git add package.json .gitignore
-git commit -m "chore: add package.json and .gitignore"
-git push
+# Ignorar dependencias
+node_modules/
+package-lock.json
+
+# Archivos temporales
+.env
+*.log
+
+# Configuración local de VS Code o Codespaces
+.vscode/
+.DS_Store
