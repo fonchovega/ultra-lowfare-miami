@@ -2,43 +2,50 @@ name: FareBot (cada 3 horas)
 
 on:
   schedule:
-    - cron: "0 */3 * * *"
+    - cron: '0 */3 * * *'   # cada 3 horas
   workflow_dispatch:
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
-  run-fareBot:
+  run-farebot:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # 👈 necesario para leer historial de data.json
+
+      - name: Show tree (debug)
+        run: |
+          git --version
+          node -v || true
+          ls -la
+          ls -la scripts/ || true
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
       - name: Instalar dependencias
-        run: npm install
+        run: |
+          npm ci || npm i
 
-      - name: Ejecutar FareBot
+      - name: Ejecutar FareBot (actualiza data.json)
         run: node scripts/farebot.js
 
-      - name: Emitir alertas (Issue)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/alert.js || true
+      - name: Construir historico.json
+        run: node scripts/historico.js
 
-      - name: Commit & push data.json
+      - name: Commit & push outputs
         run: |
-          if [[ -n "$(git status --porcelain data.json)" ]]; then
+          if [[ -n "$(git status --porcelain)" ]]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add data.json
-            git commit -m "chore: update data.json (auto run) [ci]"
+            git add data.json historico.json
+            git commit -m "chore(ci): update data.json & historico.json"
             git push
           else
             echo "Sin cambios que commitear."
