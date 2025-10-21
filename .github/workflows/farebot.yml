@@ -2,7 +2,7 @@ name: FareBot (cada 3 horas)
 
 on:
   schedule:
-    - cron: '0 */3 * * *'   # cada 3 horas
+    - cron: '0 */3 * * *'  # cada 3 horas
   workflow_dispatch:
 
 permissions:
@@ -15,38 +15,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0        # 👈 necesario para leer historial de data.json
+          fetch-depth: 0
 
-      - name: Show tree (debug)
-        run: |
-          git --version
-          node -v || true
-          ls -la
-          ls -la scripts/ || true
-
-      - name: Use Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Instalar dependencias
-        run: |
-          npm ci || npm i
+      - name: Install dependencies
+        run: npm ci || npm i
 
-      - name: Ejecutar FareBot (actualiza data.json)
+      - name: Ejecutar FareBot
         run: node scripts/farebot.js
 
-      - name: Construir historico.json
-        run: node scripts/historico.js
-
-      - name: Commit & push outputs
+      - name: Commit & push updates
         run: |
           if [[ -n "$(git status --porcelain)" ]]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add data.json historico.json
-            git commit -m "chore(ci): update data.json & historico.json"
+            git commit -m "chore: auto update data & historico"
             git push
           else
-            echo "Sin cambios que commitear."
+            echo "Sin cambios para guardar."
           fi
