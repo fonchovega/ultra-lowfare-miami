@@ -1,525 +1,260 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Dashboard Ultra-Low Fare · Víctor Vega</title>
-<link rel="stylesheet" href="style.css"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Ultra-Low Fare · Víctor Vega</title>
+
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<style>
+:root{--azul:#0d5bd7;--azul2:#003d9e;--ok:#1cb26b;--no:#e63b3b;--gris:#f5f7fb;--borde:#e5e9f2;--txt:#0f172a;}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;background:var(--gris);color:var(--txt)}
+header{background:linear-gradient(90deg,var(--azul),var(--azul2));color:#fff;padding:18px 16px}
+h1{margin:0;font-size:20px;font-weight:700}
+.sub{font-size:12px;opacity:.9}
+.wrap{max-width:1100px;margin:18px auto;padding:0 12px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.btn{padding:10px 12px;border-radius:10px;border:1px solid var(--borde);cursor:pointer;font-weight:600;background:#fff}
+.btn.primary{background:var(--azul);color:#fff;border-color:var(--azul)}
+.btn.ghost{background:transparent;color:#fff;border-color:#ffffff55}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:14px;box-shadow:0 4px 14px rgba(0,0,0,.05)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.ok{background:#eaf8f1;color:var(--ok);border:1px solid #c6efd9}
+.no{background:#fdecec;color:var(--no);border:1px solid #f5b5b5}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--borde);text-align:left;vertical-align:top}
+thead{background:#eef4ff}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hidden{display:none}
+canvas{max-width:100%}
+.badge{display:inline-flex;gap:6px;align-items:center;background:#eef2ff;border:1px solid #dbe2ff;border-radius:8px;padding:4px 8px;font-size:12px}
+.grid{overflow:auto;border:1px solid var(--borde);border-radius:12px;background:#fff}
+.heat td,.heat th{border:1px solid #e5e9f2;text-align:center}
+.small{font-size:12px;color:#64748b}
+</style>
 </head>
 <body>
 <header>
-  <h1>🛫 Dashboard Ultra-Low Fare · Víctor Vega</h1>
-  <div class="sub">Actualizado automáticamente cada 3 horas · Zona: CST</div>
-
-  <nav class="tabs">
-    <button class="btn" onclick="mostrar('inicio')">Resumen</button>
-    <button class="btn" onclick="mostrar('detalle','LIM ⇄ FLL')">Detalle FLL</button>
-    <button class="btn" onclick="mostrar('detalle','LIM ⇄ MIA')">Detalle MIA</button>
-    <button class="btn" onclick="mostrar('detalle','LIM ⇄ MCO')">Detalle MCO</button>
-    <button class="btn" onclick="mostrar('historico')">Histórico</button>
-    <button class="btn" onclick="mostrar('historico_det')">Histórico detallado</button>
-  </nav>
-
-  <div class="actions-header">
-    <button class="primary" onclick="refrescarAhora()">🔄 Actualizar ahora</button>
-    <button class="secondary" onclick="descargarPDF()">⬇️ Descargar informe PDF</button>
-    <span id="auto-status" class="muted">Auto-refresco: cada 5 min</span>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <i class="fa-solid fa-plane-departure"></i>
+    <h1>Ultra-Low Fare · Víctor Vega</h1>
+    <span class="sub" id="tz"></span>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" id="refreshNow"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+      <button class="btn ghost" id="toggleAuto"><i class="fa-solid fa-clock"></i> Auto: <span id="autoState">off</span></button>
+      <button class="btn ghost" id="btnCsv"><i class="fa-solid fa-file-csv"></i> CSV</button>
+      <button class="btn ghost" id="btnPdf"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+      <a class="btn ghost" href="data.json" target="_blank"><i class="fa-solid fa-file-lines"></i> JSON</a>
+    </div>
   </div>
 </header>
 
-<main id="print-area">
-  <!-- RESUMEN -->
-  <section id="inicio" class="card">
-    <h2>Estado general</h2>
-    <div class="kpi">
-      <div class="item"><b>Simulaciones de hoy</b><span id="kpi-sims">—</span><div class="small">(reinicia a las 00:00 CST)</div></div>
-      <div class="item"><b>Última ejecución</b><span id="kpi-last">—</span></div>
-      <div class="item"><b>Próxima ejecución</b><span id="kpi-next">—</span></div>
-      <div class="item"><b>Generado</b><span id="kpi-gen">—</span></div>
-    </div>
+<div class="wrap">
+  <div class="toolbar">
+    <button class="btn primary" data-view="resumen"><i class="fa-solid fa-gauge-high"></i> Resumen</button>
+    <button class="btn" data-view="detalle-fll"><i class="fa-solid fa-location-dot"></i> FLL</button>
+    <button class="btn" data-view="detalle-mia"><i class="fa-solid fa-location-dot"></i> MIA</button>
+    <button class="btn" data-view="detalle-mco"><i class="fa-solid fa-location-dot"></i> MCO</button>
+    <button class="btn" data-view="historico"><i class="fa-solid fa-chart-line"></i> Histórico</button>
+    <button class="btn" data-view="heatmap"><i class="fa-solid fa-border-all"></i> Heatmap</button>
+  </div>
 
-    <div class="card">
-      <h3>Rutas monitoreadas</h3>
-      <div class="table-wrap">
-        <table id="tabla-resumen" class="table">
-          <thead>
-            <tr><th>Estado</th><th>Ruta</th><th>Precio</th><th>Umbral</th><th>Resultado</th><th>Acción</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="footnote">
-        Los precios son por pasajero (ida y vuelta) con impuestos y tasas. “Cumple” si ≤ umbral y respeta equipaje de mano y ≤ 1 escala.
-      </div>
-    </div>
+  <div id="stateBar" class="sub">Cargando datos…</div>
 
-    <!-- BUSCADORES REALES -->
-    <div class="card">
-      <h3>🔎 Buscar ahora (sitios reales)</h3>
-      <p class="muted">Abre múltiples buscadores con tu ruta y fechas. Si un sitio no aplica “≤1 escala” por URL, actívalo manualmente en su filtro.</p>
-
-      <div class="chip-row">
-        <!-- MIA -->
-        <button class="secondary" onclick="openAll('MIA','2026-02-15','2026-02-20')">MIA · 15→20 feb</button>
-        <button class="secondary" onclick="openAll('MIA','2026-02-15','2026-02-21')">MIA · 15→21 feb</button>
-
-        <!-- FLL -->
-        <button class="secondary" onclick="openAll('FLL','2026-02-15','2026-02-20')">FLL · 15→20 feb</button>
-        <button class="secondary" onclick="openAll('FLL','2026-02-15','2026-02-21')">FLL · 15→21 feb</button>
-
-        <!-- MCO -->
-        <button class="secondary" onclick="openAll('MCO','2026-02-15','2026-02-20')">MCO · 15→20 feb</button>
-        <button class="secondary" onclick="openAll('MCO','2026-02-15','2026-02-21')">MCO · 15→21 feb</button>
-      </div>
-
-      <div style="margin-top:10px">
-        <label class="muted small">Selecciona fuentes a abrir:</label>
-
-        <!-- Presets -->
-        <div class="chip-row">
-          <button class="secondary" onclick="preset('rapido')">⚡ Rápido</button>
-          <button class="secondary" onclick="preset('afondo')">🧭 A fondo</button>
-          <button class="secondary" onclick="preset('confirmacion')">✅ Confirmación</button>
-          <span style="width:8px"></span>
-          <button class="secondary" onclick="preset('todos')">☑️ Todos</button>
-          <button class="secondary" onclick="preset('ninguno')">🚫 Ninguno</button>
-        </div>
-
-        <!-- Checkboxes -->
-        <div id="providers" class="providers"></div>
-      </div>
-    </div>
+  <section id="view-resumen" class="view">
+    <div class="cards" id="summary"></div>
   </section>
 
-  <!-- DETALLE POR RUTA -->
-  <section id="detalle" class="card hidden">
-    <h2 id="detalle-title">Detalle</h2>
-    <div class="muted" id="detalle-sub">—</div>
-    <div class="table-wrap">
-      <table id="tabla-detalle" class="table">
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Fuente</th>
-            <th>Operador</th>
-            <th>Resultado</th>
-            <th>Estado</th>
-            <th>Enlace</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
+  <section id="view-detalle-fll" class="view hidden">
+    <h2>LIM ⇄ FLL</h2>
+    <div class="grid"><table id="tbl-fll"><thead>
+      <tr><th>Proveedor</th><th>Tipo</th><th>Resultado</th><th>Estado</th><th>Acciones</th></tr>
+    </thead><tbody></tbody></table></div>
+  </section>
+
+  <section id="view-detalle-mia" class="view hidden">
+    <h2>LIM ⇄ MIA</h2>
+    <div class="grid"><table id="tbl-mia"><thead>
+      <tr><th>Proveedor</th><th>Tipo</th><th>Resultado</th><th>Estado</th><th>Acciones</th></tr>
+    </thead><tbody></tbody></table></div>
+  </section>
+
+  <section id="view-detalle-mco" class="view hidden">
+    <h2>LIM ⇄ MCO</h2>
+    <div class="grid"><table id="tbl-mco"><thead>
+      <tr><th>Proveedor</th><th>Tipo</th><th>Resultado</th><th>Estado</th><th>Acciones</th></tr>
+    </thead><tbody></tbody></table></div>
+  </section>
+
+  <section id="view-historico" class="view hidden">
+    <h2>Histórico (mínimos diarios por ruta)</h2>
+    <div class="small" id="histNote"></div>
+    <canvas id="chartHist" height="140"></canvas>
+  </section>
+
+  <section id="view-heatmap" class="view hidden">
+    <h2>Heatmap ruta × fecha (últimos 30 días)</h2>
+    <div class="small">Color según precio mínimo; celdas vacías = sin dato.</div>
+    <div class="grid" style="margin-top:8px;overflow:auto">
+      <table class="heat" id="tbl-heat" style="min-width:700px">
+        <thead><tr id="heat-head"><th>Fecha</th><th>FLL</th><th>MIA</th><th>MCO</th></tr></thead>
+        <tbody id="heat-body"></tbody>
       </table>
     </div>
-    <div class="actions">
-      <button class="primary" onclick="mostrar('inicio')">Volver al resumen</button>
-    </div>
   </section>
 
-  <!-- HISTÓRICO (GRÁFICO) -->
-  <section id="historico" class="card hidden">
-    <h2>Evolución histórica (precio más bajo por día)</h2>
-    <p class="muted">Muestra el menor precio encontrado por ruta en cada día. Sirve para ver tendencias y decidir compra.</p>
-    <div class="card">
-      <canvas id="histChart" height="120"></canvas>
-    </div>
-    <div class="actions">
-      <button class="primary" onclick="mostrar('inicio')">Volver al resumen</button>
-    </div>
-  </section>
-
-  <!-- HISTÓRICO DETALLADO -->
-  <section id="historico_det" class="card hidden">
-    <h2>Histórico detallado de simulaciones</h2>
-    <div class="filters">
-      <label>Ruta
-        <select id="f-ruta"></select>
-      </label>
-      <label>Desde
-        <input type="date" id="f-desde"/>
-      </label>
-      <label>Hasta
-        <input type="date" id="f-hasta"/>
-      </label>
-      <label>Fuente
-        <input type="text" id="f-fuente" placeholder="Google Flights, Kayak, Expedia…"/>
-      </label>
-      <label>Estado
-        <select id="f-estado">
-          <option value="">(todos)</option>
-          <option value="Confirmado">Confirmado</option>
-          <option value="Cumple">Cumple</option>
-          <option value="Cumple parcialmente">Cumple parcialmente</option>
-          <option value="Parcial">Parcial</option>
-          <option value="Condicional">Condicional</option>
-          <option value="Informativo">Informativo</option>
-          <option value="Excluida">Excluida</option>
-          <option value="No cumple">No cumple</option>
-        </select>
-      </label>
-      <button class="primary" onclick="aplicarFiltros()">Aplicar filtros</button>
-      <button class="secondary" onclick="limpiarFiltros()">Limpiar</button>
-      <button class="secondary" onclick="exportarCSV()">⬇️ Exportar CSV</button>
-    </div>
-
-    <div class="table-wrap">
-      <table id="tabla-histdet" class="table">
-        <thead>
-          <tr>
-            <th>Fecha/hora</th>
-            <th>Ruta</th>
-            <th>Fuente</th>
-            <th>Precio (US$)</th>
-            <th>Estado</th>
-          </tr>
-        </thead><tbody></tbody>
-      </table>
-    </div>
-    <div class="footnote">Se listan todas las simulaciones registradas (minutos/horas exactos). Usa los filtros para afinar la vista.</div>
-    <div class="actions">
-      <button class="primary" onclick="mostrar('inicio')">Volver al resumen</button>
-    </div>
-  </section>
-</main>
-
-<footer>
-  <span id="last-refresh" class="muted">—</span>
-</footer>
+</div>
 
 <script>
-let DATA=null, chart=null;
-const AUTO_MS = 5*60*1000; // 5 min
-let HIST_DET_FLAT = [];     // arreglo plano de simulaciones
-let CURRENT_ROWS = [];      // vista filtrada actual
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+const fmtUSD=v=>'$'+Number(v||0).toLocaleString('en-US',{maximumFractionDigits:0});
+let DATA=null,AUTO=false,timer=null,chart=null;
 
-/* ---------- Utilidades ---------- */
-function etiqueta(estado){
-  const e = (estado||'').toLowerCase();
-  if(e.includes('confirmado')) return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Confirmado</span>';
-  if(e.includes('cumple') && !e.includes('no')) return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> '+(estado||'Cumple')+'</span>';
-  if(e.includes('parcial')||e.includes('condicional')||e.includes('informativo')) return '<span class="pill warn"><i class="fa-solid fa-triangle-exclamation"></i> '+estado+'</span>';
-  if(e.includes('excluida')) return '<span class="pill no"><i class="fa-solid fa-ban"></i> Excluida</span>';
-  return '<span class="pill no"><i class="fa-solid fa-circle-xmark"></i> '+(estado||'No cumple')+'</span>';
-}
-function iconSemaforo(res){
-  const r = (res||'').toLowerCase();
-  if(r.includes('confirmado')||r.includes('cumple')) return '<i class="fa-solid fa-circle" style="color:#16a34a" title="Cumple"></i>';
-  if(r.includes('parcial')||r.includes('condicional')) return '<i class="fa-solid fa-circle" style="color:#facc15" title="Parcial/Cond."></i>';
-  return '<i class="fa-solid fa-circle" style="color:#ef4444" title="No cumple"></i>';
-}
-function mostrar(vista, ruta=null){
-  ['inicio','detalle','historico','historico_det'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  if(vista==='detalle'){ renderDetalle(ruta); }
-  if(vista==='historico'){ renderHistorico(); }
-  if(vista==='historico_det'){ renderHistoricoDet(); }
-  document.getElementById(vista).classList.remove('hidden');
-  window.scrollTo({top:0,behavior:'smooth'});
+$$('.toolbar .btn').forEach(b=>b.onclick=()=>{ $$('.toolbar .btn').forEach(x=>x.classList.remove('primary')); b.classList.add('primary'); $$('.view').forEach(v=>v.classList.add('hidden')); $('#view-'+b.dataset.view).classList.remove('hidden'); });
+
+$('#toggleAuto').onclick=()=>{AUTO=!AUTO;$('#autoState').textContent=AUTO?'on':'off';clearInterval(timer);if(AUTO)timer=setInterval(load,600000);}
+$('#refreshNow').onclick=()=>load();
+$('#btnCsv').onclick=exportCSV;
+$('#btnPdf').onclick=exportPDF;
+
+async function load(){
+  const r=await fetch('data.json?ts='+Date.now());
+  if(!r.ok){ $('#stateBar').textContent='No se pudo cargar data.json'; return;}
+  DATA=await r.json();
+  renderAll();
 }
 
-/* ---------- Carga de datos ---------- */
-async function cargar(){
-  const res = await fetch('data.json?cache='+Date.now());
-  DATA = await res.json();
+function renderAll(){
+  const meta=DATA.meta||{};
+  $('#tz').textContent='Zona: '+(meta.zona||'—');
+  $('#stateBar').textContent='Última generación: '+(meta.generado||'—');
 
-  // KPIs
-  document.getElementById('kpi-sims').textContent = (DATA.contador_diario?.completadas ?? '—') + ' / ' + (DATA.contador_diario?.total ?? '—');
-  document.getElementById('kpi-last').textContent = DATA.resumen?.[0]?.ultima_ejecucion ?? '—';
-  document.getElementById('kpi-next').textContent = DATA.contador_diario?.proxima ?? '—';
-  document.getElementById('kpi-gen').textContent  = DATA.meta?.generado || '—';
+  renderSummary();
+  renderDetalle('LIM ⇄ FLL','#tbl-fll');
+  renderDetalle('LIM ⇄ MIA','#tbl-mia');
+  renderDetalle('LIM ⇄ MCO','#tbl-mco');
+  renderHistorico();
+  renderHeatmap();
+}
 
-  // Tabla resumen
-  const tb = document.querySelector('#tabla-resumen tbody');
-  tb.innerHTML='';
+function renderSummary(){
+  const wrap=$('#summary'); wrap.innerHTML='';
   (DATA.resumen||[]).forEach(r=>{
-    const link = r.best_url ? <a class="link" href="${r.best_url}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Comprar</a> : '—';
-    const price = r.precio_mas_bajo_usd ? <i class="fa-solid fa-dollar-sign" style="color:#16a34a"></i> ${r.precio_mas_bajo_usd} : '—';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="text-align:center">${iconSemaforo(r.resultado)}</td>
-      <td>${r.ruta}</td>
-      <td>${price}</td>
-      <td>≤ ${r.umbral_usd}</td>
-      <td>${r.resultado}</td>
-      <td><a class="link" href="#" onclick="mostrar('detalle','${r.ruta}')">Ver detalle</a> ${link!=='—'?'· '+link:''}</td>
-    `;
-    tb.appendChild(tr);
+    const ok=/cumple/i.test(r.resultado||'');
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`
+      <h3><i class="fa-solid fa-route"></i> ${esc(r.ruta||'-')}</h3>
+      <p><span class="pill ${ok?'ok':'no'}">${esc(r.resultado||'-')}</span></p>
+      <p><span class="badge"><i class="fa-solid fa-dollar-sign"></i> Mín: ${fmtUSD(r.precio_mas_bajo_usd)}</span>
+         <span class="badge"><i class="fa-solid fa-bullseye"></i> Umbral: ${fmtUSD(r.umbral_usd)}</span></p>
+      <div class="row-actions">
+        <button class="btn" data-go="${r.ruta.includes('FLL')?'detalle-fll':r.ruta.includes('MIA')?'detalle-mia':'detalle-mco'}"><i class="fa-solid fa-eye"></i> Ver detalle</button>
+        ${r.best_url?<a class="btn" target="_blank" href="${esc(r.best_url)}"><i class="fa-solid fa-up-right-from-square"></i> Ver oferta</a>:''}
+      </div>`;
+    wrap.appendChild(card);
   });
-
-  // Histórico detallado plano
-  HIST_DET_FLAT = [];
-  const rutas = Object.keys(DATA.historico_detallado||{});
-  rutas.forEach(ruta=>{
-    (DATA.historico_detallado[ruta]||[]).forEach(item=>{
-      HIST_DET_FLAT.push({
-        ruta,
-        fecha: item.fecha,
-        fechaISO: (item.fecha||'').slice(0,10),
-        fuente: item.fuente,
-        precio: item.precio_usd,
-        estado: item.estado
-      });
-    });
-  });
-
-  // Select de rutas (una sola vez)
-  const selRuta = document.getElementById('f-ruta');
-  if(selRuta && selRuta.options.length===0){
-    const optTodos = document.createElement('option'); optTodos.value=''; optTodos.textContent='(todas)';
-    selRuta.appendChild(optTodos);
-    (Object.keys(DATA.historico_detallado||{})).forEach(r=>{
-      const o = document.createElement('option'); o.value=r; o.textContent=r;
-      selRuta.appendChild(o);
-    });
-  }
-
-  document.getElementById('last-refresh').textContent = 'Actualizado: ' + (new Date()).toLocaleString();
+  $$('#summary .btn[data-go]').forEach(b=>b.onclick=()=>{ $(.toolbar .btn[data-view="${b.dataset.go}"]).click(); });
 }
 
-/* ---------- Detalle ---------- */
-function renderDetalle(ruta){
-  const d = (DATA.detalles||{})[ruta];
-  if(!d){ return; }
-  document.getElementById('detalle-title').textContent = 'Detalle · ' + ruta;
-  document.getElementById('detalle-sub').textContent = Bloque #${d.bloque} · ${d.hora} · Simulación ${d.simulacion} · Umbral ≤ US$ ${d.umbral} · Resultado: ${d.resultado_final};
-  const tb = document.querySelector('#tabla-detalle tbody');
-  tb.innerHTML='';
-  (d.evaluaciones||[]).forEach(e=>{
-    const iconFuente = (e.tipo||'').toLowerCase().includes('meta')
-      ? '<i class="fa-solid fa-compass" title="Metabuscador"></i>'
-      : '<i class="fa-solid fa-plane-departure" title="Aerolínea directa"></i>';
-
-    const op = (e.operador||'').toLowerCase();
-    const iconOp = op.includes('avianca') ? '<i class="fa-solid fa-plane" style="color:#D90429"></i>'
-                 : op.includes('copa')    ? '<i class="fa-solid fa-plane" style="color:#005EB8"></i>'
-                 : op.includes('latam')   ? '<i class="fa-solid fa-plane" style="color:#E61B72"></i>'
-                 : '<i class="fa-solid fa-plane"></i>';
-
-    const iconRes = (e.resultado||'').includes('US$')
-      ? '<i class="fa-solid fa-dollar-sign" style="color:#16a34a"></i>'
-      : '<i class="fa-solid fa-info-circle"></i>';
-
-    const iconLink = e.url
-      ? <a href="${e.url}" target="_blank" class="link" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir</a>
-      : '—';
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${iconFuente} ${e.tipo||''}</td>
-      <td>${e.fuente||''}</td>
-      <td>${iconOp} ${e.operador||'—'}</td>
-      <td>${iconRes} ${e.resultado||''}</td>
-      <td>${etiqueta(e.estado||'')}</td>
-      <td>${iconLink}</td>
-    `;
-    tb.appendChild(tr);
-  });
+function renderDetalle(key, tableSel){
+  const det=DATA.detalles?.[key]; const tbody=$(${tableSel} tbody);
+  if(!det){ tbody.innerHTML='<tr><td colspan="5">Sin datos.</td></tr>'; return;}
+  tbody.innerHTML=(det.evaluaciones||[]).map(e=>`
+    <tr>
+      <td>${esc(e.fuente||'-')}</td>
+      <td>${esc(e.tipo||'-')}</td>
+      <td>${esc(e.resultado||'-')}</td>
+      <td><span class="pill ${/cumple/i.test(e.estado)?'ok':'no'}">${esc(e.estado||'-')}</span></td>
+      <td>
+        <div class="row-actions">
+          ${e.url?<a class="btn" target="_blank" href="${esc(e.url)}"><i class="fa-solid fa-up-right-from-square"></i> Ver oferta</a>:''}
+          ${e.url?<button class="btn" onclick="navigator.clipboard.writeText('${e.url.replace(/'/g,"&#39;")}')"><i class="fa-solid fa-link"></i> Copiar</button>:''}
+        </div>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="5">Sin resultados.</td></tr>';
 }
 
-/* ---------- Histórico (gráfico) ---------- */
 function renderHistorico(){
-  const hx = DATA.historico || []; // [{fecha, fll, mia, mco}]
-  const labels = hx.map(d=>d.fecha);
-  const fll = hx.map(d=>d.fll ?? null);
-  const mia = hx.map(d=>d.mia ?? null);
-  const mco = hx.map(d=>d.mco ?? null);
+  const hist = DATA.historico || []; // [{fecha:'YYYY-MM-DD', fll, mia, mco}]
+  $('#histNote').textContent = Entradas: ${hist.length||0};
+  const labels = hist.map(h=>h.fecha);
+  const fll = hist.map(h=>h.fll ?? null);
+  const mia = hist.map(h=>h.mia ?? null);
+  const mco = hist.map(h=>h.mco ?? null);
 
-  if(chart){ chart.destroy(); }
-  const ctx = document.getElementById('histChart');
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {label:'LIM ⇄ FLL', data:fll, tension:.25},
-        {label:'LIM ⇄ MIA', data:mia, tension:.25},
-        {label:'LIM ⇄ MCO', data:mco, tension:.25}
-      ]
-    },
-    options: {
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{ legend:{position:'bottom'} },
-      scales:{ y:{ title:{display:true,text:'US$'}, beginAtZero:false } }
-    }
+  const sma = (arr, n=7)=>arr.map((_,i)=>{
+    const slice=arr.slice(Math.max(0,i-n+1), i+1).filter(x=>typeof x==='number');
+    if(!slice.length) return null;
+    return Math.round(slice.reduce((a,b)=>a+b,0)/slice.length);
   });
+
+  const datasets = [
+    {label:'FLL', data:fll, borderColor:'#0d5bd7', tension:.2},
+    {label:'MIA', data:mia, borderColor:'#18a957', tension:.2},
+    {label:'MCO', data:mco, borderColor:'#e63b3b', tension:.2},
+    {label:'Media 7 días (global)', data:sma(hist.map(h=>Math.min(...[h.fll,h.mia,h.mco].filter(x=>typeof x==='number')))), borderDash:[5,5], borderColor:'#555', tension:.2}
+  ].map(d=>({...d, spanGaps:true, fill:false}));
+
+  const ctx = $('#chartHist');
+  if(chart) chart.destroy();
+  chart = new Chart(ctx,{type:'line',data:{labels,datasets},options:{plugins:{legend:{position:'bottom'}}, scales:{y:{beginAtZero:false}}}});
 }
 
-/* ---------- Histórico detallado (tabla + filtros + CSV) ---------- */
-function aplicarFiltros(){
-  const ruta   = document.getElementById('f-ruta').value || '';
-  const desde  = document.getElementById('f-desde').value || '';
-  const hasta  = document.getElementById('f-hasta').value || '';
-  const fuente = (document.getElementById('f-fuente').value || '').toLowerCase().trim();
-  const estado = document.getElementById('f-estado').value || '';
-
-  const rows = HIST_DET_FLAT.filter(x=>{
-    if(ruta && x.ruta!==ruta) return false;
-    if(desde && x.fechaISO <  desde) return false;
-    if(hasta && x.fechaISO >  hasta) return false;
-    if(fuente && !(x.fuente||'').toLowerCase().includes(fuente)) return false;
-    if(estado && !(x.estado||'').toLowerCase().includes(estado.toLowerCase())) return false;
-    return true;
-  });
-  pintarTablaHistDet(rows);
-}
-function limpiarFiltros(){
-  ['f-ruta','f-desde','f-hasta','f-fuente','f-estado'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(!el) return;
-    if(el.tagName==='SELECT') el.selectedIndex = 0;
-    else el.value = '';
-  });
-  pintarTablaHistDet(HIST_DET_FLAT);
-}
-function pintarTablaHistDet(rows){
-  const tb = document.querySelector('#tabla-histdet tbody');
-  tb.innerHTML = '';
-  CURRENT_ROWS = rows.slice();
-  (rows||[]).forEach(r=>{
-    const tr = document.createElement('tr');
+function renderHeatmap(){
+  const hist = (DATA.historico||[]).slice(-30); // últimos 30
+  const body = $('#heat-body'); body.innerHTML='';
+  if(!hist.length){ body.innerHTML='<tr><td colspan="4">Sin datos.</td></tr>'; return; }
+  const flat = hist.flatMap(h=>[h.fll,h.mia,h.mco].filter(x=>typeof x==='number'));
+  const min = Math.min(...flat), max = Math.max(...flat);
+  const color = v=>{
+    if(v==null) return '#fff';
+    const t = (v-min)/Math.max(1,(max-min));
+    const r = Math.round(255*(t)), g = Math.round(255*(1-t));
+    return rgb(${r},${g},140);
+  };
+  hist.forEach(h=>{
+    const tr=document.createElement('tr');
     tr.innerHTML = `
-      <td><span class="badge">${r.fecha}</span></td>
-      <td>${r.ruta}</td>
-      <td>${r.fuente}</td>
-      <td>US$ ${r.precio}</td>
-      <td>${etiqueta(r.estado)}</td>
+      <td class="small">${esc(h.fecha)}</td>
+      <td style="background:${color(h.fll)}">${h.fll?fmtUSD(h.fll):''}</td>
+      <td style="background:${color(h.mia)}">${h.mia?fmtUSD(h.mia):''}</td>
+      <td style="background:${color(h.mco)}">${h.mco?fmtUSD(h.mco):''}</td>
     `;
-    tb.appendChild(tr);
+    body.appendChild(tr);
   });
-  if(rows.length===0){
-    const tr = document.createElement('tr');
-    tr.innerHTML = <td colspan="5" class="muted">No hay resultados con los filtros aplicados.</td>;
-    tb.appendChild(tr);
-  }
 }
-function renderHistoricoDet(){
-  if(HIST_DET_FLAT.length===0){ return; }
-  pintarTablaHistDet(HIST_DET_FLAT);
-}
-function exportarCSV(){
-  const rows = CURRENT_ROWS.length ? CURRENT_ROWS : HIST_DET_FLAT;
-  if(!rows.length){ alert('No hay datos para exportar.'); return; }
-  const header = ['fecha_hora','ruta','fuente','precio_usd','estado'];
-  const lines = [header.join(',')];
-  rows.forEach(r=>{
-    const vals = [
-      r.fecha,
-      r.ruta,
-      r.fuente ? r.fuente.replace(/"/g,'""') : '',
-      (r.precio ?? '').toString(),
-      r.estado ? r.estado.replace(/"/g,'""') : ''
-    ].map(v=>{
-      const s = (v==null?'':v.toString());
-      return (/[",\n]/.test(s)) ? "${s}" : s;
-    });
-    lines.push(vals.join(','));
+
+function exportCSV(){
+  const rows = [];
+  (DATA.resumen||[]).forEach(r=>{
+    rows.push([r.ruta, r.resultado, r.precio_mas_bajo_usd, r.umbral_usd, r.ultima_ejecucion||'']);
   });
-  const csv = '\ufeff' + lines.join('\n');
+  const csv = 'Ruta,Resultado,Min USD,Umbral USD,Última ejecución\n' + rows.map(r=>r.join(',')).join('\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const hoy = new Date().toISOString().slice(0,10);
-  a.href = url; a.download = historico_simulaciones_${hoy}.csv;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='resumen.csv'; a.click();
 }
 
-/* ---------- BUSCADORES REALES (multi-fuente) ---------- */
-const providers = {
-  // Metas
-  kayak:     {name:'KAYAK',     build:(dst,d1,d2)=>https://www.kayak.com/flights/LIM-${dst}/${d1}/${d2}?sort=bestflight_a&stops=~1},
-  skyscanner:{name:'Skyscanner',build:(dst,d1,d2)=>https://www.skyscanner.com/transport/flights/lim/${dst.toLowerCase()}/${d1.replaceAll('-','').slice(2)}/${d2.replaceAll('-','').slice(2)}/?adults=1&stops=1&cabinclass=economy},
-  momondo:   {name:'Momondo',   build:(dst,d1,d2)=>https://www.momondo.com/flight-search/LIM-${dst}/${d1}/${d2}?sort=bestflight_a},
-  kiwi:      {name:'Kiwi',      build:(dst,d1,d2)=>https://www.kiwi.com/en/search/results/lim/${dst.toLowerCase()}/${d1}/${d2}?sort=best&stopsNumber=0%2C1},
-  gflights:  {name:'Google Flights', build:(dst,d1,d2)=>https://www.google.com/travel/flights?q=Flights%20to%20${dst}%20from%20LIM%20on%20${d1}%20return%20${d2}},
-
-  // OTAs globales
-  expedia:   {name:'Expedia',   build:(dst,d1,d2)=>https://www.expedia.com/Flights-Search?trip=roundtrip&leg1=from:LIM,to:${dst},departure:${d1.replaceAll('-','/')}TANYT&leg2=from:${dst},to:LIM,departure:${d2.replaceAll('-','/')}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1},
-  orbitz:    {name:'Orbitz',    build:(dst,d1,d2)=>https://www.orbitz.com/Flights-Search?trip=roundtrip&leg1=from:LIM,to:${dst},departure:${d1.replaceAll('-','/')}TANYT&leg2=from:${dst},to:LIM,departure:${d2.replaceAll('-','/')}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1},
-  travelocity:{name:'Travelocity',build:(dst,d1,d2)=>https://www.travelocity.com/Flights-Search?trip=roundtrip&leg1=from:LIM,to:${dst},departure:${d1.replaceAll('-','/')}TANYT&leg2=from:${dst},to:LIM,departure:${d2.replaceAll('-','/')}TANYT&passengers=adults:1&options=cabinclass:economy&stops=1},
-  priceline: {name:'Priceline', build:(dst,d1,d2)=>https://www.priceline.com/m/fly/search/#/searches/itineraries?cabin-class=ECO&legs=2&leg1=LIM-${dst}-${d1}&leg2=${dst}-LIM-${d2}&num-adults=1},
-  tripcom:   {name:'Trip.com',  build:(dst,d1,d2)=>https://us.trip.com/flights/lim-to-${dst.toLowerCase()}/tickets?depdate=${d1}&retdate=${d2}&dcity=LIM&acity=${dst}&type=roundtrip&cabin=economy&adult=1},
-  opodo:     {name:'Opodo',     build:(dst,d1,d2)=>https://www.opodo.com/flights/lim-${dst.toLowerCase()}/${d1}/${d2}/?roundTrip=true&adults=1&class=economy},
-  edreams:   {name:'eDreams',   build:(dst,d1,d2)=>https://www.edreams.net/flights/lim-${dst.toLowerCase()}/${d1}/${d2}/?roundTrip=true&adults=1&class=economy},
-  cheapoair: {name:'CheapOair', build:(dst,d1,d2)=>https://www.cheapoair.com/fpnext/Air/Listing?d1=LIM&a1=${dst}&d2=${dst}&a2=LIM&dd1=${d1}&dd2=${d2}&trip=R&class=E&adt=1},
-
-  // LATAM región
-  despegar:  {name:'Despegar',  build:(dst,d1,d2)=>https://www.despegar.com.pe/vuelos/${d1}/${d2}/LIM/${dst}/1/0/0?from=SB},
-  viajanet:  {name:'Viajanet',  build:(dst,d1,d2)=>https://www.viajanet.com.br/passagens-aereas/resultados?iata_from=LIM&iata_to=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&tripType=RT&cabinType=ECO},
-  atrapalo:  {name:'Atrápalo',  build:(dst,d1,d2)=>https://www.atrapalo.pe/viajes/buscador/#/vuelos/ida_y_vuelta/LIM/${dst}/${d1}/${d2}/1/0/0/0/Economica},
-  bestday:   {name:'BestDay',   build:(dst,d1,d2)=>https://www.bestday.com.mx/vuelos/#/search/flight/LIM/${dst}/${d1}/${d2}/1/0/0/Economy},
-
-  // Aerolíneas
-  copa:      {name:'Copa',      build:(dst,d1,d2)=>https://book.copaair.com/booking/flights?tripType=roundtrip&origin=LIM&destination=${dst}&departureDate=${d1}&returnDate=${d2}&adt=1&cabin=economy},
-  avianca:   {name:'Avianca',   build:(dst,d1,d2)=>https://www.avianca.com/en/?from=LIM&to=${dst}&departureDate=${d1}&returnDate=${d2}&adults=1&cabins=economy},
-  latam:     {name:'LATAM',     build:(dst,d1,d2)=>https://www.latamairlines.com/pe/es/oferta-vuelos?origin=LIM&destination=${dst}&outbound=${d1}&inbound=${d2}&adt=1&cabin=economy},
-  aa:        {name:'American',  build:(dst,d1,d2)=>https://www.aa.com/booking/flights/choose-flights?tripType=roundTrip&destination=${dst}&origin=LIM&departDate=${d1}&returnDate=${d2}&cabin=coach&passengerCount=1},
-  jetblue:   {name:'JetBlue',   build:(dst,d1,d2)=>https://www.jetblue.com/booking/flights?from=LIM&to=${dst}&depart=${d1}&return=${d2}&type=rt&adult=1},
-  spirit:    {name:'Spirit',    build:(dst,d1,d2)=>https://booking.spirit.com/Flight-Search?trip=roundtrip&origin=LIM&destination=${dst}&departing=${d1}&returning=${d2}&ADT=1&cabin=Economy}
-};
-
-// Presets
-const PRESETS = {
-  rapido: ['gflights','kayak','skyscanner','expedia'],
-  afondo: [
-    'gflights','kayak','skyscanner','momondo','kiwi',
-    'expedia','orbitz','travelocity','priceline','tripcom','opodo','edreams','cheapoair',
-    'despegar','viajanet','atrapalo','bestday'
-  ],
-  confirmacion: ['copa','avianca','latam','aa','jetblue','spirit'],
-  todos: null, ninguno: []
-};
-function setChecked(keys, value){
-  keys.forEach(k=>{
-    const cb = document.getElementById('pv_'+k);
-    if(cb) cb.checked = value;
+async function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(14); doc.text('Ultra-Low Fare · Resumen', 14, 16);
+  let y=26;
+  (DATA.resumen||[]).forEach(r=>{
+    doc.setFontSize(11);
+    doc.text(${r.ruta} — ${r.resultado} — Min: ${r.precio_mas_bajo_usd} — Umbral: ${r.umbral_usd}, 14, y);
+    y+=7; if(y>280){ doc.addPage(); y=20; }
   });
-}
-function preset(name){
-  const allKeys = Object.keys(providers);
-  if(name === 'todos'){ setChecked(allKeys, true); return; }
-  if(name === 'ninguno'){ setChecked(allKeys, false); return; }
-  setChecked(allKeys, false);
-  const keys = PRESETS[name] || [];
-  setChecked(keys, true);
-}
-(function renderProviderChecks(){
-  const cont = document.getElementById('providers');
-  const order = [
-    'gflights','kayak','skyscanner','momondo','kiwi',
-    'expedia','orbitz','travelocity','priceline','tripcom','opodo','edreams','cheapoair',
-    'despegar','viajanet','atrapalo','bestday',
-    'copa','avianca','latam','aa','jetblue','spirit'
-  ];
-  order.forEach(key=>{
-    const p = providers[key];
-    const id = 'pv_'+key;
-    const label = document.createElement('label');
-    label.className = 'provider';
-    const pre = ['kayak','skyscanner','expedia','copa','avianca'].includes(key)?'checked':'';
-    label.innerHTML = <input type="checkbox" id="${id}" ${pre}/> ${p.name};
-    cont.appendChild(label);
-  });
-  preset('rapido'); // preselección
-})();
-function openAll(dst, d1, d2){
-  const keys = Object.keys(providers);
-  let delay = 0;
-  keys.forEach(k=>{
-    const cb = document.getElementById('pv_'+k);
-    if (!cb || !cb.checked) return;
-    const url = providers[k].build(dst, d1, d2);
-    setTimeout(()=> window.open(url, '_blank'), delay);
-    delay += 120;
-  });
+  doc.save('resumen.pdf');
 }
 
-/* ---------- Refrescos ---------- */
-function refrescarAhora(){ cargar(); }
-function descargarPDF(){ window.print(); }
-cargar().then(()=>mostrar('inicio'));
-setInterval(()=>cargar(), AUTO_MS);
+load();
 </script>
 </body>
 </html>
