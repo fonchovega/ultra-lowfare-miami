@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generado": "2025-10-20T21:30:32.674Z"
+    "generado": "2025-10-21T03:18:52.583Z"
   },
   "resumen": [
     {
@@ -8,8 +8,8 @@
       "salida": "2026-02-15",
       "retorno": "2026-02-20",
       "umbral": 360,
-      "precio": 384,
-      "cumple": "Cumple"
+      "precio": 405,
+      "cumple": "No cumple"
     },
     {
       "ruta": "LIM ⇄ MIA",
@@ -24,7 +24,7 @@
       "salida": "2026-02-15",
       "retorno": "2026-02-20",
       "umbral": 400,
-      "precio": 399,
+      "precio": 442,
       "cumple": "No cumple"
     }
   ]
