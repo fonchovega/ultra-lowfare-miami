@@ -1,49 +1,37 @@
-// 📘 reconstruye historico.json desde los commits previos de data.json
-import { execSync } from "child_process";
+// Script para reconstruir historico.json combinando data.json y commits previos
 import fs from "fs";
+import path from "path";
 
-const HISTORICO_PATH = "./historico.json";
+const DATA_PATH = "./data.json";
+const HIST_PATH = "./historico.json";
 
-function getDataFromCommit(ref) {
-  try {
-    const raw = execSync(git show ${ref}:data.json, { encoding: "utf8" });
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
+try {
+  const dataRaw = fs.readFileSync(DATA_PATH, "utf8");
+  const data = JSON.parse(dataRaw);
 
-function getAllCommits() {
-  const raw = execSync(git log --pretty=format:%H -- data.json, {
-    encoding: "utf8",
-  });
-  return raw.split("\n").reverse(); // más antiguo → más reciente
-}
-
-(function buildHistorico() {
-  const commits = getAllCommits();
-  const historico = [];
-
-  console.log(🔍 Analizando ${commits.length} commits con data.json...);
-
-  for (const commit of commits) {
-    const snap = getDataFromCommit(commit);
-    if (!snap || !snap.resumen) continue;
-
-    const fecha = snap.meta?.generado || "sin-fecha";
-    for (const r of snap.resumen) {
-      historico.push({
-        fecha,
-        ruta: r.ruta,
-        salida: r.salida,
-        retorno: r.retorno,
-        precio: r.precio,
-        umbral: r.umbral,
-        cumple: r.precio <= r.umbral,
-      });
-    }
+  // Si no existe historico.json, crear uno nuevo
+  let historico = [];
+  if (fs.existsSync(HIST_PATH)) {
+    const histRaw = fs.readFileSync(HIST_PATH, "utf8");
+    historico = JSON.parse(histRaw);
   }
 
-  fs.writeFileSync(HISTORICO_PATH, JSON.stringify(historico, null, 2), "utf8");
-  console.log(✅ historico.json reconstruido con ${historico.length} registros.);
-})();
+  // Agrega nuevo bloque solo si no está duplicado por fecha
+  const yaExiste = historico.some((item) => item.meta?.generado === data.meta?.generado);
+  if (!yaExiste) {
+    historico.push(data);
+    fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
+    console.log("✅ Histórico actualizado correctamente.");
+  } else {
+    console.log("⚠️ Los datos ya estaban registrados en el histórico.");
+  }
+
+  // Limita opcionalmente a 200 entradas (puedes cambiarlo)
+  if (historico.length > 200) {
+    historico = historico.slice(-200);
+    fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
+    console.log("⚙️ Histórico recortado a las últimas 200 ejecuciones.");
+  }
+} catch (err) {
+  console.error("❌ Error procesando histórico:", err);
+}
