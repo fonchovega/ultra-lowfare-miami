@@ -33,9 +33,9 @@ try {
     console.log("Registro ya existente; no se agrego duplicado.");
   }
 
-  // Mantener maximo 200 registros (opcional)
-  if (historico.length > 200) {
-    historico = historico.slice(-200);
+  // Mantener maximo 600 registros (opcional)
+  if (historico.length > 600) {
+    historico = historico.slice(-600);
     fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
     console.log("Historico recortado a las ultimas 200 ejecuciones.");
   }
