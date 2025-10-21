@@ -1,7 +1,8 @@
-// =============================================================
+// ===============================================================
 // Script: historico.js
 // Función: Combina data.json actual con historico.json acumulado
-// =============================================================
+// ===============================================================
+
 import fs from "fs";
 
 const DATA_PATH = "./data.json";
@@ -19,25 +20,25 @@ try {
     historico = JSON.parse(histRaw);
   }
 
-  // Evitar duplicados por fecha
+  // Evitar duplicados por fecha (meta.generado)
   const yaExiste = historico.some(
-    (item) => item.meta?.generado === data.meta?.generado
+    (item) => item?.meta?.generado === data?.meta?.generado
   );
 
   if (!yaExiste) {
     historico.push(data);
     fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
-    console.log("✅ Histórico actualizado correctamente.");
+    console.log("Historico actualizado correctamente.");
   } else {
-    console.log("⚠️ Registro ya existente, no se agregó duplicado.");
+    console.log("Registro ya existente; no se agrego duplicado.");
   }
 
-  // Mantener máximo 200 registros (opcional)
+  // Mantener maximo 200 registros (opcional)
   if (historico.length > 200) {
     historico = historico.slice(-200);
     fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
-    console.log("⚙️ Histórico recortado a las últimas 200 ejecuciones.");
+    console.log("Historico recortado a las ultimas 200 ejecuciones.");
   }
 } catch (err) {
-  console.error("❌ Error procesando histórico:", err);
+  console.error("Error procesando historico:", err);
 }
