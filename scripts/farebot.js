@@ -81,9 +81,45 @@ async function runSim() {
     meta: { generado: new Date().toISOString() },
     resumen: results,
   };
+// === [HISTÓRICO] Escritura incremental de data.json ===
+try {
+  const DATA_PATH = "./data.json";
+  let db = {};
 
-  fs.writeFileSync(DATA_PATH, JSON.stringify(salida, null, 2), "utf8");
-  console.log("✅ data.json actualizado correctamente.");
+  // 1) Leer data actual
+  try {
+    db = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
+  } catch {
+    db = {};
+  }
+
+  // 2) Asegurar estructura base
+  if (!Array.isArray(db.historico)) db.historico = [];
+
+  // 3) Preparar nueva corrida
+  const nowISO = new Date().toISOString();
+  const nuevoResumen = salida.resumen;
+
+  // 4) Agregar al histórico
+  db.historico.push({
+    ts: nowISO,
+    resumen: JSON.parse(JSON.stringify(nuevoResumen)),
+  });
+
+  // 5) Mantener máximo 400 registros
+  const MAX_ITEMS = 400;
+  if (db.historico.length > MAX_ITEMS) {
+    db.historico = db.historico.slice(-MAX_ITEMS);
+  }
+
+  // 6) Actualizar vista actual
+  db.meta = { generado: nowISO };
+  db.resumen = nuevoResumen;
+
+  // 7) Guardar en disco
+  fs.writeFileSync(DATA_PATH, JSON.stringify(db, null, 2), "utf8");
+  console.log("✅ data.json actualizado y archivado correctamente.");
+} catch (err) {
+  console.error("❌ Error al actualizar data.json:", err);
 }
-
-runSim().catch(err => console.error("❌ Error:", err));
+// === [HISTÓRICO] FIN ===
