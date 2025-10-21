@@ -19,7 +19,7 @@ try {
     historico = JSON.parse(histRaw);
   }
 
-  // Evita duplicados por fecha
+  // Evitar duplicados por fecha
   const yaExiste = historico.some(
     (item) => item.meta?.generado === data.meta?.generado
   );
