@@ -29,9 +29,9 @@ try {
     console.log("⚠️ Los datos ya estaban en el histórico, no se duplicaron.");
   }
 
-  // Recorta a 600 entradas máximo (opcional)
-  if (historico.length > 600) {
-    historico = historico.slice(-600);
+  // Recorta a 200 entradas máximo (opcional)
+  if (historico.length > 200) {
+    historico = historico.slice(-200);
     fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
     console.log("⚙️ Histórico recortado a las últimas 200 ejecuciones.");
   }
