@@ -1,105 +1,117 @@
 /**
- * 🧱 Reconstruye historico.json usando el historial de commits de data.json en Git.
- * - Lee todos los commits que tocaron data.json (la ruta se define en DATA_FILE).
- * - Extrae el contenido de cada versión y normaliza a un formato común.
- * - Deduplica por meta.generado y escribe historico.json con tope MAX_HISTORY (default 600).
- *
- * 📋 Requisitos: tener Git instalado y ejecutar en un repo clonado (no ZIP).
+ * Reconstruye historico.json leyendo el historial de commits de data.json.
+ * - Lista todos los commits que modificaron data.json.
+ * - Extrae y normaliza el contenido (resultados) de cada versión.
+ * - Deduplica por meta.generado y guarda hasta MAX_HISTORY entradas.
  */
 
 import { execSync } from "child_process";
 import fs from "fs";
-import path from "path";
 
-const MAX_HISTORY = process.env.MAX_HISTORY || 600;
-const DATA_FILE = process.env.DATA_FILE || "data.json"; // Ruta de entrada
-const HIST_FILE = process.env.HIST_FILE || "historico.json"; // Archivo de salida
+const MAX_HISTORY = Number(process.env.MAX_HISTORY || 600);
+const DATA_FILE   = "data.json";
+const HIST_FILE   = "historico.json";
 
-// --- Función segura para parsear JSON sin romper ---
+/* ---------- utilidades ---------- */
 function safeJSON(raw) {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(raw); } catch { return null; }
 }
 
-// === Obtiene los commits donde cambió data.json ===
+/** Devuelve hashes de commits que tocaron data.json (más antiguo primero) */
 function getCommitsAffectingData() {
   try {
-    const out = execSync(git log --pretty=format:%H -- ${DATA_FILE}, { encoding: "utf8" });
-    return out.split("\n").filter(Boolean);
+    const out = execSync(`git log --pretty=format:%H -- ${DATA_FILE}`, { encoding: "utf8" });
+    // más antiguo primero
+    return out.split("\n").filter(Boolean).reverse();
   } catch (err) {
     console.error("Error ejecutando git log:", err.message);
     return [];
   }
 }
 
-// --- Lee el contenido del archivo data.json en un commit específico ---
-function readDataAt(ref) {
+/** Lee el contenido de data.json en un commit dado (hash) */
+function readDataAt(commitHash) {
   try {
-    const raw = execSync(git show ${ref}:${DATA_FILE}, { encoding: "utf8" });
+    const raw = execSync(`git show ${commitHash}:${DATA_FILE}`, { encoding: "utf8" });
     return safeJSON(raw);
   } catch {
     return null;
   }
 }
 
-// --- Normaliza y deduplica los registros ---
+/** Normaliza cualquier forma a un arreglo de registros {meta,resumen} */
 function normalizeEntries(jsonData) {
   if (!jsonData) return [];
-  if (!Array.isArray(jsonData)) jsonData = [jsonData];
+  const blocks = Array.isArray(jsonData) ? jsonData : [jsonData];
 
   const entries = [];
-  for (const block of jsonData) {
+  for (const block of blocks) {
     if (!block || !block.resultados) continue;
-    for (const record of block.resultados) {
+
+    for (const rec of block.resultados) {
       entries.push({
-        meta: { generado: block.meta?.generado || null },
-        resumen: record,
+        meta: {
+          // si existe meta.generado lo usamos, si no, null (luego se completa)
+          generado: block?.meta?.generado ?? null,
+        },
+        resumen: rec,
       });
     }
   }
-
   return entries;
 }
 
-// --- Reconstrucción completa ---
+/* ---------- reconstrucción ---------- */
 function rebuild() {
-  console.log(🔄 Reconstruyendo ${HIST_FILE} desde historial de ${DATA_FILE} ...);
+  console.log(`Reconstruyendo ${HIST_FILE} desde el historial de ${DATA_FILE}...`);
 
   const commits = getCommitsAffectingData();
+  if (commits.length === 0) {
+    console.error("No se hallaron commits que afecten data.json.");
+    process.exit(1);
+  }
+
   const all = [];
 
-  for (const commitHash of commits.reverse()) {
+  for (const commitHash of commits) {
     const data = readDataAt(commitHash);
     const entries = normalizeEntries(data);
-    all.push(...entries);
-  }
 
-  // Deduplicar por meta.generado
-  const unique = [];
-  const seen = new Set();
-  for (const item of all) {
-    const key = item.meta?.generado;
-    if (key && !seen.has(key)) {
-      seen.add(key);
-      unique.push(item);
+    // completa meta.generado si venía null, con timestamp sintético taggeado por commit
+    for (const e of entries) {
+      if (!e.meta.generado) e.meta.generado = `${new Date().toISOString()}#${commitHash}`;
+      all.push(e);
     }
+
+    // opcional: corta temprano si ya superamos el tope
+    if (all.length >= MAX_HISTORY) break;
   }
 
-  // Limitar al máximo
-  const limited = unique.slice(-MAX_HISTORY);
+  // deduplica por meta.generado (última ocurrencia gana)
+  const map = new Map();
+  for (const e of all) map.set(e.meta.generado, e);
 
-  // Escribir resultado
-  fs.writeFileSync(HIST_FILE, JSON.stringify(limited, null, 2), "utf8");
-  console.log(✅ Reconstrucción lista: ${HIST_FILE} (${limited.length} registros, límite ${MAX_HISTORY}));
+  // ordena por fecha ascendente (ISO empieza con año, sirve para ordenar)
+  const ordered = Array.from(map.values()).sort(
+    (a, b) => String(a.meta.generado).localeCompare(String(b.meta.generado))
+  );
+
+  // recorta a las últimas MAX_HISTORY entradas
+  const recorte = ordered.slice(-MAX_HISTORY);
+
+  fs.writeFileSync(HIST_FILE, JSON.stringify(recorte, null, 2), "utf8");
+  console.log(`Listo. Escribí ${recorte.length} registros en ${HIST_FILE} (máx ${MAX_HISTORY}).`);
 }
 
-// --- Ejecución principal ---
+/* ---------- main ---------- */
 try {
+  // verificación simple de que existe repo git
+  if (!fs.existsSync(".git")) {
+    console.error("Este script debe ejecutarse dentro de un repo Git (carpeta .git no encontrada).");
+    process.exit(1);
+  }
   rebuild();
 } catch (err) {
-  console.error("⚠️ Error reconstruyendo histórico:", err);
+  console.error("Error reconstruyendo histórico:", err);
   process.exit(1);
 }
