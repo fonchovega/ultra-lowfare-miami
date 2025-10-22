@@ -24,14 +24,14 @@ function safeJSON(raw) {
   }
 }
 
-// --- Obtiene todos los commits que modificaron el archivo data.json ---
+// === Obtiene los commits donde cambió data.json ===
 function getCommitsAffectingData() {
   try {
-    const output = execSync(git log --pretty=format:%H -- ${DATA_FILE}, { encoding: "utf8" });
-    return output.split("\n").filter(Boolean);
-  } catch {
-    console.error("❌ Error al obtener commits de Git. Asegúrate de estar en un repositorio válido.");
-    process.exit(1);
+    const out = execSync(git log --pretty=format:%H -- ${DATA_FILE}, { encoding: "utf8" });
+    return out.split("\n").filter(Boolean);
+  } catch (err) {
+    console.error("Error ejecutando git log:", err.message);
+    return [];
   }
 }
 
