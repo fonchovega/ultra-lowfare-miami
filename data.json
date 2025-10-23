@@ -1,36 +1,131 @@
-{
-  "meta": {
-    "generado": "2025-10-21T15:00:00Z",
-    "origen": "LIM",
-    "moneda": "USD"
+[
+  {
+    "meta": {
+      "generado": "2025-10-23T11:02:05.278Z"
+    },
+    "resultados": [
+      {
+        "ruta": " LIM → MIA",
+        "fecha": "2025-10-23T11:02:05.277Z",
+        "precio_encontrado": 783,
+        "cumple": "❌ No cumple",
+        "limite": 360,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      },
+      {
+        "ruta": " LIM → FLL",
+        "fecha": "2025-10-23T11:02:05.278Z",
+        "precio_encontrado": 727,
+        "cumple": "❌ No cumple",
+        "limite": 360,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      },
+      {
+        "ruta": " LIM → MCO",
+        "fecha": "2025-10-23T11:02:05.278Z",
+        "precio_encontrado": 673,
+        "cumple": "❌ No cumple",
+        "limite": 400,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      }
+    ]
   },
-  "resumen": [
-    {
-      "fecha": "2025-10-21",
-      "destino": "MIA",
-      "aerolinea": "Avianca",
-      "precio": 349,
-      "escala": 1,
-      "equipaje": "solo equipaje de mano",
-      "duracion_vuelo": "7h 45m"
+  {
+    "meta": {
+      "generado": "2025-10-23T11:05:06.565Z"
     },
-    {
-      "fecha": "2025-10-21",
-      "destino": "FLL",
-      "aerolinea": "Spirit",
-      "precio": 358,
-      "escala": 1,
-      "equipaje": "solo equipaje de mano",
-      "duracion_vuelo": "7h 30m"
+    "resultados": [
+      {
+        "ruta": " LIM → MIA",
+        "fecha": "2025-10-23T11:05:06.565Z",
+        "precio_encontrado": 513,
+        "cumple": "❌ No cumple",
+        "limite": 360,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      },
+      {
+        "ruta": " LIM → FLL",
+        "fecha": "2025-10-23T11:05:06.565Z",
+        "precio_encontrado": 439,
+        "cumple": "❌ No cumple",
+        "limite": 360,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      },
+      {
+        "ruta": " LIM → MCO",
+        "fecha": "2025-10-23T11:05:06.565Z",
+        "precio_encontrado": 738,
+        "cumple": "❌ No cumple",
+        "limite": 400,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      }
+    ]
+  },
+  {
+    "meta": {
+      "generado": "2025-10-23T11:05:12.416Z"
     },
-    {
-      "fecha": "2025-10-21",
-      "destino": "MCO",
-      "aerolinea": "Copa Airlines",
-      "precio": 372,
-      "escala": 1,
-      "equipaje": "solo equipaje de mano",
-      "duracion_vuelo": "8h 15m"
-    }
-  ]
-}
+    "resultados": [
+      {
+        "ruta": " LIM → MIA",
+        "fecha": "2025-10-23T11:05:12.415Z",
+        "precio_encontrado": 650,
+        "cumple": "❌ No cumple",
+        "limite": 360,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      },
+      {
+        "ruta": " LIM → FLL",
+        "fecha": "2025-10-23T11:05:12.416Z",
+        "precio_encontrado": 418,
+        "cumple": "❌ No cumple",
+        "limite": 360,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      },
+      {
+        "ruta": " LIM → MCO",
+        "fecha": "2025-10-23T11:05:12.416Z",
+        "precio_encontrado": 791,
+        "cumple": "❌ No cumple",
+        "limite": 400,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      }
+    ]
+  }
+]

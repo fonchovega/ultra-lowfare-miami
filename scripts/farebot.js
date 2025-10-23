@@ -1,13 +1,18 @@
+// scripts/farebot.js
 import fs from "fs";
-import axios from "axios";
+
+// Si más adelante conectamos APIs reales, descomenta esto:
+// import axios from "axios";
 
 const DATA_PATH = "./data.json";
 
+// --------------------------
 // Función principal
+// --------------------------
 async function main() {
-  console.log("Iniciando búsqueda de tarifas...");
+  console.log("🔎 Iniciando búsqueda de tarifas...");
 
-  // Parámetros de ejemplo (ajustables)
+  // Parámetros de ejemplo (mock)
   const routes = [
     { origin: "LIM", destination: "MIA", price_limit: 360 },
     { origin: "LIM", destination: "FLL", price_limit: 360 },
@@ -18,22 +23,21 @@ async function main() {
 
   for (const route of routes) {
     try {
-      console.log(
-        Buscando ${route.origin} -> ${route.destination} (tope $${route.price_limit})
-      );
+      console.log(`🔍 Buscando ${route.origin} → ${route.destination} (tope $${route.price_limit})`);
 
-      // --- Simulación: en implementación real aquí va la llamada a metabuscadores/APIs ---
+      // --- Simulación de precio encontrado (mock) ---
       const simulatedPrice = Math.floor(Math.random() * 550) + 250;
+
       const cumple = simulatedPrice <= route.price_limit;
       const timestamp = new Date().toISOString();
 
       const record = {
-        ruta: ${route.origin} -> ${route.destination},
+        ruta:` ${route.origin} → ${route.destination}`,
         fecha: timestamp,
         precio_encontrado: simulatedPrice,
-        cumple: cumple ? "Cumple" : "No cumple",
+        cumple: cumple ? "✅ Sí cumple" : "❌ No cumple",
         limite: route.price_limit,
-        fuente: "simulacion_interna",
+        fuente: "simulación interna (mock)",
         detalles: {
           equipaje: "carry-on only",
           escalas_max: 1,
@@ -42,20 +46,22 @@ async function main() {
 
       results.push(record);
 
-      console.log(
-        `${route.origin}->${route.destination}: $${simulatedPrice} => ${
-          cumple ? "Cumple" : "No cumple"
-        }`
-      );
+      console.log(`📌 ${route.origin}→${route.destination}: $${simulatedPrice} → ${cumple ? "Cumple" : "No cumple"}`);
     } catch (err) {
-      console.error(Error buscando ${route.origin}-${route.destination}:, err);
+      console.error(`❗ Error buscando ${route.origin}-${route.destination}:`, err);
     }
   }
-
 // Guardar resultados en data.json
 try {
   let existingData = [];
 
+<<<<<<< HEAD
+// Guardar resultados en data.json
+try {
+  let existingData = [];
+
+=======
+>>>>>>> 7bf9ca1 (fix:normaliza data.json como array y guarda corridas OK)
   if (fs.existsSync(DATA_PATH)) {
     const raw = fs.readFileSync(DATA_PATH, "utf8");
     const parsed = JSON.parse(raw);
@@ -67,6 +73,7 @@ try {
       existingData = [];
     }
   }
+<<<<<<< HEAD
 
   // Agregar nueva corrida
   existingData.push({
@@ -75,21 +82,29 @@ try {
   });
 
 // Limitar historial a 600 corridas (ajustable por escalabilidad luego)
+=======
+    // Agregar nueva corrida
+    existingData.push({
+      meta: { generado: new Date().toISOString() },
+      resultados: results,
+    });
+
+    // Limitar historial a 600 ejecuciones
+>>>>>>> 7bf9ca1 (fix:normaliza data.json como array y guarda corridas OK)
     const MAX_RECORDS = 600;
     if (existingData.length > MAX_RECORDS) {
       existingData = existingData.slice(-MAX_RECORDS);
-      console.log(
-        Data recortada a las últimas ${MAX_RECORDS} ejecuciones.
-      );
+      console.log(`✂️ Data recortada a las últimas ${MAX_RECORDS} ejecuciones.`);
     }
 
+    // Escribir data.json actualizado
     fs.writeFileSync(DATA_PATH, JSON.stringify(existingData, null, 2), "utf8");
-    console.log("Data guardada correctamente en data.json");
+    console.log("💾 Data guardada correctamente en data.json");
   } catch (err) {
-    console.error("Error guardando data.json:", err);
+    console.error("❗ Error guardando data.json:", err);
   }
 
-  console.log("Búsqueda finalizada correctamente.");
+  console.log("✅ Búsqueda finalizada correctamente.");
 }
 
 main();
