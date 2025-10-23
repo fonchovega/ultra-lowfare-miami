@@ -52,21 +52,29 @@ async function main() {
     }
   }
 
-  // Guardar resultados en data.json
-  try {
-    let existingData = [];
-    if (fs.existsSync(DATA_PATH)) {
-      const raw = fs.readFileSync(DATA_PATH, "utf8");
-      existingData = JSON.parse(raw);
+// Guardar resultados en data.json
+try {
+  let existingData = [];
+
+  if (fs.existsSync(DATA_PATH)) {
+    const raw = fs.readFileSync(DATA_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    // Asegurar que existingData sea un arreglo
+    if (Array.isArray(parsed)) {
+      existingData = parsed;
+    } else {
+      console.warn("⚠️ data.json no era un array, se reinicia.");
+      existingData = [];
     }
+  }
 
-    // Agregar nueva corrida
-    existingData.push({
-      meta: { generado: new Date().toISOString() },
-      resultados: results,
-    });
+  // Agregar nueva corrida
+  existingData.push({
+    meta: { generado: new Date().toISOString() },
+    resultados: results,
+  });
 
-    // Limitar historial a 600 corridas (ajustable por escalabilidad luego)
+// Limitar historial a 600 corridas (ajustable por escalabilidad luego)
     const MAX_RECORDS = 600;
     if (existingData.length > MAX_RECORDS) {
       existingData = existingData.slice(-MAX_RECORDS);
