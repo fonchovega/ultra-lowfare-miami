@@ -170,5 +170,48 @@
         }
       }
     ]
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T06:50:13.284Z"
+    },
+    "resultados": [
+      {
+        "ruta": " LIM → MIA",
+        "fecha": "2025-10-24T06:50:13.283Z",
+        "precio_encontrado": 561,
+        "cumple": "❌ No cumple",
+        "limite": 360,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      },
+      {
+        "ruta": " LIM → FLL",
+        "fecha": "2025-10-24T06:50:13.283Z",
+        "precio_encontrado": 638,
+        "cumple": "❌ No cumple",
+        "limite": 360,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      },
+      {
+        "ruta": " LIM → MCO",
+        "fecha": "2025-10-24T06:50:13.283Z",
+        "precio_encontrado": 760,
+        "cumple": "❌ No cumple",
+        "limite": 400,
+        "fuente": "simulación interna (mock)",
+        "detalles": {
+          "equipaje": "carry-on only",
+          "escalas_max": 1
+        }
+      }
+    ]
   }
 ]
