@@ -219,5 +219,22 @@
         "escalas_max": 1
       }
     }
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T18:53:59.404Z"
+    },
+    "resumen": {
+      "ruta": " LIM → MCO",
+      "fecha": "2025-10-24T18:53:59.403Z",
+      "precio_encontrado": 427,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "detalles": {
+        "equipaje": "carry-on only",
+        "escalas_max": 1
+      }
+    }
   }
 ]
