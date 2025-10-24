@@ -55,13 +55,6 @@ async function main() {
 try {
   let existingData = [];
 
-<<<<<<< HEAD
-// Guardar resultados en data.json
-try {
-  let existingData = [];
-
-=======
->>>>>>> 7bf9ca1 (fix:normaliza data.json como array y guarda corridas OK)
   if (fs.existsSync(DATA_PATH)) {
     const raw = fs.readFileSync(DATA_PATH, "utf8");
     const parsed = JSON.parse(raw);
@@ -73,7 +66,6 @@ try {
       existingData = [];
     }
   }
-<<<<<<< HEAD
 
   // Agregar nueva corrida
   existingData.push({
@@ -82,22 +74,12 @@ try {
   });
 
 // Limitar historial a 600 corridas (ajustable por escalabilidad luego)
-=======
-    // Agregar nueva corrida
-    existingData.push({
-      meta: { generado: new Date().toISOString() },
-      resultados: results,
-    });
-
-    // Limitar historial a 600 ejecuciones
->>>>>>> 7bf9ca1 (fix:normaliza data.json como array y guarda corridas OK)
     const MAX_RECORDS = 600;
     if (existingData.length > MAX_RECORDS) {
       existingData = existingData.slice(-MAX_RECORDS);
       console.log(`✂️ Data recortada a las últimas ${MAX_RECORDS} ejecuciones.`);
     }
 
-    // Escribir data.json actualizado
     fs.writeFileSync(DATA_PATH, JSON.stringify(existingData, null, 2), "utf8");
     console.log("💾 Data guardada correctamente en data.json");
   } catch (err) {
