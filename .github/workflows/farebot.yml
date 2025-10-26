@@ -1,10 +1,10 @@
 name: FareBot Auto Run
 
 on:
-  # ⏱️ Ejecuta cada hora — el guard decide si continuar o no
+  # 🕒 Ejecuta cada hora (editable por el usuario)
   schedule:
     - cron: "0 * * * *"
-  # 🚀 Permite ejecutar manualmente desde la pestaña "Actions"
+  # 🚀 Permite ejecución manual desde la pestaña "Actions"
   workflow_dispatch:
 
 jobs:
@@ -23,15 +23,19 @@ jobs:
       - name: 📦 Install dependencies
         run: npm install
 
-      - name: 🔍 Guard — verifica si debe ejecutarse
+      - name: 🔍 Guard - verifica si debe ejecutarse
         id: guard
         run: node scripts/guard_run.js
 
-      - name: ✈️ Ejecutar FareBot
+      - name: 🚀 Ejecutar FareBot
         if: steps.guard.outputs.should == 'true'
         run: node scripts/farebot.js
 
-      - name: 🗂️ Guardar logs del guard
+      - name: 💾 Actualizar histórico
+        if: steps.guard.outputs.should == 'true'
+        run: node scripts/historico.js
+
+      - name: 📁 Guardar logs del guard
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -43,4 +47,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: datahistorico
-          path: data/datahistorico.json
+          path: data/historico.json

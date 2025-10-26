@@ -28,7 +28,7 @@ try {
   if (!yaExiste) {
     historico.push(data);
     fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
-    console.log(✅ Histórico actualizado en ${HIST_PATH});
+    console.log(`✅ Histórico actualizado en ${HIST_PATH}`);
   } else {
     console.log("ℹ️  Registro ya existente, no se agregó al histórico.");
   }
