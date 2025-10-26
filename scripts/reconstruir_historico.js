@@ -26,7 +26,7 @@ function normalizeRecord(r) {
   const total = r.totalFare ?? r.price ?? r.amount ?? null;
   const route =
     r.route ||
-    (r.from && r.to ? ´${r.from}⇄${r.to}´ : r.origin && r.destination ? ´${r.origin}⇄${r.destination}´: "");
+    (r.from && r.to ? `${r.from}⇄${r.to}` : r.origin && r.destination ? `${r.origin}⇄${r.destination}`: "");
   const foundAt = toISO(r.foundAt || r.detectedAt || r.createdAt || r.timestamp || Date.now());
 
   return {
@@ -42,7 +42,7 @@ function normalizeRecord(r) {
     airline: r.airline || r.carrier || "",
     metaEngine: r.metaEngine || r.engine || r.meta || "",
     source: r.source || r.vendor || "",
-    itinerary: r.itinerary || r.legs?.map(l => ´${l.from}-${l.to}´).join(">") || "",
+    itinerary: r.itinerary || r.legs?.map(l => `${l.from}-${l.to}`).join(">") || "",
     totalFare: total ? Number(total) : null,
     currency: r.currency || "USD",
     meetsThreshold: r.meetsThreshold ?? r.qualifies ?? false,
@@ -93,7 +93,7 @@ function main() {
   // Persistir
   writeJSONAtomic(HIST_FILE, merged);
 
-  console.log(´Reconstrucción completa: ${merged.length} registros en data/historico.json´);
+  console.log(`Reconstrucción completa: ${merged.length} registros en data/historico.json`);
 }
 
 main();
