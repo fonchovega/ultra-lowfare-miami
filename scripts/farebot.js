@@ -4,7 +4,7 @@ import fs from "fs";
 // Si más adelante conectamos APIs reales, descomenta esto:
 // import axios from "axios";
 
-const DATA_PATH = "./data.json";
+const DATA_PATH = "./data/historico.json";
 
 // --------------------------
 // Función principal
