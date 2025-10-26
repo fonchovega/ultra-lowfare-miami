@@ -1,39 +1,35 @@
-function normStr(x) {
-  return String(x ?? "").trim().toLowerCase();
-}
+// ======================================================================
+// Script: dedupe.js
+// Función: Elimina duplicados del histórico según meta.generado
+// ======================================================================
 
-function makeKey(x) {
-  // Clave estable para deduplicar “mismo resultado”
-  // Puedes ajustar campos si lo ves necesario
-  return [
-    normStr(x.route),
-    normStr(x.departDate),
-    normStr(x.returnDate),
-    normStr(x.stopsMax),
-    normStr(x.baggage),
-    normStr(x.airline || x.metaAirline || ""),
-    normStr(x.metaEngine || x.source || ""),
-    normStr(x.itinerary || ""),
-    normStr(x.currency || "usd"),
-    String(Math.round(Number(x.totalFare || x.price || 0) * 100)) // centavos
-  ].join("|");
-}
+import fs from "fs";
 
-function dedupeKeepLatest(records) {
-  const map = new Map();
-  for (const r of records) {
-    const k = makeKey(r);
-    const prev = map.get(k);
-    if (!prev) {
-      map.set(k, r);
-      continue;
+const HIST_PATH = "./data/historico.json";
+
+try {
+  const raw = fs.readFileSync(HIST_PATH, "utf8");
+  const historico = JSON.parse(raw);
+
+  const vistos = new Set();
+  const depurado = [];
+
+  for (const item of historico) {
+    const clave = item?.meta?.generado;
+    if (clave && !vistos.has(clave)) {
+      vistos.add(clave);
+      depurado.push(item);
     }
-    // conservar el más nuevo por foundAt
-    const a = new Date(prev.foundAt || prev.createdAt || 0).getTime();
-    const b = new Date(r.foundAt || r.createdAt || 0).getTime();
-    if (b >= a) map.set(k, r);
   }
-  return Array.from(map.values());
-}
 
-module.exports = { dedupeKeepLatest };
+  const antes = historico.length;
+  const despues = depurado.length;
+  fs.writeFileSync(HIST_PATH, JSON.stringify(depurado, null, 2), "utf8");
+
+  console.log(
+    `✅ Histórico depurado. ${antes} → ${despues} registros únicos guardados.`
+  );
+
+} catch (err) {
+  console.error("❌ Error depurando histórico:", err);
+}
