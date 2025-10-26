@@ -1,58 +1,98 @@
 // scripts/local_runner.js
-// Versión local del flujo automatizado de FareBot (sin GitHub Actions)
+// Runner local: ejecuta FareBot y actualiza histórico usando la misma lógica del guard.
+// Se ejecuta ahora y luego cada hora automáticamente.
 
-import cron from "node-cron";
-import { exec } from "child_process";
 import fs from "fs";
+import { execSync } from "child_process";
+import path from "path";
 
-const GUARD = "scripts/guard_run.js";
-const FAREBOT = "scripts/farebot.js";
-const LOG_FILE = "./logs/local_runner.log";
+const CFG_PATH = "./config.json";
+const LOG_DIR = "./logs";
+const LOG_FILE = path.join(LOG_DIR, "local_runner.log");
 
-// ✅ Función auxiliar para registrar logs
-function log(msg) {
+// ✅ Asegura que exista la carpeta de logs
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR, { recursive: true });
+}
+
+// ✅ Función para registrar logs con timestamp
+function logLine(line) {
   const stamp = new Date().toISOString();
-  const line = `[${stamp}] ${msg}`;
+  fs.appendFileSync(LOG_FILE, [${stamp}] ${line}\n);
   console.log(line);
-  fs.appendFileSync(LOG_FILE, line + "\n");
 }
 
-// ✅ Función para ejecutar un script Node y capturar su salida
-function runScript(script) {
-  return new Promise((resolve) => {
-    exec(`node ${script}`, (error, stdout, stderr) => {
-      if (error) {
-        log(`❌ Error ejecutando ${script}: ${error.message}`);
-        resolve(false);
-        return;
-      }
-      log(`📜 ${script} stdout:\n${stdout}`);
-      if (stderr) log(`⚠️ stderr:\n${stderr}`);
-      resolve(stdout.includes("✅ Sí") || stdout.includes("should=true"));
-    });
-  });
-}
-
-// 🕓 Cargar configuración
-const config = JSON.parse(fs.readFileSync("./config.json", "utf8"));
-const runsPerDay = Number(config.auto_runs_per_day ?? 8);
-const everyHours = Number(config.run_every_hours ?? 24 / runsPerDay);
-const cronExpr = `0 */${everyHours} * * *`; // cada X horas al minuto 0
-
-log("🚀 Local Runner iniciado");
-log(`🕒 Cadencia: cada ${everyHours} horas (${runsPerDay} corridas por día)`);
-
-// 🧩 Programar tarea
-cron.schedule(cronExpr, async () => {
-  log("⏱️ Ejecución programada iniciada...");
-  const shouldRun = await runScript(GUARD);
-
-  if (shouldRun) {
-    log("✅ Guard aprobó ejecución — iniciando FareBot...");
-    await runScript(FAREBOT);
-  } else {
-    log("⏭️ Guard bloqueó ejecución (fuera de intervalo configurado)");
+// ✅ Leer configuración
+function readCfg() {
+  try {
+    const raw = fs.readFileSync(CFG_PATH, "utf8");
+    return JSON.parse(raw);
+  } catch (err) {
+    logLine(❌ Error leyendo config.json: ${err.message});
+    return {};
   }
-});
+}
 
-log("🕹️ Cron job activo. Presiona Ctrl+C para detener.");
+// ✅ Determinar si debe ejecutarse en esta hora
+function shouldRunNow(cfg) {
+  if (cfg.auto_runs === false) {
+    logLine("🚫 auto_runs = false → se omite ejecución automática.");
+    return false;
+  }
+
+  const runsPerDay = Number.isFinite(Number(cfg.auto_runs_per_day))
+    ? Number(cfg.auto_runs_per_day)
+    : 8;
+  const everyHours = Number.isFinite(Number(cfg.run_every_hours))
+    ? Number(cfg.run_every_hours)
+    : Math.max(1, Math.floor(24 / runsPerDay));
+  const tz = cfg.timezone || "UTC";
+
+  const now = new Date();
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    hourCycle: "h23",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(now).map(p => [p.type, p.value]));
+  const hour = Number(parts.hour);
+  const ok = (hour % everyHours) === 0;
+
+  logLine(🕓 Hora local (${tz}): ${hour}:00 | cada ${everyHours}h → shouldRun=${ok});
+  return ok;
+}
+
+// ✅ Ejecuta FareBot y actualiza histórico si hay cambios
+function runOnce() {
+  try {
+    const cfg = readCfg();
+    if (!shouldRunNow(cfg)) {
+      logLine("⏭️ Saltado por ventana horaria.");
+      return;
+    }
+
+    logLine("🚀 Ejecutando FareBot...");
+    execSync("node scripts/farebot.js", { stdio: "inherit" });
+
+    // Verificar si hubo cambios en data.json
+    const changed = execSync("git diff --quiet -- data.json || echo CHANGED")
+      .toString()
+      .includes("CHANGED");
+
+    if (changed) {
+      logLine("💾 data.json cambió → actualizando histórico...");
+      execSync("node scripts/historico.js", { stdio: "inherit" });
+      logLine("✅ Histórico actualizado.");
+    } else {
+      logLine("ℹ️ data.json no cambió → sin actualización de histórico.");
+    }
+  } catch (err) {
+    logLine(❌ Error en runOnce: ${err.message});
+  }
+}
+
+// ✅ Ejecutar inmediatamente y repetir cada hora
+logLine("🟢 Iniciando local_runner...");
+runOnce();
+setInterval(runOnce, 60 * 60 * 1000);
