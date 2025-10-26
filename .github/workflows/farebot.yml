@@ -1,54 +1,51 @@
-name: FareBot (auto)
+name: Ultra-LowFare Auto Runner
 
 on:
-  # Dispara cada hora (UTC). El guard decidirá si ejecutar o no según config.json
   schedule:
+    # 🔁 Se ejecuta cada hora (el control fino lo hace guard_run.js)
     - cron: "0 * * * *"
-  workflow_dispatch:
-
-permissions:
-  contents: write
+  workflow_dispatch:  # permite ejecutar manualmente desde la UI
+    inputs:
+      force:
+        description: "Forzar ejecución aunque guard_run devuelva false"
+        required: false
+        default: "false"
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    timeout-minutes: 10
 
-      - name: Setup Node.js
+    steps:
+      - name: 🧩 Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Install dependencies
-        run: npm ci || npm i
+      - name: 📦 Install dependencies
+        run: npm ci
 
-      # 👇 El guard lee config.json (timezone, auto_runs_per_day, etc.)
-      #    y publica un output "run=true|false"
-      - name: Guard run
+      - name: 🧭 Guard run (control horario)
         id: guard
         run: node scripts/guard_run.js
 
-      - name: Ejecutar FareBot
-        if: steps.guard.outputs.run == 'true'
+      # 🧠 Control lógico: solo continuar si guard_run.js devuelve "true" o si se forzó manualmente
+      - name: 🚀 Run farebot
+        if: steps.guard.outputs.should == 'true' || github.event.inputs.force == 'true'
         run: node scripts/farebot.js
 
-      - name: Actualizar histórico
-        if: steps.guard.outputs.run == 'true'
+      - name: 📊 Merge histórico
+        if: steps.guard.outputs.should == 'true' || github.event.inputs.force == 'true'
         run: node scripts/historico.js
 
-      - name: Commit & push updates
-        if: steps.guard.outputs.run == 'true'
+      - name: 💾 Commit & push updated data
+        if: steps.guard.outputs.should == 'true' || github.event.inputs.force == 'true'
         run: |
-          if [[ -n "$(git status --porcelain)" ]]; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add data.json data/historico.json
-            git commit -m "chore: auto update data & histórico ($(date -u +'%Y-%m-%d %H:%M UTC'))"
-            git push
-          else
-            echo "Sin cambios para guardar."
-          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/*.json data.json
+          git commit -m "chore(auto): update data & histórico [skip ci]" || echo "No changes to commit"
+          git push
