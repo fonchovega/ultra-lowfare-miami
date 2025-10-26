@@ -1,51 +1,46 @@
-name: Ultra-LowFare Auto Runner
+name: FareBot Auto Run
 
 on:
+  # ⏱️ Ejecuta cada hora — el guard decide si continuar o no
   schedule:
-    # 🔁 Se ejecuta cada hora (el control fino lo hace guard_run.js)
     - cron: "0 * * * *"
-  workflow_dispatch:  # permite ejecutar manualmente desde la UI
-    inputs:
-      force:
-        description: "Forzar ejecución aunque guard_run devuelva false"
-        required: false
-        default: "false"
+  # 🚀 Permite ejecutar manualmente desde la pestaña "Actions"
+  workflow_dispatch:
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
 
     steps:
-      - name: 🧩 Checkout repo
+      - name: 🧩 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧰 Setup Node.js
+      - name: ⚙️ Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 20
 
       - name: 📦 Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: 🧭 Guard run (control horario)
+      - name: 🔍 Guard — verifica si debe ejecutarse
         id: guard
         run: node scripts/guard_run.js
 
-      # 🧠 Control lógico: solo continuar si guard_run.js devuelve "true" o si se forzó manualmente
-      - name: 🚀 Run farebot
-        if: steps.guard.outputs.should == 'true' || github.event.inputs.force == 'true'
+      - name: ✈️ Ejecutar FareBot
+        if: steps.guard.outputs.should == 'true'
         run: node scripts/farebot.js
 
-      - name: 📊 Merge histórico
-        if: steps.guard.outputs.should == 'true' || github.event.inputs.force == 'true'
-        run: node scripts/historico.js
+      - name: 🗂️ Guardar logs del guard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guard-logs
+          path: logs/guard.log
 
-      - name: 💾 Commit & push updated data
-        if: steps.guard.outputs.should == 'true' || github.event.inputs.force == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/*.json data.json
-          git commit -m "chore(auto): update data & histórico [skip ci]" || echo "No changes to commit"
-          git push
+      - name: 📊 Guardar resultados históricos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: datahistorico
+          path: data/datahistorico.json
