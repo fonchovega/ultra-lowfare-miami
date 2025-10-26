@@ -19,4 +19,12 @@
   "devDependencies": {
     "http-server": "^14.1.1"
   }
+{
+  "scripts": {
+    "reconstruir:historico": "node scripts/reconstruir_historico.js"
+  },
+  "dependencies": {
+    "glob": "^10.3.10"
+  }
+}
 }
