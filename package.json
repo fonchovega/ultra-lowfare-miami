@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Dashboard y bots para monitorear tarifas LIM↔MIA/FLL/MCO con histórico.",
+  "description": "Dashboard y bots para monitorear tarifas LIM⇄MIA/FLL/MCO con histórico.",
   "engines": {
     "node": ">=20"
   },
@@ -12,6 +12,7 @@
     "historico": "node scripts/historico.js",
     "rebuild:history": "node scripts/rebuild_historico_from_git.js",
     "reconstruir:historico": "node scripts/rebuild_historico_from_git.js",
+    "guard": "node scripts/guard_run.js",
     "start": "http-server -c-1 -p 8080"
   },
   "dependencies": {
