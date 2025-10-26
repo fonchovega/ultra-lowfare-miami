@@ -14,8 +14,7 @@
     "reconstruir:historico": "node scripts/rebuild_historico_from_git.js",
     "guard": "node scripts/guard_run.js",
     "start": "http-server -c-1 -p 8080"
-    "sync:context": "node scripts/context_sync.js"
-  },
+      },
   "dependencies": {
     "node-fetch": "^3.3.2",
     "glob": "^10.3.10"
