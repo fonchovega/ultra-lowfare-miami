@@ -1,8 +1,9 @@
-name: FareBot (cada 3 horas)
+name: FareBot (auto)
 
 on:
+  # Dispara cada hora (UTC). El guard decidirá si ejecutar o no según config.json
   schedule:
-    - cron: '0 */3 * * *'   # cada 3 horas
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -11,7 +12,6 @@ permissions:
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,24 +21,32 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install dependencies
         run: npm ci || npm i
 
+      # 👇 El guard lee config.json (timezone, auto_runs_per_day, etc.)
+      #    y publica un output "run=true|false"
+      - name: Guard run
+        id: guard
+        run: node scripts/guard_run.js
+
       - name: Ejecutar FareBot
+        if: steps.guard.outputs.run == 'true'
         run: node scripts/farebot.js
 
       - name: Actualizar histórico
-        run: node scripts/rebuild_historico_from_git.js
+        if: steps.guard.outputs.run == 'true'
+        run: node scripts/historico.js
 
       - name: Commit & push updates
-        if: ${{ success() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+        if: steps.guard.outputs.run == 'true'
         run: |
           if [[ -n "$(git status --porcelain)" ]]; then
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git add data.json historico.json
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data.json data/historico.json
             git commit -m "chore: auto update data & histórico ($(date -u +'%Y-%m-%d %H:%M UTC'))"
             git push
           else
