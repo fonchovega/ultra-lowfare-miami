@@ -1,15 +1,15 @@
-// ===============================================================
+// ======================================================================
 // Script: historico.js
-// Función: Combina data.json actual con historico.json acumulado
-// ===============================================================
+// Función: Combina data.json actual con data/historico.json acumulado
+// ======================================================================
 
 import fs from "fs";
 
-const DATA_PATH = "./data.json";
-const HIST_PATH = "./historico.json";
+const DATA_PATH = "./data.json";                 // data actual (última corrida)
+const HIST_PATH = "./data/historico.json";       // ruta nueva del histórico
 
 try {
-  // Leer data.json
+  // Leer data.json (última ejecución)
   const dataRaw = fs.readFileSync(DATA_PATH, "utf8");
   const data = JSON.parse(dataRaw);
 
@@ -20,25 +20,18 @@ try {
     historico = JSON.parse(histRaw);
   }
 
-  // Evitar duplicados por fecha (meta.generado)
+  // Evitar duplicados por fecha exacta (meta.generado)
   const yaExiste = historico.some(
-    (item) => item?.meta?.generado === data?.meta?.generado
+    (item) => item.meta?.generado === data.meta?.generado
   );
 
   if (!yaExiste) {
     historico.push(data);
     fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
-    console.log("Historico actualizado correctamente.");
+    console.log(✅ Histórico actualizado en ${HIST_PATH});
   } else {
-    console.log("Registro ya existente; no se agrego duplicado.");
+    console.log("ℹ️  Registro ya existente, no se agregó al histórico.");
   }
 
-  // Mantener maximo 600 registros (opcional)
-  if (historico.length > 600) {
-    historico = historico.slice(-600);
-    fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
-    console.log("Historico recortado a las ultimas 200 ejecuciones.");
-  }
 } catch (err) {
-  console.error("Error procesando historico:", err);
-}
+  console.error("❌ Error combinando data.json con histórico:", err);
