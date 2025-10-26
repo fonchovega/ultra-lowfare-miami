@@ -12,7 +12,7 @@ const LOG_FILE = path.join(LOG_DIR, "guard.log");
 
 // ✅ Crea carpeta de logs si no existe
 if (!fs.existsSync(LOG_DIR)) {
-  fs.mkdirSync(LOG_DIR);
+  fs.mkdirSync(LOG_DIR, { recursive: true });
 }
 
 // ✅ Función para registrar salida en workflow y logs
@@ -35,8 +35,12 @@ try {
   const cfg = JSON.parse(raw);
 
   const auto = cfg.auto_runs !== false; // Por defecto true
-  const runsPerDay = Number(cfg.auto_runs_per_day ?? 8);
-  const everyHours = Number(cfg.run_every_hours ?? 24 / runsPerDay);
+  const runsPerDay = Number.isFinite(Number(cfg.auto_runs_per_day))
+    ? Number(cfg.auto_runs_per_day)
+    : 8;
+  const everyHours = Number.isFinite(Number(cfg.run_every_hours))
+    ? Number(cfg.run_every_hours)
+    : Math.max(1, Math.floor(24 / runsPerDay));
   const tz = cfg.timezone || "UTC";
 
   if (!auto) {
@@ -70,8 +74,9 @@ try {
   ].join(" | ");
 
   logLine(summary);
-
   setOutput("should", shouldRun ? "true" : "false");
+  logLine(`➡️ setOutput should=${shouldRun ? "true" : "false"}`);
+
   process.exit(0);
 
 } catch (err) {
