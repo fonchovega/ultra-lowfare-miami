@@ -35,3 +35,4 @@ try {
 
 } catch (err) {
   console.error("❌ Error combinando data.json con histórico:", err);
+}
