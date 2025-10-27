@@ -1,1 +1,396 @@
-[]
+{
+  "meta": {
+    "fuente": "ChatGPT histórico consolidado",
+    "generado": "2025-10-27T01:41:30.438Z",
+    "total_snapshots": 38,
+    "ventana": {
+      "inicio": "2025-10-18 00:00 CST",
+      "fin": "2025-10-26T13:06:12.989Z"
+    }
+  },
+  "rutas": [
+    " LIM → MCO"
+  ],
+  "data": [
+    {
+      "fecha": "2025-10-23T11:02:05.278Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 673,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-23T11:05:06.565Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 738,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-23T11:05:12.416Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 791,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T06:30:17.722Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 413,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T06:50:13.284Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 760,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T07:14:47.497Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 694,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T07:32:26.751Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 637,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T07:34:46.946Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 331,
+      "cumple": "✅ Sí cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T07:52:53.480Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 759,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T08:31:17.463Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 317,
+      "cumple": "✅ Sí cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T09:35:33.603Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 374,
+      "cumple": "✅ Sí cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T13:41:05.444Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 698,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T15:38:10.056Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 673,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T18:53:59.404Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 427,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-24T21:28:25.608Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 659,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-25T03:15:11.183Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 701,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-25T06:44:59.088Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 628,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-25T09:29:48.432Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 347,
+      "cumple": "✅ Sí cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-25T13:05:06.928Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 487,
+      "cumple": "❌ No cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-25T15:30:39.459Z",
+      "ruta": " LIM → MCO",
+      "precio_encontrado": 261,
+      "cumple": "✅ Sí cumple",
+      "limite": 400,
+      "fuente": "simulación interna (mock)",
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-18 00:00 CST",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-19 18:00 CST",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-20 15:00 CST",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-20T13:38:34.080Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-20T15:34:19.498Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-20T18:53:43.402Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-20T21:30:32.674Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-21T03:18:52.583Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-21T04:49:53.797Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-21T06:51:57.083Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-21T15:00:00Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-25T18:48:23.954Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-25T21:27:53.908Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-26T03:32:14.124Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-26T06:48:15.390Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-26T09:29:02.892Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": "2025-10-26T13:06:12.989Z",
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    },
+    {
+      "fecha": null,
+      "ruta": null,
+      "precio_encontrado": null,
+      "cumple": null,
+      "limite": null,
+      "fuente": null,
+      "equipaje": null,
+      "escalas_max": null
+    }
+  ]
+}
