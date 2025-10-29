@@ -1,50 +1,39 @@
 name: FareBot Auto Run
 
 on:
-  # 🕒 Ejecuta cada hora (editable por el usuario)
   schedule:
-    - cron: "0 * * * *"
-  # 🚀 Permite ejecución manual desde la pestaña "Actions"
+    - cron: "0 */4 * * *"
   workflow_dispatch:
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
-
+    env:
+      NODE_ENV: production
+      USE_MOCK: false
+      PROJECT_VERSION: v1.3.1
+      TELEGRAM_NOTIFY: true
+      EMAIL_NOTIFY: false
+      WHATSAPP_NOTIFY: false
     steps:
-      - name: 🧩 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: ⚙️ Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
-      - name: 📦 Install dependencies
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-      - name: 🔍 Guard - verifica si debe ejecutarse
-        id: guard
-        run: node scripts/guard_run.js
+      - name: FareBot v1.3.1
+        run: node scripts/farebot_v131.js
 
-      - name: 🚀 Ejecutar FareBot
-        if: steps.guard.outputs.should == 'true'
-        run: node scripts/farebot.js
-
-      - name: 💾 Actualizar histórico
-        if: steps.guard.outputs.should == 'true'
-        run: node scripts/historico.js
-
-      - name: 📁 Guardar logs del guard
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: guard-logs
-          path: logs/guard.log
-
-      - name: 📊 Guardar resultados históricos
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: datahistorico
-          path: data/historico.json
+      - name: Commit results
+        run: |
+          git config --global user.email "farebot@ultralowfare.ai"
+          git config --global user.name "FareBot Auto"
+          git add data/data.json data/run_log.json
+          git commit -m "🤖 FareBot v1.3.1 auto-update $(date -u +'%Y-%m-%dT%H:%M:%SZ')" || echo "No changes to commit"
+          git push origin main
