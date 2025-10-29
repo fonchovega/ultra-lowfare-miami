@@ -1,38 +1,32 @@
-// ======================================================================
-// Script: historico.js
-// Función: Combina data.json actual con data/historico.json acumulado
-// ======================================================================
+// ============================================================
+// historico.js — Combina data.json con data/historico.json
+// ============================================================
 
-import fs from "fs";
+import { readJsonSafe, writeJson, ensureDir, log } from "./helper.js";
+import path from "path";
 
-const DATA_PATH = "./data.json";                 // data actual (última corrida)
-const HIST_PATH = "./data/historico.json";       // ruta nueva del histórico
+const DATA_PATH = "./data.json";
+const HIST_PATH = "./data/historico.json";
 
 try {
-  // Leer data.json (última ejecución)
-  const dataRaw = fs.readFileSync(DATA_PATH, "utf8");
-  const data = JSON.parse(dataRaw);
-
-  // Leer o inicializar histórico
-  let historico = [];
-  if (fs.existsSync(HIST_PATH)) {
-    const histRaw = fs.readFileSync(HIST_PATH, "utf8");
-    historico = JSON.parse(histRaw);
+  const data = readJsonSafe(DATA_PATH, null);
+  if (!data) {
+    log("⚠️ No se encontró data.json. Cancelando actualización.", "WARN");
+    process.exit(0);
   }
 
-  // Evitar duplicados por fecha exacta (meta.generado)
-  const yaExiste = historico.some(
-    (item) => item.meta?.generado === data.meta?.generado
-  );
+  let historico = readJsonSafe(HIST_PATH, []);
+  const yaExiste = historico.some((item) => item.meta?.generado === data.meta?.generado);
 
   if (!yaExiste) {
     historico.push(data);
-    fs.writeFileSync(HIST_PATH, JSON.stringify(historico, null, 2), "utf8");
-    console.log(`✅ Histórico actualizado en ${HIST_PATH}`);
+    ensureDir(path.dirname(HIST_PATH));
+    writeJson(HIST_PATH, historico);
+    log(✅ Histórico actualizado (${historico.length} registros));
   } else {
-    console.log("ℹ️  Registro ya existente, no se agregó al histórico.");
+    log("ℹ️ Registro duplicado. No se agregó al histórico.", "INFO");
   }
 
 } catch (err) {
-  console.error("❌ Error combinando data.json con histórico:", err);
+  log(❌ Error actualizando histórico: ${err.message}, "ERROR");
 }
