@@ -1,36 +1,28 @@
 {
   "timezone": "America/Chicago",
-  "auto_runs": true,
   "auto_runs_per_day": 8,
   "run_every_hours": 3,
-  "max_stops": 1,
   "carry_on_required": true,
+  "max_stops": 1,
 
-  "routes": [
+  "v131": {
+    "meta_cap": 8,
+    "airline_cap": 10,
+    "dedupe_equal_price": false, 
+    "prefer_low_fees": true,
+    "prefer_refundable": false
+  },
+
+  "projects": [
     {
-      "label": "LIM ⇄ FLL",
-      "dst": "FLL",
+      "id": "A",
+      "label": "LIM ⇄ Florida",
+      "origins": ["LIM"],
+      "destinations": ["MIA", "FLL", "MCO"],
       "depart": "2026-02-15",
       "return": ["2026-02-20", "2026-02-21"],
-      "umbral": 360
-    },
-    {
-      "label": "LIM ⇄ MIA",
-      "dst": "MIA",
-      "depart": "2026-02-15",
-      "return": ["2026-02-20", "2026-02-21"],
-      "umbral": 360
-    },
-    {
-      "label": "LIM ⇄ MCO",
-      "dst": "MCO",
-      "depart": "2026-02-15",
-      "return": ["2026-02-20", "2026-02-21"],
-      "umbral": 400
+      "pax": { "adults": 1, "children": 0, "infants": 0 },
+      "budget": { "MIA": 360, "FLL": 360, "MCO": 400 }
     }
-  ],
-
-  "providers_prefer": ["kayak", "skyscanner", "expedia"],
-  "providers_airlines": ["avianca", "copa", "latam", "aa", "jetblue", "spirit"],
-  "use_real_apis": false
+  ]
 }
