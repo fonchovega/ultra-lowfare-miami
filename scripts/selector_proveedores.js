@@ -3,7 +3,7 @@
 
 import path from "path";
 import { fileURLToPath } from "url";
-import { buildDeepLink } from "./helpers.js";
+import { buildDeepLink } from "./fs_helpers.js";
 
 // Utilidades base
 const __filename = fileURLToPath(import.meta.url);
