@@ -1,88 +1,68 @@
-// scripts/guard_run.js
-// Controla si ejecutar automáticamente la búsqueda de FareBot según config.json
-// Escribe también un registro de auditoría en logs/guard.log
-// Compatible con GitHub Actions y ejecución local
+// ============================================================
+// sync_all.js — Sincroniza histórico + genera contexto v1.2
+// ============================================================
 
-import fs from "fs";
 import path from "path";
+import { execSync } from "child_process";
+import { readJsonSafe, writeJson, ensureDir, nowIsoUtc, log } from "./helper.js";
 
+const DATA_PATH = "./data.json";
+const HIST_PATH = "./data/historico.json";
+const CONTEXT_PATH = "./data/historico_contextual_v1.2.json";
 const CFG_PATH = "./config.json";
-const LOG_DIR = "./logs";
-const LOG_FILE = path.join(LOG_DIR, "guard.log");
 
-// ✅ Crea carpeta de logs si no existe
-if (!fs.existsSync(LOG_DIR)) {
-  fs.mkdirSync(LOG_DIR, { recursive: true });
-}
+log("🚀 Iniciando sincronización total...");
 
-// ✅ Función para registrar salida en workflow y logs
-function setOutput(name, value) {
-  if (process.env.GITHUB_OUTPUT) {
-    fs.appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
-  }
-}
-
-// ✅ Función para escribir en logs con timestamp
-function logLine(line) {
-  const stamp = new Date().toISOString();
-  fs.appendFileSync(LOG_FILE, `[${stamp}] ${line}\n`);
-  console.log(line);
-}
-
-// 🧩 Lógica principal
-try {
-  const raw = fs.readFileSync(CFG_PATH, "utf8");
-  const cfg = JSON.parse(raw);
-
-  const auto = cfg.auto_runs !== false; // Por defecto true
-  const runsPerDay = Number.isFinite(Number(cfg.auto_runs_per_day))
-    ? Number(cfg.auto_runs_per_day)
-    : 8;
-  const everyHours = Number.isFinite(Number(cfg.run_every_hours))
-    ? Number(cfg.run_every_hours)
-    : Math.max(1, Math.floor(24 / runsPerDay));
-  const tz = cfg.timezone || "UTC";
-
-  if (!auto) {
-    const msg = "🚫 Auto-runs desactivado. Se omite ejecución automática.";
-    logLine(msg);
-    setOutput("should", "false");
-    process.exit(0);
+const updateHistorico = () => {
+  const data = readJsonSafe(DATA_PATH, null);
+  if (!data) {
+    log("⚠️ No hay data.json, omitiendo histórico.", "WARN");
+    return 0;
   }
 
-  // 🕒 Determinar hora local
-  const now = new Date();
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: tz,
-    hourCycle: "h23",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  let historico = readJsonSafe(HIST_PATH, []);
+  const yaExiste = historico.some((i) => i.meta?.generado === data.meta?.generado);
 
-  const parts = Object.fromEntries(fmt.formatToParts(now).map(p => [p.type, p.value]));
-  const hour = Number(parts.hour);
+  if (!yaExiste) {
+    historico.push(data);
+    writeJson(HIST_PATH, historico);
+    log(✅ Histórico actualizado (${historico.length}));
+  } else {
+    log("ℹ️ Registro existente. No agregado.");
+  }
+  return historico.length;
+};
 
-  // ⚙️ Evaluar si ejecutar o no
-  const shouldRun = hour % everyHours === 0;
+const generateContext = (snapCount) => {
+  const REPO = "fonchovega/ultra-lowfare-miami";
+  const cfg = readJsonSafe(CFG_PATH, null);
 
-  // 🧾 Registro informativo
-  const summary = [
-    `🕓 Hora local (${tz}): ${hour}:00`,
-    `⚙️ Intervalo configurado: cada ${everyHours}h`,
-    `📆 Ejecutar: ${shouldRun ? "✅ Sí" : "⏭️ No (fuera del intervalo configurado)"}`,
-  ].join(" | ");
+  const payload = {
+    meta: {
+      tipo: "contextual",
+      version_contexto: "v1.2",
+      fuente: "ChatGPT_sync + GitHub Actions API",
+      fecha_sync: nowIsoUtc(),
+      repo: REPO,
+      commit: execSync("git rev-parse HEAD").toString().trim(),
+    },
+    resumen: {
+      snapshots_en_historico_json: snapCount,
+      ultimo_dedupe: { ejecutado: true, registros_unicos: snapCount },
+      config: cfg,
+    },
+    bitacora_tecnica: [
+      "v1.1: histórico en /data",
+      "v1.2: guard_run + dedupe + límites",
+      "v1.3.1: helper.js consolidado y referencias corregidas",
+    ],
+  };
 
-  logLine(summary);
-  setOutput("should", shouldRun ? "true" : "false");
-  logLine(`➡️ setOutput should=${shouldRun ? "true" : "false"}`);
+  writeJson(CONTEXT_PATH, payload);
+  log(✅ Contexto v1.2 generado en ${CONTEXT_PATH});
+};
 
-  process.exit(0);
+const totalSnapshots = updateHistorico();
+generateContext(totalSnapshots);
 
-} catch (err) {
-  const msg = `❌ Error leyendo config.json: ${err.message}`;
-  logLine(msg);
-  // En caso de error, permitir ejecución para no detener flujo
-  setOutput("should", "true");
-  process.exit(0);
-}
+log("🎯 Sincronización finalizada correctamente.");
