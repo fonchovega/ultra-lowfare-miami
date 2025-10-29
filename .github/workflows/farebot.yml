@@ -1,41 +1,98 @@
-// ============================================================
-// sync_all.js — Sincroniza histórico + genera contexto v1.2
-// ============================================================
+// ======================================================================
+// scripts/sync_all.js
+// Sincroniza histórico (data.json -> data/historico.json) y
+// genera contexto v1.2 (data/historico_contextual_v1.2.json)
+// ======================================================================
 
+import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
-import { readJsonSafe, writeJson, ensureDir, nowIsoUtc, log } from "./helper.js";
+import { fileURLToPath } from "url";
 
-const DATA_PATH = "./data.json";
-const HIST_PATH = "./data/historico.json";
-const CONTEXT_PATH = "./data/historico_contextual_v1.2.json";
-const CFG_PATH = "./config.json";
+// ---------------------------------------------------------------
+// Utilidades internas (autónomas, sin dependencias externas)
+// ---------------------------------------------------------------
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-log("🚀 Iniciando sincronización total...");
+function log(msg, level = "INFO") {
+  const stamp = new Date().toISOString();
+  const tag = level.padEnd(5, " ");
+  console.log(`[${stamp}] [${tag}] ${msg}`);
+}
 
-const updateHistorico = () => {
+function ensureDir(p) {
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+}
+
+function readJsonSafe(filePath, fallback) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    const raw = fs.readFileSync(filePath, "utf8");
+    if (!raw.trim()) return fallback;
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJsonAtomic(filePath, data) {
+  const dir = path.dirname(filePath);
+  ensureDir(dir);
+  const tmp = `${filePath}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
+  fs.renameSync(tmp, filePath);
+}
+
+const nowIsoUtc = () => new Date().toISOString();
+
+// ---------------------------------------------------------------
+// Rutas base (relativas al repo)
+// ---------------------------------------------------------------
+const DATA_PATH    = path.resolve(__dirname, "..", "data.json");
+const HIST_PATH    = path.resolve(__dirname, "..", "data", "historico.json");
+const CONTEXT_PATH = path.resolve(__dirname, "..", "data", "historico_contextual_v1.2.json");
+const CFG_PATH     = path.resolve(__dirname, "..", "config.json");
+
+// ---------------------------------------------------------------
+// 1) Actualizar histórico
+// ---------------------------------------------------------------
+function updateHistorico() {
+  log("📘 Actualizando histórico...");
   const data = readJsonSafe(DATA_PATH, null);
   if (!data) {
-    log("⚠️ No hay data.json, omitiendo histórico.", "WARN");
+    log("⚠️  No hay data.json, se omite la actualización del histórico.", "WARN");
     return 0;
   }
 
-  let historico = readJsonSafe(HIST_PATH, []);
-  const yaExiste = historico.some((i) => i.meta?.generado === data.meta?.generado);
+  const historico = readJsonSafe(HIST_PATH, []);
+  const yaExiste = historico.some((i) => i?.meta?.generado === data?.meta?.generado);
 
   if (!yaExiste) {
     historico.push(data);
-    writeJson(HIST_PATH, historico);
-    log(✅ Histórico actualizado (${historico.length}));
+    writeJsonAtomic(HIST_PATH, historico);
+    log(`✅ Histórico actualizado (${historico.length} snapshots).`);
   } else {
-    log("ℹ️ Registro existente. No agregado.");
+    log("ℹ️  Registro ya existente. No se agregó.");
   }
   return historico.length;
-};
+}
 
-const generateContext = (snapCount) => {
+// ---------------------------------------------------------------
+// 2) Generar contexto v1.2
+// ---------------------------------------------------------------
+function generateContext(snapCount) {
+  log("🧭 Generando contexto v1.2...");
+
   const REPO = "fonchovega/ultra-lowfare-miami";
   const cfg = readJsonSafe(CFG_PATH, null);
+
+  let head = "n/a";
+  try {
+    head = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+  } catch {
+    // ok, puede estar corriendo fuera de git
+  }
 
   const payload = {
     meta: {
@@ -44,25 +101,39 @@ const generateContext = (snapCount) => {
       fuente: "ChatGPT_sync + GitHub Actions API",
       fecha_sync: nowIsoUtc(),
       repo: REPO,
-      commit: execSync("git rev-parse HEAD").toString().trim(),
+      commit: head
     },
     resumen: {
       snapshots_en_historico_json: snapCount,
       ultimo_dedupe: { ejecutado: true, registros_unicos: snapCount },
-      config: cfg,
+      config: cfg
+    },
+    artefactos: {
+      archivos_clave: [
+        "scripts/farebot.js",
+        "scripts/historico.js",
+        "scripts/rebuild_historico_from_git.js",
+        "scripts/dedupe.js",
+        "scripts/guard_run.js",
+        ".github/workflows/farebot.yml",
+        "data/historico.json"
+      ]
     },
     bitacora_tecnica: [
       "v1.1: histórico en /data",
       "v1.2: guard_run + dedupe + límites",
-      "v1.3.1: helper.js consolidado y referencias corregidas",
-    ],
+      "v1.3.1: helpers consolidados y referencias corregidas"
+    ]
   };
 
-  writeJson(CONTEXT_PATH, payload);
-  log(✅ Contexto v1.2 generado en ${CONTEXT_PATH});
-};
+  writeJsonAtomic(CONTEXT_PATH, payload);
+  log(`✅ Contexto v1.2 generado en ${CONTEXT_PATH}`);
+}
 
+// ---------------------------------------------------------------
+// Ejecutar
+// ---------------------------------------------------------------
+log("🚀 Iniciando sincronización total...");
 const totalSnapshots = updateHistorico();
 generateContext(totalSnapshots);
-
 log("🎯 Sincronización finalizada correctamente.");
