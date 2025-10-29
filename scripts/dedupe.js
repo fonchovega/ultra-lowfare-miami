@@ -1,35 +1,34 @@
-// ======================================================================
-// Script: dedupe.js
-// Función: Elimina duplicados del histórico según meta.generado
-// ======================================================================
-
+// dedupe.js — elimina duplicados en histórico. En v1.3.1 se puede ignorar snapshots con mismo precio.
 import fs from "fs";
 
 const HIST_PATH = "./data/historico.json";
+const CFG_PATH  = "./config.json";
 
-try {
-  const raw = fs.readFileSync(HIST_PATH, "utf8");
-  const historico = JSON.parse(raw);
+function read(p, fallback) {
+  try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch { return fallback; }
+}
 
-  const vistos = new Set();
-  const depurado = [];
+(function main() {
+  const cfg = read(CFG_PATH, {});
+  const eqPrice = !!cfg?.v131?.dedupe_equal_price;
 
-  for (const item of historico) {
-    const clave = item?.meta?.generado;
-    if (clave && !vistos.has(clave)) {
-      vistos.add(clave);
-      depurado.push(item);
-    }
+  let hist = read(HIST_PATH, []);
+  if (!Array.isArray(hist) || !hist.length) {
+    console.log("ℹ️ No hay histórico para dedupe.");
+    process.exit(0);
   }
 
-  const antes = historico.length;
-  const despues = depurado.length;
-  fs.writeFileSync(HIST_PATH, JSON.stringify(depurado, null, 2), "utf8");
+  const seen = new Set();
+  const out = [];
+  for (const snap of hist) {
+    const k = eqPrice
+      ? `${snap?.meta?.rutasKey}|${snap?.mejorPrecio||snap?.resumen?.mejor_precio}`
+      : `${snap?.meta?.generado}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(snap);
+  }
 
-  console.log(
-    `✅ Histórico depurado. ${antes} → ${despues} registros únicos guardados.`
-  );
-
-} catch (err) {
-  console.error("❌ Error depurando histórico:", err);
-}
+  fs.writeFileSync(HIST_PATH, JSON.stringify(out, null, 2), "utf8");
+  console.log(`✅ Dedupe listo: ${out.length} registros únicos.`);
+})();
