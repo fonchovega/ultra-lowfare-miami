@@ -59,7 +59,7 @@ export function selectProviders({ configPath = "./config.json", sourcesPath = ".
 
 function requireScore() {
   // soporta import ES en runtime simple
-  const mod = await import("./scoring.js");
+  const mod = require("./scoring.js");
   return mod;
 }
 
