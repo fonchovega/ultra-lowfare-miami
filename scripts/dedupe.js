@@ -85,9 +85,9 @@ export function dedupeHistorico() {
 if (import.meta.main) {
   try {
     const res = dedupeHistorico();
-    console.log(
+    console.log(`
       ✅ Dedupe completado | antes=${res.antes} despues=${res.despues} removidos=${res.removidos}
-    );
+    `);
     process.exit(0);
   } catch (e) {
     console.error("❌ Error en dedupe:", e.message);
