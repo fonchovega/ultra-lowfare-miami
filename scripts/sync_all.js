@@ -1,96 +1,93 @@
-// ======================================================================
-// Script: sync_all.js
-// Autor: Foncho & GPT-5
-// Objetivo: Unificar sincronización de histórico + generar contexto v1.2
-// Uso:     node scripts/sync_all.js
-// Cambios v1.3.1:
-//   - Integra dedupe.js (dedupeHistorico) para asegurar conteo consistente
-//   - Usa helper.js para IO y logging
-// ======================================================================
+// ============================================================
+// sync_all.js — Sincroniza histórico y contexto (v1.3.1)
+// ============================================================
 
 import path from "path";
-import { execSync } from "child_process";
 import { fileURLToPath } from "url";
-import { readJsonSafe, writeJson, ensureDir, nowIsoUtc, log } from "./helper.js";
+
+import {
+  readJsonSafe,
+  writeJson,
+  ensureDir,
+  readFileSafe,
+  writeFileSafe,
+  nowIsoUtc,
+  log,
+} from "./helper.js";
+
 import { dedupeHistorico } from "./dedupe.js";
 
+// ---------------------------------------------
+// ESM-safe __filename / __dirname
+// ---------------------------------------------
 const __filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
+const __dirname = path.dirname(__filename);
 
-// Rutas base
-const DATA_PATH = path.join(__dirname, "..", "data.json");
-const HIST_PATH = path.join(__dirname, "..", "data", "historico.json");
-const CONTEXT_PATH = path.join(__dirname, "..", "data", "historico_contextual_v1.2.json");
-const CFG_PATH = path.join(__dirname, "..", "config.json");
+// ---------------------------------------------
+// Rutas
+// ---------------------------------------------
+const BASE_DIR = path.resolve(__dirname, "..");
+const DATA_DIR = path.join(BASE_DIR, "data");
+const LOGS_DIR = path.join(BASE_DIR, "logs");
+const OUTPUTS_DIR = path.join(BASE_DIR, "outputs");
 
-log("🚀 Iniciando sincronización total...");
+const DATA_PATH = path.join(BASE_DIR, "data.json"); // si existe
+const HIST_PATH = path.join(DATA_DIR, "historico.json");
+const CONTEXT_PATH = path.join(DATA_DIR, "historico_contextual_v1.2.json");
+const DEV_NOTES = path.join(BASE_DIR, "dev_notes.md");
 
-// --- 1) Consolidar histórico: añadir snapshot si no existe
-function updateHistorico() {
-  const data = readJsonSafe(DATA_PATH, null);
-  if (!data) {
-    log("⚠️ No se encontró data.json, omitiendo append al histórico.", "WARN");
-    return 0;
-  }
+// ---------------------------------------------
+// Flags
+// ---------------------------------------------
+const args = process.argv.slice(2);
+const DRY_RUN = args.includes("--dry-run");
 
-  let historico = readJsonSafe(HIST_PATH, []);
-  const yaExiste = historico.some((item) => item.meta?.generado === data.meta?.generado);
-
-  if (!yaExiste) {
-    historico.push(data);
-    ensureDir(path.dirname(HIST_PATH));
-    writeJson(HIST_PATH, historico);
-    log(`✅ Histórico actualizado (${historico.length} snapshots)`);
-  } else {
-    log("ℹ️ Registro ya existente. No se agregó al histórico.");
-  }
-
-  return historico.length;
+// ---------------------------------------------
+// Helpers
+// ---------------------------------------------
+function header(msg) {
+  log(`🚀 ${msg}`);
 }
 
-// --- 2) Generar contexto v1.2 con conteo post-dedupe
-function generateContext(snapshotsCount) {
-  log("🧭 Generando contexto histórico v1.2...");
+function writeDevNotes(lines = []) {
+  const stamp = nowIsoUtc();
+  const content = [
+    `## Sync @ ${stamp}`,
+    ...lines.map((l) => `- ${l}`),
+    "",
+  ].join("\n");
+  const prev = readFileSafe(DEV_NOTES, "");
+  writeFileSafe(DEV_NOTES, prev ? `${prev}\n${content}` : content);
+}
 
-  const REPO = "fonchovega/ultra-lowfare-miami";
-  const cfg = readJsonSafe(CFG_PATH, null);
+// ---------------------------------------------
+// 1) Cargar / construir histórico base
+// ---------------------------------------------
+function loadHistorico() {
+  // prioridad: data/historico.json, luego data.json.historico, luego []
+  const directo = readJsonSafe(HIST_PATH, null);
+  if (Array.isArray(directo)) return directo;
 
-  let headSha = "n/a";
-  try {
-    headSha = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
-  } catch {
-    // está bien si no hay git en el runner
-  }
+  const rootData = readJsonSafe(DATA_PATH, null);
+  if (rootData && Array.isArray(rootData.historico)) return rootData.historico;
 
+  return [];
+}
+
+// ---------------------------------------------
+// 2) Generar contexto v1.2
+// ---------------------------------------------
+function generateContext(historico = []) {
   const payload = {
     meta: {
-      tipo: "contextual",
-      version_contexto: "v1.2",
-      fuente: "ChatGPT_sync + GitHub Actions API",
-      fecha_sync: nowIsoUtc(),
-      repo: REPO,
-      commit: headSha,
-    },
-    resumen: {
-      snapshots_en_historico_json: snapshotsCount,
-      ultimo_dedupe: { ejecutado: true, registros_unicos: snapshotsCount },
-      config: cfg ?? {},
-    },
-    artefactos: {
-      archivos_clave: [
-        "scripts/farebot.js",
-        "scripts/historico.js",
-        "scripts/rebuild_historico_from_git.js",
-        "scripts/dedupe.js",
-        "scripts/guard_run.js",
-        ".github/workflows/farebot.yml",
-        "data/historico.json",
-      ],
+      generado: nowIsoUtc(),
+      version: "1.2",
+      total_snapshots: historico.length,
     },
     bitacora_tecnica: [
       "v1.1: split de data en /data.json y /data/historico.json",
-      "v1.2: guard_run + reconstrucción desde Git + dedupe y límites",
-      "v1.3.1: helper.js consolidado, dedupe integrado en sync_all",
+      "v1.2: guard_run + reconstrucción desde Git + dedupe y notas",
+      "v1.3.1: helper.js consolidado y logs con backticks",
     ],
   };
 
@@ -99,11 +96,43 @@ function generateContext(snapshotsCount) {
   log(`✅ Contexto v1.2 generado en ${CONTEXT_PATH}`);
 }
 
-// --- 3) Flujo principal
-const countBefore = updateHistorico();
-const dedupeRes = dedupeHistorico(); // asegura unicidad antes de contar para contexto
-log(
-  `🧹 Dedupe: antes=${dedupeRes.antes} despues=${dedupeRes.despues} removidos=${dedupeRes.removidos}
-`);
-generateContext(dedupeRes.desde ?? dedupeRes.despues ?? countBefore);
-log("🎯 Sincronización completa. Histórico y contexto actualizados.\n");
+// ---------------------------------------------
+// 3) Flujo principal
+// ---------------------------------------------
+(async function main() {
+  header("Iniciando sincronización total…");
+
+  // Asegura carpetas
+  [DATA_DIR, LOGS_DIR, OUTPUTS_DIR].forEach(ensureDir);
+
+  // Carga histórico actual
+  let historico = loadHistorico();
+  log(`📦 Histórico base: ${historico.length} snapshots`);
+
+  // Dedupe
+  const dedupeRes = dedupeHistorico(historico);
+  log(`🧹 Dedupe: antes=${dedupeRes.antes} despues=${dedupeRes.despues} removidos=${dedupeRes.removidos}`);
+  historico = dedupeRes.data;
+
+  // Persistencia (omitida si DRY_RUN)
+  if (DRY_RUN) {
+    log(`🧪 DRY-RUN activo: no se escriben archivos`);
+  } else {
+    ensureDir(path.dirname(HIST_PATH));
+    writeJson(HIST_PATH, historico);
+    log(`✅ Histórico actualizado (${historico.length} snapshots)`);
+  }
+
+  // Generar contexto
+  generateContext(historico);
+
+  // dev_notes.md
+  writeDevNotes([
+    `Snapshots: ${historico.length}`,
+    `Dedupe: -${dedupeRes.removidos}`,
+    `Contexto: ${path.relative(BASE_DIR, CONTEXT_PATH)}`,
+    DRY_RUN ? "Modo: DRY-RUN" : "Modo: real",
+  ]);
+
+  log(`🎯 Listo.`);
+})();
