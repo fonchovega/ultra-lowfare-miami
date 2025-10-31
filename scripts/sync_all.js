@@ -40,7 +40,7 @@ function updateHistorico() {
     historico.push(data);
     ensureDir(path.dirname(HIST_PATH));
     writeJson(HIST_PATH, historico);
-    log(✅ Histórico actualizado (${historico.length} snapshots));
+    log(`✅ Histórico actualizado (${historico.length} snapshots)`);
   } else {
     log("ℹ️ Registro ya existente. No se agregó al histórico.");
   }
@@ -96,7 +96,7 @@ function generateContext(snapshotsCount) {
 
   ensureDir(path.dirname(CONTEXT_PATH));
   writeJson(CONTEXT_PATH, payload);
-  log(✅ Contexto v1.2 generado en ${CONTEXT_PATH});
+  log(`✅ Contexto v1.2 generado en ${CONTEXT_PATH}`);
 }
 
 // --- 3) Flujo principal
