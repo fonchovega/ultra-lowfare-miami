@@ -103,7 +103,7 @@ function generateContext(snapshotsCount) {
 const countBefore = updateHistorico();
 const dedupeRes = dedupeHistorico(); // asegura unicidad antes de contar para contexto
 log(
-  🧹 Dedupe: antes=${dedupeRes.antes} despues=${dedupeRes.despues} removidos=${dedupeRes.removidos}
-);
+  `🧹 Dedupe: antes=${dedupeRes.antes} despues=${dedupeRes.despues} removidos=${dedupeRes.removidos}
+`);
 generateContext(dedupeRes.desde ?? dedupeRes.despues ?? countBefore);
 log("🎯 Sincronización completa. Histórico y contexto actualizados.\n");
