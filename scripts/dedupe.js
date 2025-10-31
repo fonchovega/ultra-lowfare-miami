@@ -27,7 +27,7 @@ export function dedupeHistorico() {
     arr = JSON.parse(raw);
     if (!Array.isArray(arr)) throw new Error("historico.json no es un array");
   } catch (e) {
-    throw new Error(historico.json inválido: ${e.message});
+    throw new Error(`historico.json inválido: ${e.message}`);
   }
 
   const antes = arr.length;
