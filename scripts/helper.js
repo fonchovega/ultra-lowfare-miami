@@ -44,3 +44,20 @@ export const log = (msg, tag = "INFO") => {
   const stamp = new Date().toISOString();
   console.log(`[${stamp}] [${tag}] ${msg}`);
 };
+// ============================================================
+// Nuevos helpers para manejo seguro de archivos de texto
+// ============================================================
+
+export const readFileSafe = (filePath, fallback = "") => {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    return fs.readFileSync(filePath, "utf8");
+  } catch {
+    return fallback;
+  }
+};
+
+export const writeFileSafe = (filePath, content = "") => {
+  ensureDir(path.dirname(filePath));
+  fs.writeFileSync(filePath, content, "utf8");
+};
