@@ -8,7 +8,7 @@ name: FareBot v1.3.1 - Live Adaptive Run
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *"  # Cada 3 horas
+    - cron: "0 */6 * * *"  # Cada 6 horas
 
 jobs:
   run-farebot:
