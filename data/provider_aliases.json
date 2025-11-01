@@ -1,0 +1,27 @@
+{
+  "airlines": {
+    "AA": ["American", "American Airlines", "AA"],
+    "LATAM": ["LATAM", "LAN", "LATAM Airlines"],
+    "Avianca": ["Avianca"],
+    "Copa": ["Copa", "Copa Airlines"],
+    "Delta": ["Delta", "Delta Air Lines"],
+    "United": ["United", "United Airlines"],
+    "JetBlue": ["JetBlue", "B6", "Jet Blue"],
+    "Spirit": ["Spirit", "NK", "Spirit Airlines"],
+    "Sky": ["Sky", "Sky Airline"],
+    "JetSmart": ["JetSmart", "JetSMART", "Jet Smart"],
+    "Aerojet": ["Aerojet", "Aerojet Airlines", "Aerojet Air"]
+  },
+  "metas": {
+    "GoogleFlights": ["Google Flights", "GoogleFlights", "Google"],
+    "Skyscanner": ["Skyscanner"],
+    "Kayak": ["Kayak"],
+    "Momondo": ["Momondo"],
+    "Expedia": ["Expedia"],
+    "Priceline": ["Priceline"],
+    "Travelocity": ["Travelocity"],
+    "Orbitz": ["Orbitz"],
+    "Cheapoair": ["CheapOair", "Cheapoair", "Cheap O Air"],
+    "Kiwi": ["Kiwi", "Kiwi.com"]
+  }
+}
