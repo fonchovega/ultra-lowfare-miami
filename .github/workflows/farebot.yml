@@ -1,16 +1,24 @@
-# ============================================================
-# FareBot v1.3.1 — LIVE Adaptive Run
-# Ejecuta búsquedas reales en proveedores y guarda histórico
-# ============================================================
-
-name: FareBot v1.3.1 - Live Adaptive Run
+name: FareBot v1.3.2 – Live Adaptive Run
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Si 'true', solo imprime sin escribir data/historico"
+        required: false
+        default: "false"
+
+  schedule:
+    - cron: "0 9 * * *"   # 09:00 UTC diario (ajústalo si quieres)
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: production
+      SOURCE_MODE: live         # << Forzamos modo LIVE en v1.3.2
+      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
 
     steps:
       - name: Checkout
@@ -22,23 +30,27 @@ jobs:
           node-version: 20
 
       - name: Install deps (si existen)
+        run: npm ci || npm install
+
+      # === NUEVO en v1.3.2: instalación explícita de Playwright + navegadores ===
+      - name: Install Playwright
         run: |
-          npm ci || npm install
-          npx playwright install --with-deps chromium
+          npm install @playwright/test
+          npx playwright install --with-deps
 
       - name: Preparar carpetas
         run: |
-          mkdir -p data logs outputs
+          mkdir -p data logs
 
-      - name: Ejecutar farebot_v131.js
-        run: node scripts/farebot_v131.js
+      - name: Ejecutar farebot_v132.js
+        run: node scripts/farebot_v132.js
 
       - name: Publicar artefactos
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-artifacts
+          name: data-v132
           path: |
             data/data.json
             data/historico.json
-            outputs/
-            
+            logs/*.log
