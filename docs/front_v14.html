@@ -3,144 +3,138 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ultra-LowFare · FrontWeb UX v1.4 (LIM→MIA/MCO/FLL)</title>
+  <title>Ultra-LowFare · FrontWeb UX v1.4 (Full DB Viewer)</title>
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <style>
     :root{
-      --bg:#0b0f14; --panel:#101821; --card:#0f172a;
-      --accent:#7cd4ff; --ok:#2bdc8c; --bad:#ff6b6b; --muted:#9aa4ad;
-      --grid:#142036; --ink:#e6eef6; --ink2:#c7d0da; --brand:#0ea5e9;
-      --link:#93c5fd;
+      --bg:#0b0f14; --panel:#101821; --card:#0f172a; --ink:#e2e8f0;
+      --muted:#94a3b8; --brand:#7cd4ff; --ok:#2bdc8c; --bad:#ff6b6b; --line:#1f2937;
+      --accent:#eab308;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;color:var(--ink);background:var(--bg)}
-    header{display:flex;gap:14px;align-items:center;padding:14px 18px;border-bottom:1px solid #15253d;background:linear-gradient(180deg,#0b1220,#0b1220 70%,#0b0f14)}
+    body{margin:0;font:14px/1.5 system-ui, Segoe UI, Roboto, Arial; color:var(--ink); background:linear-gradient(180deg,#0c1118,#0b0f14)}
+    header{display:flex;gap:14px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0c1420,#0c1118)}
     header h1{margin:0;font-size:18px}
-    .badge{padding:4px 10px;border:1px solid #2a3a56;border-radius:999px;background:#0b1324;color:var(--ink2)}
-    .layout{display:grid;grid-template-columns:280px 1fr;min-height:calc(100% - 60px)}
-    aside{background:var(--panel);border-right:1px solid #1a2b45;padding:16px 14px}
-    aside h3{margin:0 0 8px;font-size:13px;color:var(--ink2);font-weight:600;letter-spacing:.2px}
-    aside .block{background:var(--card);border:1px solid #1a2b45;border-radius:12px;padding:10px;margin-bottom:12px}
-    select,input[type="date"],input[type="checkbox"]{width:100%;padding:8px 10px;border-radius:10px;border:1px solid #223556;background:#0a1322;color:var(--ink)}
-    .main{display:grid;grid-template-rows:160px 1fr;gap:14px;padding:16px}
+    .badge{padding:4px 10px;border:1px solid #2a3a4d;border-radius:99px;color:#9fb3c8;background:#0f1520}
+    .layout{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 60px)}
+    aside{background:var(--panel);border-right:1px solid var(--line);padding:14px}
+    aside h3{margin:10px 0 6px;font-size:13px;color:#a8c1d8}
+    aside label{display:block;font-size:13px;color:#cbd5e1;margin:8px 0}
+    aside input, aside select{width:100%;background:#0f1520;color:#e2e8f0;border:1px solid #2a3a4d;border-radius:8px;padding:8px}
+    aside .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    aside .btn{width:100%;margin-top:10px;padding:9px 10px;background:#102033;border:1px solid #25405c;border-radius:10px;color:#bfe3ff;cursor:pointer}
+    aside .btn:hover{background:#0f2036}
+    .main{display:grid;grid-template-rows:160px 1fr;gap:12px;padding:14px}
     .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-    .card{background:var(--panel);border:1px solid #1a2b45;border-radius:16px;padding:14px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .kpi-title{color:#9fb3c8;font-size:12px}
     .kpi-value{font-size:28px;font-weight:700;margin-top:6px}
-    .tabs{display:flex;gap:6px}
-    .tabs button{padding:8px 12px;border:1px solid #1f3050;background:#0b1528;color:var(--ink);border-radius:10px;cursor:pointer}
-    .tabs button.active{background:var(--brand);border-color:var(--brand);color:#06111c}
-    .pane{display:none}
-    .pane.active{display:block}
-    .grid-panel{background:var(--panel);border:1px solid #1a2b45;border-radius:16px;padding:0}
-    .grid-panel header{position:static;background:#0f192e;border-radius:16px 16px 0 0;padding:12px 14px;border-bottom:1px solid #1a2b45}
-    .table-wrap{overflow:auto;border-top:1px solid #1a2b45}
+    .tabs{display:flex;gap:8px;padding:8px;flex-wrap:wrap}
+    .tab{padding:7px 10px;border:1px solid #2a3a4d;border-radius:10px;background:#0f1520;color:#cbd5e1;cursor:pointer}
+    .tab.active{background:#193652;border-color:#2b5b86;color:#cfe9ff}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+    .panel header{position:static;background:var(--card);border-bottom:1px solid var(--line);padding:10px 12px}
+    .panel .content{padding:0}
+    .table-wrap{overflow:auto;border-top:1px solid var(--line)}
     table{width:100%;border-collapse:collapse}
-    th,td{padding:10px 12px;border-bottom:1px solid #172742;white-space:nowrap}
-    th{background:#0f1924;position:sticky;top:0;color:var(--ink2);text-align:left}
-    tr:hover{background:#0c1a31}
-    a{color:var(--link);text-decoration:none}
-    .ok{color:var(--ok)} .warn{color:#fbbf24} .bad{color:var(--bad)}
-    .hint{color:var(--muted);font-size:12px}
-    .mini{font-size:12px;color:var(--ink2)}
-    .pill{border:1px solid #28466b;border-radius:999px;padding:2px 8px;background:#0c1629;color:var(--ink2);font-size:12px}
-    .flex{display:flex;gap:8px;align-items:center}
-    .right{margin-left:auto}
-    .chart{height:360px}
+    th,td{padding:10px 12px;border-bottom:1px solid #0f1924;white-space:nowrap}
+    th{background:#0f1924;position:sticky;top:0}
+    tr:hover td{background:#0e1522}
+    .pill{padding:2px 8px;border-radius:999px;border:1px solid #2a3a4d;background:#0f1520;color:#bcd1e3;font-size:12px}
+    .mininote{font-size:12px;color:#93acc4}
+    .status-ok{color:var(--ok)} .status-bad{color:var(--bad)}
+    .route-tag{padding:2px 8px;border-radius:8px;background:#0f1928;border:1px solid #26445f;color:#9fd1ff}
+    .muted{color:var(--muted)}
+    .flex{display:flex;align-items:center;gap:10px}
+    .space{flex:1}
+    .note{font-size:12px;color:#93acc4;margin-top:8px}
+    svg{display:block;width:100%;height:260px;background:#0b111a}
+    .legend{display:flex;gap:10px;align-items:center;font-size:12px;color:#9fb3c8;padding:6px 10px}
+    .tag{padding:2px 8px;border-radius:8px;background:#0f1928;border:1px solid #26445f}
+    .btn-sec{padding:6px 10px;border-radius:8px;border:1px solid #2a3a4d;background:#0f1520;color:#cfe9ff;cursor:pointer}
+    .btn-sec:hover{background:#11223a}
   </style>
 </head>
 <body>
   <header>
     <h1>Ultra-LowFare · FrontWeb UX v1.4</h1>
-    <span class="badge">Dataset: data.json + histórico.json</span>
-    <span class="badge">Rutas: LIM→MIA/FLL/MCO</span>
-    <span class="badge">Ground rules: Tren MIA/FLL, Auto MCO</span>
-    <span class="right hint">Actualiza datos con el botón en la barra lateral.</span>
+    <span class="badge">Dataset: <b>data.json</b> + <b>historico.json</b></span>
+    <span class="badge">Compat: v1.1 → v1.3.2</span>
+    <span class="badge">Rutas LIM↔MIA/FLL/MCO</span>
+    <div class="space"></div>
+    <span class="mininote">Actualiza con el botón de la barra lateral.</span>
   </header>
 
-  <div class="layout">
+  <section class="layout">
     <aside>
-      <div class="block">
-        <h3>Rutas</h3>
-        <select id="routeSel">
-          <option value="LIM-MIA">LIM → MIA</option>
-          <option value="LIM-FLL">LIM → FLL</option>
-          <option value="LIM-MCO">LIM → MCO</option>
-        </select>
+      <h3>Rutas</h3>
+      <select id="routeSel"></select>
+
+      <h3>Rango de fechas (histórico)</h3>
+      <div class="row">
+        <input id="dateFrom" type="date">
+        <input id="dateTo" type="date">
       </div>
-      <div class="block">
-        <h3>Rango de fechas (histórico)</h3>
-        <label class="mini">Desde</label>
-        <input type="date" id="fromDate">
-        <label class="mini" style="margin-top:8px;display:block">Hasta</label>
-        <input type="date" id="toDate">
-      </div>
-      <div class="block">
-        <h3>Preferencias</h3>
-        <label class="flex"><input type="checkbox" id="carryOnly" checked> Solo carry-on</label>
-        <label class="flex"><input type="checkbox" id="max1stop" checked> Máx 1 escala</label>
-      </div>
-      <div class="block">
-        <button id="refreshBtn" style="width:100%;padding:10px;border-radius:10px;border:1px solid #2a4266;background:#0e1c33;color:#e8f0f8;cursor:pointer">
-          🔄 Actualizar datos
-        </button>
-        <div id="lastLoad" class="hint" style="margin-top:8px"></div>
-      </div>
-      <div class="block">
-        <h3>Notas</h3>
-        <div class="hint">
-          • Mejor opción = <b>precio aéreo más bajo</b> + <b>terrestre</b> aplicable.<br>
-          • LIM→MCO fuerza <b>alquiler de auto</b> (regla del negocio).<br>
-          • MIA/FLL intenta tren; si no hay, cae a auto.
-        </div>
+
+      <h3>Preferencias</h3>
+      <label><input id="prefCarry" type="checkbox" checked> Solo carry-on</label>
+      <label><input id="prefStops" type="checkbox" checked> Máx 1 escala</label>
+
+      <button class="btn" id="btnReload">🔄 Actualizar datos</button>
+      <div class="note">
+        • “Mejor opción” = <b>precio aéreo más bajo</b> + terrestre aplicable.<br>
+        • <b>LIM→MCO</b>: fuerza alquiler de auto (regla).<br>
+        • <b>LIM→MIA/FLL</b>: intenta tren; si no hay, cae a auto.
       </div>
     </aside>
 
-    <div class="main">
+    <main class="main">
       <div class="kpis">
         <div class="card">
-          <div class="mini">Mejor total (aéreo+terrestre)</div>
-          <div id="kpiBestTotal" class="kpi-value">—</div>
-          <div id="kpiBestBreak" class="mini hint">—</div>
+          <div class="kpi-title">Mejor total (aéreo+terrestre)</div>
+          <div class="kpi-value" id="kpiBestTotal">—</div>
+          <div class="mininote" id="kpiBestTotalDetail">—</div>
         </div>
         <div class="card">
-          <div class="mini">Mejor aéreo</div>
-          <div id="kpiBestAir" class="kpi-value">—</div>
-          <div id="kpiBestAirMeta" class="mini hint">—</div>
+          <div class="kpi-title">Mejor aéreo</div>
+          <div class="kpi-value" id="kpiBestAir">—</div>
+          <div class="mininote" id="kpiBestAirDetail">—</div>
         </div>
         <div class="card">
-          <div class="mini">Promedio histórico</div>
-          <div id="kpiAvg" class="kpi-value">—</div>
-          <div class="mini hint">Ruta/criterios aplicados</div>
+          <div class="kpi-title">Promedio histórico</div>
+          <div class="kpi-value" id="kpiAvg">—</div>
+          <div class="mininote" id="kpiAvgDetail">—</div>
         </div>
         <div class="card">
-          <div class="mini">Snapshots analizados</div>
-          <div id="kpiSnaps" class="kpi-value">—</div>
-          <div class="mini hint">Ventana temporal seleccionada</div>
+          <div class="kpi-title">Snapshots analizados</div>
+          <div class="kpi-value" id="kpiSnaps">0</div>
+          <div class="mininote" id="kpiSnapsDetail">Ventana temporal seleccionada</div>
         </div>
         <div class="card">
-          <div class="mini">Proveedor top (frecuencia)</div>
-          <div id="kpiTopProv" class="kpi-value">—</div>
-          <div class="mini hint">Más veces “mejor precio”</div>
+          <div class="kpi-title">Proveedor top (frecuencia)</div>
+          <div class="kpi-value" id="kpiTopProv">—</div>
+          <div class="mininote" id="kpiTopProvDetail">Más veces “mejor precio”</div>
         </div>
       </div>
 
-      <div class="card">
-        <div class="tabs" id="tabs">
-          <button data-tab="pane1" class="active">1) Mejor opción por día/hora</button>
-          <button data-tab="pane2">2) Histórico mínimo por día/hora</button>
-          <button data-tab="pane3">3) Detalle completo por día/hora</button>
-        </div>
+      <div class="panel">
+        <header class="flex">
+          <div class="tabs">
+            <button class="tab active" data-tab="t1">1) Mejor opción por día/hora</button>
+            <button class="tab" data-tab="t2">2) Histórico mínimo por día/hora</button>
+            <button class="tab" data-tab="t3">3) Detalle completo por día/hora</button>
+            <button class="tab" data-tab="t4">4) Explorador completo (sin filtros)</button>
+          </div>
+          <div class="space"></div>
+          <span class="route-tag" id="routeBadge">—</span>
+        </header>
 
-        <div id="pane1" class="pane active">
-          <div class="grid-panel">
-            <header class="flex">
-              <b>Mejor opción consolidada (con terrestre)</b>
-              <span class="pill" id="pane1Route">—</span>
-            </header>
-            <div class="table-wrap">
-              <table id="tblBest">
-                <thead>
+        <!-- TAB 1 -->
+        <div class="content" id="viewT1">
+          <div class="table-wrap">
+            <table id="tblBest">
+              <thead>
                 <tr>
                   <th>Fecha salida</th>
                   <th>Hora salida</th>
@@ -148,371 +142,440 @@
                   <th>Proveedor</th>
                   <th>Terrestre</th>
                   <th>Costo terrestre (USD)</th>
-                  <th><b>Total</b> (USD)</th>
+                  <th>Total (USD)</th>
                   <th>Detalle</th>
                 </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
 
-        <div id="pane2" class="pane">
-          <div class="grid-panel">
-            <header class="flex">
-              <b>Evolución del mejor precio (aéreo solo)</b>
-              <span class="pill" id="pane2Route">—</span>
-            </header>
-            <div id="chartLine" class="chart"></div>
+        <!-- TAB 2 -->
+        <div class="content" id="viewT2" style="display:none">
+          <div class="legend">
+            <span class="tag">Serie: mínimo diario (aéreo)</span>
+            <span class="muted" id="chartMeta">—</span>
           </div>
+          <svg id="chart"></svg>
         </div>
 
-        <div id="pane3" class="pane">
-          <div class="grid-panel">
-            <header class="flex">
-              <b>Detalle completo de capturas</b>
-              <span class="pill" id="pane3Route">—</span>
-            </header>
-            <div class="table-wrap">
-              <table id="tblAll">
-                <thead>
+        <!-- TAB 3 -->
+        <div class="content" id="viewT3" style="display:none">
+          <div class="table-wrap">
+            <table id="tblFull">
+              <thead>
                 <tr>
-                  <th>Fecha captura</th>
+                  <th>Fecha/hora</th>
                   <th>Ruta</th>
-                  <th>Proveedor</th>
-                  <th>Tipo</th>
-                  <th>Precio (USD)</th>
-                  <th>Link</th>
+                  <th>Aéreo (USD)</th>
+                  <th>Cumple límite</th>
+                  <th>Límite</th>
+                  <th>Fuente/Proveedor</th>
+                  <th>Equipaje</th>
+                  <th>Escalas</th>
                 </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 4: Explorador completo -->
+        <div class="content" id="viewT4" style="display:none">
+          <div class="flex" style="padding:10px 12px;border-bottom:1px solid #0f1924;background:#0f1924">
+            <div class="mininote">Explora absolutamente todos los registros tal como existen en los JSON (sin filtros de carry/escala).</div>
+            <div class="space"></div>
+            <button id="btnCSV" class="btn-sec">⬇️ Exportar CSV (todos)</button>
+          </div>
+          <div class="table-wrap">
+            <table id="tblExplorer">
+              <thead>
+                <tr>
+                  <th>Snapshot TS</th>
+                  <th>Ruta</th>
+                  <th>Aéreo (USD)</th>
+                  <th>Under budget</th>
+                  <th>Límite</th>
+                  <th>Proveedor</th>
+                  <th>Equipaje</th>
+                  <th>Escalas</th>
+                  <th>Modo origen</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
 
       </div>
-    </div>
-  </div>
+    </main>
+  </section>
 
 <script>
-/* ===========================
-   0) Parámetros del negocio
-   =========================== */
-
-// Costos base de tren por aeropuerto de llegada (placeholder ajustable).
-const GROUND_COSTS = {
-  MIA: { mode: "train", label: "Tri-Rail/Metrorail", cost: 7 },   // ejemplo
-  FLL: { mode: "train", label: "Tri-Rail Shuttle",  cost: 8 },
-  // Si se quisiera permitir tren a MCO, cambiaría aquí; por regla, usamos auto.
-};
-
-// Modelo de alquiler de auto (placeholder simple).
-const RENTAL_MODEL = {
-  basePerDay: 28,     // tarifa base/día (USD)
-  taxesPct:   0.22,   // % aprox de impuestos/fees
-  minDays:    1
-};
-
-// Lee JSONs generados por el bot
-const PATH_DATA  = "./data/data.json";
-const PATH_HIST  = "./data/historico.json";
-
-// Rutas válidas
-const ROUTES = ["LIM-MIA","LIM-FLL","LIM-MCO"];
-
-/* ===========================
-   1) Utilidades
-   =========================== */
-
-const $ = sel => document.querySelector(sel);
-function fmtUSD(v){ return v==null ? "—" : `$${v.toFixed(0)}`; }
-function sameRouteTag(r){ return (r.route || r.ruta || "").replace("→","-").replace(/\s/g,''); }
-
-function parseISO(s){
-  const d = new Date(s);
-  return isNaN(d) ? null : d;
-}
-
-// Estima días de alquiler entre dos ISO strings (si falta return, 3 días)
-function estimateRentalDays(depISO, retISO){
-  const d1 = parseISO(depISO);
-  const d2 = parseISO(retISO);
-  if (!d1 || !d2){ return 3; }
-  const ms = Math.max(24*3600*1000, d2 - d1);
-  return Math.ceil(ms / (24*3600*1000));
-}
-
-function rentalCost(days){
-  const base = RENTAL_MODEL.basePerDay * Math.max(RENTAL_MODEL.minDays, days);
-  return base * (1 + RENTAL_MODEL.taxesPct);
-}
-
-function groundFor(arrivalIata, depISO, retISO){
-  if (arrivalIata === "MCO"){
-    const days = estimateRentalDays(depISO, retISO);
-    return { mode:"car", label:"Alquiler auto", cost: rentalCost(days) };
+/* ========= 0) Reglas terrestres (placeholder) ========= */
+function terrestrialRule(route){
+  const r = route.replace(/\s/g,'').toUpperCase();
+  if(r.includes("LIM") && r.includes("MCO")){
+    // auto obligatorio
+    return { mode:"auto", cost: 45 };
   }
-  // Preferir tren si existe costo predefinido
-  const meta = GROUND_COSTS[arrivalIata];
-  if (meta){
-    return { mode:"train", label: meta.label, cost: meta.cost };
+  if(r.includes("LIM") && (r.includes("MIA") || r.includes("FLL"))){
+    // tren preferente
+    return { mode:"tren", cost: 18 };
   }
-  // Fallback auto
-  const days = estimateRentalDays(depISO, retISO);
-  return { mode:"car", label:"Alquiler auto (fallback)", cost: rentalCost(days) };
+  return { mode:"n/a", cost: 0 };
 }
 
-// Extrae mejor precio aéreo por snapshot para una ruta
-function bestAirFromSnapshot(snapshot, routeTag){
-  const arr = (snapshot.resultados || snapshot.resultado || []);
-  const items = [];
-  for (const r of arr){
-    const tag = sameRouteTag({route: r.route || r.ruta});
-    if (tag !== routeTag) continue;
+/* ========= 1) Utilidades ========= */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const fmtUSD = v => (v==null || isNaN(v)) ? "—" : "$" + Number(v).toFixed(0);
+function parseISO(s){ const d=new Date(s); return isNaN(d)?null:d; }
+function csvEscape(v){
+  if (v==null) return "";
+  const s = String(v).replace(/"/g,'""');
+  return /[",\n]/.test(s) ? `"${s}"` : s;
+}
 
-    // Soporta diferentes esquemas (v1.3.x)
-    if (r.best_offer?.total_usd){
-      items.push({ price: r.best_offer.total_usd, provider: (r.providers?.meta?.[0]?.name || r.providers?.airlines?.[0]?.name || "—"), dep: r.dep, ret: r.ret });
-    } else if (r.precio_encontrado){ // mock antiguo
-      items.push({ price: r.precio_encontrado, provider: r.fuente || "—", dep: r.dep, ret: r.ret });
+/* ========= 2) Normalización (mock viejo y live nuevo) ========= */
+// Devuelve filas normalizadas + filas “raw” para el explorador
+function normalizeFromSnapshot(snapshot){
+  const out = [];
+  const rawRows = [];
+  const ts = snapshot?.meta?.generado || snapshot?.meta?.timestamp || snapshot?.fecha || new Date().toISOString();
+  const list = snapshot?.resultados || snapshot?.resultado || [];
+  for (const r of list){
+    // RAW (para explorador)
+    rawRows.push({ ts, r });
+
+    // MOCK viejo
+    if ('precio_encontrado' in r){
+      out.push({
+        ts,
+        date: (r.fecha||ts).slice(0,10),
+        time: (r.fecha||ts).slice(11,16),
+        route: (r.ruta || "").replace(/\s+/g,''),
+        air: +r.precio_encontrado || null,
+        ok: String(r.cumple||'').includes('Sí'),
+        limit: r.limite ?? null,
+        provider: r.fuente || 'mock',
+        equip: r.detalles?.equipaje ?? '',
+        stops: r.detalles?.escalas_max ?? null,
+        origin_mode: "mock"
+      });
+      continue;
+    }
+    // LIVE nuevo
+    if (r.best_offer){
+      const prov = [...(r.providers?.meta||[]),(r.providers?.airlines||[])].flat();
+      const bestProv = prov.sort((a,b)=>(b.score??0)-(a.score??0))[0];
+      out.push({
+        ts,
+        date: (r.dep||ts).slice(0,10),
+        time: (r.dep||ts).slice(11,16),
+        route: (r.route||"").replace(/\s+/g,''),
+        air: +r.best_offer.total_usd || null,
+        ok: !!r.best_offer.under_budget,
+        limit: null,
+        provider: bestProv?.name || bestProv?.id || 'live',
+        equip: (r.constraints?.carry_on_required ? "carry-on" : ''),
+        stops: r.constraints?.max_stops ?? null,
+        origin_mode: "live"
+      });
+      continue;
     }
   }
-  if (!items.length) return null;
-  items.sort((a,b)=>a.price-b.price);
-  return items[0]; // mínimo
+  return { rows: out, rawRows };
 }
 
-/* ===========================
-   2) Carga de datos
-   =========================== */
-
-async function loadAll(){
-  const [snap, hist] = await Promise.all([
-    fetch(PATH_DATA).then(r=>r.json()).catch(()=>null),
-    fetch(PATH_HIST).then(r=>r.json()).catch(()=>[])
+/* ========= 3) Carga de dataset completo ========= */
+async function loadDataset(){
+  const bust = `?t=${Date.now()}`;
+  const [hist, snap] = await Promise.all([
+    fetch('./data/historico.json'+bust).then(r=>r.json()).catch(()=>[]),
+    fetch('./data/data.json'+bust).then(r=>r.json()).catch(()=>null)
   ]);
-  // historico.json siempre array
-  const histArr = Array.isArray(hist) ? hist : (hist?.resultados ? [hist] : []);
-  return { snap, hist: histArr };
-}
 
-/* ===========================
-   3) Render KPIs + Pestañas
-   =========================== */
+  const rows = [];
+  const raw = [];
 
-function computeKPIs(routeTag, hist, filters){
-  // Filtrar por fechas si se setean
-  const fd = $("#fromDate").value ? new Date($("#fromDate").value) : null;
-  const td = $("#toDate").value ? new Date($("#toDate").value) : null;
-
-  const points = [];
-  for (const s of hist){
-    const ts = parseISO(s?.meta?.generado) || parseISO(s?.meta?.timestamp) || parseISO(s?.fecha);
-    if (fd && ts && ts < fd) continue;
-    if (td && ts && ts > td) continue;
-
-    const best = bestAirFromSnapshot(s, routeTag);
-    if (!best) continue;
-
-    // Costo terrestre según aeropuerto destino (segunda parte del tag)
-    const dest = routeTag.split("-")[1];
-    const ground = groundFor(dest, best.dep, best.ret);
-
-    points.push({
-      when: ts || new Date(),
-      air: best.price,
-      provider: best.provider,
-      ground: ground.cost,
-      total: best.price + ground.cost
-    });
+  if (Array.isArray(hist)){
+    for (const s of hist){
+      const {rows: rr, rawRows} = normalizeFromSnapshot(s);
+      rows.push(...rr); raw.push(...rawRows);
+    }
   }
-  if (!points.length) return { points:[], avg:null, best:null, freq:null };
+  if (snap && snap.resultados){
+    const {rows: rr, rawRows} = normalizeFromSnapshot(snap);
+    rows.push(...rr); raw.push(...rawRows);
+  }
 
-  // KPI promedio (aéreo)
-  const avg = d3.mean(points, d=>d.air);
-  // Mejor total
-  points.sort((a,b)=>a.total-b.total);
-  const best = points[0];
+  rows.sort((a,b)=> a.ts.localeCompare(b.ts));
 
-  // proveedor más frecuente como “mejor aéreo” (recalcular sobre mínimos por snapshot)
-  const byProv = d3.rollup(points, v=>v.length, d=>d.provider);
-  const top = Array.from(byProv.entries()).sort((a,b)=>b[1]-a[1])[0];
+  const routes = Array.from(new Set(rows.map(x=>x.route))).filter(Boolean).sort();
 
-  return { points, avg, best, freq: top };
+  return { rows, routes, raw };
 }
 
-function renderKPIs(k){
-  $("#kpiBestTotal").textContent = k.best ? fmtUSD(k.best.total) : "—";
-  $("#kpiBestBreak").textContent = k.best ? `Aéreo ${fmtUSD(k.best.air)} + Terrestre ${fmtUSD(k.best.ground)}` : "—";
-  $("#kpiBestAir").textContent = k.best ? fmtUSD(k.best.air) : "—";
-  $("#kpiBestAirMeta").textContent = k.best ? `Proveedor: ${k.best.provider}` : "—";
-  $("#kpiAvg").textContent = k.avg ? fmtUSD(k.avg) : "—";
-  $("#kpiSnaps").textContent = k.points?.length || 0;
-  $("#kpiTopProv").textContent = k.freq ? `${k.freq[0]} (${k.freq[1]})` : "—";
-}
-
-function renderPane1(routeTag, k){
-  $("#pane1Route").textContent = routeTag.replace("-"," → ");
-  const tb = $("#tblBest tbody");
-  tb.innerHTML = "";
-
-  // Tomamos los mejores por fecha/hora (con total)
-  // Agrupar por día/hora de salida (si hay dep ISO)
-  const grouped = d3.rollups(
-    k.points,
-    v => v.sort((a,b)=>a.total-b.total)[0],
-    d => (d.when ? d.when.toISOString().slice(0,13)+":00" : "snapshot")
-  ).map(([slot, best]) => ({ slot, best }));
-
-  grouped.sort((a,b)=>a.slot.localeCompare(b.slot));
-
-  for (const row of grouped){
-    const depISO = row.best.when?.toISOString?.() ?? row.slot;
-    const dt = new Date(depISO);
-    const dateStr = isNaN(dt) ? row.slot : dt.toLocaleDateString();
-    const timeStr = isNaN(dt) ? "—" : dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${dateStr}</td>
-      <td>${timeStr}</td>
-      <td>${fmtUSD(row.best.air)}</td>
-      <td>${row.best.provider}</td>
-      <td>${row.best.ground ? (row.best.ground>30 ? "Auto" : "Tren") : "—"}</td>
-      <td>${fmtUSD(row.best.ground)}</td>
-      <td><b>${fmtUSD(row.best.total)}</b></td>
-      <td class="hint">Consolidado por slot</td>
-    `;
-    tb.appendChild(tr);
+/* ========= 4) Render común ========= */
+function fillRoutesSelector(routes){
+  const sel = $('#routeSel');
+  sel.innerHTML = '';
+  routes.forEach(r=>{
+    const o = document.createElement('option');
+    o.value = r; o.textContent = r.replace('-',' → ');
+    sel.appendChild(o);
+  });
+  if(!routes.length){
+    const o = document.createElement('option');
+    o.value = ''; o.textContent = '—';
+    sel.appendChild(o);
   }
 }
 
-function renderPane2(routeTag, k){
-  $("#pane2Route").textContent = routeTag.replace("-"," → ");
-  const el = d3.select("#chartLine");
-  el.selectAll("*").remove();
+function applyFilters(rows){
+  const r = $('#routeSel').value;
+  const d1 = $('#dateFrom').value || '0000-00-00';
+  const d2 = $('#dateTo').value   || '9999-12-31';
+  const onlyCarry = $('#prefCarry').checked;
+  const max1 = $('#prefStops').checked;
 
-  const data = k.points.slice().sort((a,b)=>a.when-b.when);
-  if (!data.length){
-    el.append("div").attr("class","hint").style("padding","16px").text("Sin datos históricos para la selección.");
+  return rows.filter(x=>{
+    if(r && x.route !== r) return false;
+    if(x.date < d1 || x.date > d2) return false;
+    if(onlyCarry && x.equip && !/carry/i.test(x.equip)) return false;
+    if(max1 && x.stops!=null && +x.stops>1) return false;
+    return true;
+  });
+}
+
+/* ========= 5) KPIs ========= */
+function renderKPIs(rows){
+  $('#kpiSnaps').textContent = rows.length;
+  $('#kpiSnapsDetail').textContent = 'Registros (tras filtros)';
+
+  if(!rows.length){
+    $('#kpiBestTotal').textContent='—'; $('#kpiBestTotalDetail').textContent='—';
+    $('#kpiBestAir').textContent='—';   $('#kpiBestAirDetail').textContent='—';
+    $('#kpiAvg').textContent='—';       $('#kpiAvgDetail').textContent='—';
+    $('#kpiTopProv').textContent='—';   $('#kpiTopProvDetail').textContent='—';
     return;
   }
 
-  const W = el.node().clientWidth, H = el.node().clientHeight, m={t:18,r:18,b:26,l:46};
-  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const bestAir = rows.reduce((m,x)=> (x.air!=null && x.air<m.air)?x:m, {air:Infinity});
+  $('#kpiBestAir').textContent = fmtUSD(bestAir.air);
+  $('#kpiBestAirDetail').textContent = `${bestAir.date} · ${bestAir.time} · ${bestAir.provider||'—'}`;
 
-  const svg = el.append("svg").attr("width",W).attr("height",H);
-  const g = svg.append("g").attr("transform",`translate(${m.l},${m.t})`);
+  const totals = rows.map(x=>{
+    const t = terrestrialRule(x.route);
+    return { ...x, terr:t.mode, terrCost:t.cost, total:(x.air??0)+t.cost }
+  });
+  const bestTotal = totals.reduce((m,x)=> (x.total<m.total)?x:m, {total:Infinity});
+  $('#kpiBestTotal').textContent = fmtUSD(bestTotal.total);
+  $('#kpiBestTotalDetail').textContent = `${bestTotal.date} · ${bestTotal.time} · ${bestTotal.provider||'—'} (+${bestTotal.terr} ${fmtUSD(bestTotal.terrCost)})`;
 
-  const x = d3.scaleTime().domain(d3.extent(data,d=>d.when)).range([0,iw]);
-  const y = d3.scaleLinear().domain([0, d3.max(data,d=>d.air)*1.1]).nice().range([ih,0]);
+  const avg = d3.mean(rows.filter(x=>x.air!=null), d=>d.air);
+  $('#kpiAvg').textContent = fmtUSD(avg||0);
+  $('#kpiAvgDetail').textContent = 'Promedio aéreo (filtros)';
 
-  // eje
-  g.append("g").attr("transform",`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6));
-  g.append("g").call(d3.axisLeft(y).ticks(6));
-
-  // línea
-  const line = d3.line().x(d=>x(d.when)).y(d=>y(d.air));
-  g.append("path").datum(data).attr("d",line).attr("fill","none").attr("stroke","#7cd4ff").attr("stroke-width",2);
-
-  // puntos
-  g.selectAll("circle").data(data).enter().append("circle")
-    .attr("cx",d=>x(d.when)).attr("cy",d=>y(d.air)).attr("r",3).attr("fill","#93c5fd");
+  const byDay = d3.group(rows, d=>d.date);
+  const winners = [];
+  for (const [day,arr] of byDay){
+    const min = arr.reduce((m,x)=> (x.air!=null && x.air<m.air)?x:m, {air:Infinity});
+    if(min.provider) winners.push(min.provider);
+  }
+  const freq = d3.rollup(winners, v=>v.length, d=>d);
+  let top='—', topn=0;
+  for (const [k,v] of freq.entries()) if (v>topn){ top=k; topn=v; }
+  $('#kpiTopProv').textContent = top==='—' ? '—' : top;
+  $('#kpiTopProvDetail').textContent = top==='—' ? '—' : `${topn} veces como mínimo diario`;
 }
 
-function renderPane3(routeTag, hist){
-  $("#pane3Route").textContent = routeTag.replace("-"," → ");
-  const tb = $("#tblAll tbody"); tb.innerHTML = "";
-
-  const rows = [];
-  for (const s of hist){
-    const ts = parseISO(s?.meta?.generado) || parseISO(s?.meta?.timestamp) || new Date();
-    const arr = s.resultados || s.resultado || [];
-    for (const r of arr){
-      const tag = sameRouteTag({route: r.route || r.ruta});
-      if (tag !== routeTag) continue;
-
-      // Intentar “proveedores” (v1.3.x) o “fuente”
-      const providers = (r.providers?.meta || []).concat(r.providers?.airlines || []);
-      if (providers.length && r.best_offer?.total_usd){
-        const p = providers[0];
-        rows.push({
-          when: ts, route: tag.replace("-", " → "),
-          provider: p.name || p.id || "—",
-          kind: (p.id && p.id.includes("air")) ? "airline" : "meta",
-          price: r.best_offer.total_usd,
-          link: p.link || "#"
-        });
-      } else if (r.precio_encontrado){
-        rows.push({
-          when: ts, route: tag.replace("-", " → "),
-          provider: r.fuente || "—",
-          kind: "mixed",
-          price: r.precio_encontrado,
-          link: "#"
-        });
-      }
-    }
-  }
-
-  rows.sort((a,b)=>b.when - a.when);
-
-  for (const r of rows){
-    const tr = document.createElement("tr");
+/* ========= 6) Tabs ========= */
+function renderTab1(rows){
+  const tb = $('#tblBest tbody'); tb.innerHTML='';
+  rows.forEach(x=>{
+    const t = terrestrialRule(x.route);
+    const total = (x.air??0) + (t.cost||0);
+    const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${r.when.toLocaleString()}</td>
-      <td>${r.route}</td>
-      <td>${r.provider}</td>
-      <td>${r.kind}</td>
-      <td>${fmtUSD(r.price)}</td>
-      <td>${r.link && r.link!=="#" ? `<a href="${r.link}" target="_blank">abrir</a>` : "—"}</td>
+      <td>${x.date}</td>
+      <td>${x.time||'—'}</td>
+      <td>${fmtUSD(x.air)}</td>
+      <td>${x.provider||'—'}</td>
+      <td class="muted">${t.mode}</td>
+      <td>${fmtUSD(t.cost)}</td>
+      <td><b>${fmtUSD(total)}</b></td>
+      <td><span class="pill">${x.equip||'—'}</span> <span class="pill">esc: ${x.stops??'—'}</span></td>
     `;
     tb.appendChild(tr);
-  }
+  });
 }
 
-/* ===========================
-   4) Orquestación
-   =========================== */
+function renderTab2(rows){
+  const byDay = d3.groups(rows, d=>d.date)
+    .map(([date,arr])=>{
+      const min = d3.min(arr.filter(x=>x.air!=null), d=>d.air);
+      return {date, value: (min==null? null : min)};
+    })
+    .filter(d=>d.value!=null)
+    .sort((a,b)=> a.date.localeCompare(b.date));
 
-let STATE = {snap:null, hist:[], route:"LIM-MIA"};
+  $('#chartMeta').textContent = `${byDay.length} puntos (mínimo aéreo por día)`;
 
-async function refresh(){
-  $("#lastLoad").textContent = "Cargando…";
-  const data = await loadAll();
-  STATE.snap = data.snap;
-  STATE.hist = data.hist;
-  $("#lastLoad").textContent = "Datos cargados: " + (new Date()).toLocaleString();
+  const svg = d3.select('#chart'); svg.selectAll('*').remove();
+  const W = svg.node().clientWidth || 900, H = svg.node().clientHeight || 260;
+  const m = {t:20,r:20,b:30,l:48}, w=W-m.l-m.r, h=H-m.t-m.b;
 
-  const routeTag = $("#routeSel").value;
-  const k = computeKPIs(routeTag, STATE.hist, {});
-  renderKPIs(k);
-  renderPane1(routeTag, k);
-  renderPane2(routeTag, k);
-  renderPane3(routeTag, STATE.hist);
+  const g = svg.append('g').attr('transform',`translate(${m.l},${m.t})`);
+  const x = d3.scaleBand().domain(byDay.map(d=>d.date)).range([0,w]).padding(0.2);
+  const y = d3.scaleLinear().domain([0, d3.max(byDay,d=>d.value)||500]).nice().range([h,0]);
+
+  g.append('g').attr('transform',`translate(0,${h})`)
+    .call(d3.axisBottom(x).tickValues(x.domain().filter((_,i)=>!(i%Math.ceil(byDay.length/8)))) )
+    .selectAll('text').attr('transform','translate(-10,10) rotate(-30)').style('font-size','11px').style('fill','#9fb3c8');
+
+  g.append('g').call(d3.axisLeft(y).ticks(5))
+    .selectAll('text').style('fill','#9fb3c8');
+
+  g.selectAll('rect').data(byDay).enter().append('rect')
+    .attr('x', d=>x(d.date)).attr('y', d=>y(d.value))
+    .attr('width', x.bandwidth()).attr('height', d=>h - y(d.value))
+    .attr('fill', '#2b5b86');
 }
 
-// Tabs
-document.querySelectorAll("#tabs button").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    document.querySelectorAll("#tabs button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    const id = btn.dataset.tab;
-    document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
+function renderTab3(rows){
+  const tb = $('#tblFull tbody'); tb.innerHTML='';
+  rows.forEach(x=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${x.date} ${x.time||''}</td>
+      <td>${x.route}</td>
+      <td>${fmtUSD(x.air)}</td>
+      <td>${x.ok ? '<span class="status-ok">Sí</span>' : '<span class="status-bad">No</span>'}</td>
+      <td>${x.limit ?? '—'}</td>
+      <td>${x.provider||'—'}</td>
+      <td>${x.equip||'—'}</td>
+      <td>${x.stops ?? '—'}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+// Explorador completo (sin filtros)
+function renderTab4(rawRows){
+  const tb = $('#tblExplorer tbody'); tb.innerHTML='';
+  rawRows.forEach(({ts, r})=>{
+    // Intentar extraer campos visibles sin normalizar
+    const route = (r.route || r.ruta || '').replace(/\s+/g,'');
+    const air   = r.best_offer?.total_usd ?? r.precio_encontrado ?? null;
+    const ok    = r.best_offer?.under_budget ?? (typeof r.cumple==='string' ? r.cumple.includes('Sí') : r.cumple);
+    const limit = r.limite ?? null;
+    const prov  = (r.providers?.meta?.[0]?.name || r.providers?.airlines?.[0]?.name || r.fuente || '—');
+    const equip = (r.constraints?.carry_on_required ? 'carry-on' : (r.detalles?.equipaje || '—'));
+    const stops = r.constraints?.max_stops ?? r.detalles?.escalas_max ?? '—';
+    const origin = ('best_offer' in r) ? 'live' : ( 'precio_encontrado' in r ? 'mock' : 'unknown' );
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${ts}</td>
+      <td>${route}</td>
+      <td>${fmtUSD(air)}</td>
+      <td>${ok===true ? 'Sí' : (ok===false ? 'No' : '—')}</td>
+      <td>${limit ?? '—'}</td>
+      <td>${prov}</td>
+      <td>${equip}</td>
+      <td>${stops}</td>
+      <td>${origin}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+/* ========= 7) Orquestación ========= */
+let DATA = {rows:[], routes:[], raw:[]};
+
+function refreshAll(){
+  const route = $('#routeSel').value;
+  $('#routeBadge').textContent = route || '—';
+
+  // Filtros para tabs 1–3
+  const rows = applyFilters(DATA.rows).filter(x=> x.route===route);
+  rows.sort((a,b)=> a.ts.localeCompare(b.ts));
+
+  renderKPIs(rows);
+  renderTab1(rows);
+  renderTab2(rows);
+  renderTab3(rows);
+
+  // Tab 4 (sin filtros): muestra todo crudo
+  renderTab4(DATA.raw);
+}
+
+async function init(){
+  DATA = await loadDataset();
+  fillRoutesSelector(DATA.routes);
+  // preferir rutas LIM→MIA/FLL/MCO si existen
+  const pref = DATA.routes.find(r=>/LIM.*(MIA|FLL|MCO)/.test(r)) || DATA.routes[0] || '';
+  $('#routeSel').value = pref;
+  refreshAll();
+}
+
+/* ========= 8) Eventos ========= */
+$$('#btnReload, #routeSel, #dateFrom, #dateTo, #prefCarry, #prefStops').forEach(el=>{
+  el.addEventListener('change', refreshAll);
+  el.addEventListener('click',  refreshAll);
+});
+
+$$('.tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    $$('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const t = btn.dataset.tab;
+    $('#viewT1').style.display = (t==='t1')?'block':'none';
+    $('#viewT2').style.display = (t==='t2')?'block':'none';
+    $('#viewT3').style.display = (t==='t3')?'block':'none';
+    $('#viewT4').style.display = (t==='t4')?'block':'none';
   });
 });
 
-// Eventos UI
-$("#routeSel").addEventListener("change", refresh);
-$("#fromDate").addEventListener("change", refresh);
-$("#toDate").addEventListener("change", refresh);
-$("#refreshBtn").addEventListener("click", refresh);
+// Export CSV (todos los registros crudos de ambos JSON)
+$('#btnCSV').addEventListener('click', ()=>{
+  const headers = ["snapshot_ts","route","air_price","under_budget","limit","provider","equip","stops","origin_mode"];
+  const lines = [headers.join(",")];
+  DATA.raw.forEach(({ts, r})=>{
+    const route = (r.route || r.ruta || '').replace(/\s+/g,'');
+    const air   = r.best_offer?.total_usd ?? r.precio_encontrado ?? "";
+    const ok    = r.best_offer?.under_budget ?? (typeof r.cumple==='string' ? r.cumple.includes('Sí') : r.cumple);
+    const limit = r.limite ?? "";
+    const prov  = (r.providers?.meta?.[0]?.name || r.providers?.airlines?.[0]?.name || r.fuente || "");
+    const equip = (r.constraints?.carry_on_required ? 'carry-on' : (r.detalles?.equipaje || ""));
+    const stops = r.constraints?.max_stops ?? r.detalles?.escalas_max ?? "";
+    const origin= ('best_offer' in r) ? 'live' : ( 'precio_encontrado' in r ? 'mock' : 'unknown' );
 
-// Kickoff
-refresh();
+    lines.push([
+      csvEscape(ts),
+      csvEscape(route),
+      csvEscape(air),
+      csvEscape(ok),
+      csvEscape(limit),
+      csvEscape(prov),
+      csvEscape(equip),
+      csvEscape(stops),
+      csvEscape(origin)
+    ].join(","));
+  });
+  const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = "ultra_lowfare_full_export.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+
+/* ========= 9) Start ========= */
+init();
 </script>
 </body>
 </html>
