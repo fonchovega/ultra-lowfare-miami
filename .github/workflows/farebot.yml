@@ -1,77 +1,60 @@
 # ============================================================
-# farebot.yml — Workflow principal del proyecto "Ultra-LowFare"
+# farebot.yml — Workflow principal de ejecución FareBot v1.3.1
+# Soporte LIVE adaptativo + screenshots + resumen + cache
 # ============================================================
-# Centraliza la ejecución de búsqueda, sincronización e histórico.
-# Autor: Víctor Alfonso Vega Huertas
-# Fecha: Oct 2025
-# ------------------------------------------------------------
 
-name: run-farebot
+name: FareBot v1.3.1 - Live Adaptive Run
 
 on:
   workflow_dispatch:
   schedule:
-    # Ejecutar automáticamente dos veces al día (03:00 y 15:00 UTC)
-    - cron: "0 3,15 * * *"
+    - cron: "0 */3 * * *"  # Cada 3 horas
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      # ------------------------------------------------------------
-      # 1. Checkout del repositorio
-      # ------------------------------------------------------------
-      - name: Checkout
+      - name: 📦 Checkout repository
         uses: actions/checkout@v4
 
-      # ------------------------------------------------------------
-      # 2. Configurar Node.js
-      # ------------------------------------------------------------
-      - name: Setup Node
+      - name: 🔧 Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: 20
 
-      # ------------------------------------------------------------
-      # 3. Instalar dependencias (si existen)
-      # ------------------------------------------------------------
-      - name: Install deps (si existen)
+      - name: ♻️ Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
+      - name: 📦 Install dependencies
         run: |
-          if [ -f "package.json" ]; then
-            npm ci || npm install
-          else
-            echo "No hay package.json, saltando instalación."
-          fi
+          npm ci || npm install
+          npx playwright install --with-deps chromium
 
-      # ------------------------------------------------------------
-      # 4. Preparar carpetas necesarias
-      # ------------------------------------------------------------
-      - name: Preparar carpetas
-        run: |
-          mkdir -p data logs outputs
-          echo "Carpetas listas."
+      - name: 🚀 Run FareBot engine
+        run: node ./scripts/farebot_v131.js
 
-      # ------------------------------------------------------------
-      # 5. Ejecutar script principal
-      # ------------------------------------------------------------
-      - name: Ejecutar sync_all.js
-        run: |
-          node scripts/sync_all.js
-
-      # ------------------------------------------------------------
-      # 6. Publicar artefactos de salida
-      # ------------------------------------------------------------
-      - name: Publicar artefactos
+      - name: 📊 Upload results (data + histórico)
         uses: actions/upload-artifact@v4
         with:
-          name: ultra-lowfare-data
+          name: farebot-data
           path: |
-            data/
-            logs/
-            outputs/
+            data.json
+            data/historico.json
 
-      # ------------------------------------------------------------
-      # 7. Log final
-      # ------------------------------------------------------------
-      - name: Finalizar
-        run: echo "✅ Workflow FareBot completado correctamente."
+      - name: 🧾 Upload debug artifacts (screenshots + logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-artifacts
+          path: |
+            outputs/*.png
+            outputs/*.txt
+            logs/**
+            scripts/*.log
+
+      -
