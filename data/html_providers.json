@@ -1,0 +1,9 @@
+{
+  "SampleMeta": {
+    "urlTemplate": "https://samplemeta.example/search?orig={FROM}&dest={TO}&dep={DEP}&ret={RET}&adt={ADT}",
+    "waitFor": "[data-test=results-list]",
+    "priceSelector": "[data-test=lowest-price]",
+    "providerSelector": "[data-test=carrier-name]",
+    "currency": "USD"
+  }
+}
