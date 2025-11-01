@@ -56,5 +56,9 @@ jobs:
             outputs/*.txt
             logs/**
             scripts/*.log
+            
+        - name: ✅ Job completed
+        run: echo "🎯 FareBot v1.3.1 completed successfully."
 
-      -
+      - name: ✅ Job completed
+        run: echo "🎯 FareBot v1.3.1 completed successfully."
