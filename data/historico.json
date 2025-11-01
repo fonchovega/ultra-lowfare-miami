@@ -3266,5 +3266,135 @@
         }
       }
     ]
+  },
+  {
+    "meta": {
+      "generado": "2025-11-01T20:00:13.956Z",
+      "proyecto": "A",
+      "rutasKey": "A:LIM|MIA,FLL,MCO",
+      "v": "1.3.2",
+      "mode": "live"
+    },
+    "resumen": {
+      "mejor_precio": 379,
+      "cumple_umbral": true,
+      "iteraciones": 6
+    },
+    "resultados": [
+      {
+        "route": "LIM-MIA",
+        "dep": "2026-02-15",
+        "ret": "2026-02-20",
+        "pax": 1,
+        "constraints": {
+          "carry_on_required": true,
+          "max_stops": 1
+        },
+        "providers": {
+          "meta": [],
+          "airlines": []
+        },
+        "best_offer": {
+          "total_usd": 379,
+          "under_budget": false,
+          "mode": "live"
+        }
+      },
+      {
+        "route": "LIM-MIA",
+        "dep": "2026-02-15",
+        "ret": "2026-02-21",
+        "pax": 1,
+        "constraints": {
+          "carry_on_required": true,
+          "max_stops": 1
+        },
+        "providers": {
+          "meta": [],
+          "airlines": []
+        },
+        "best_offer": {
+          "total_usd": 382,
+          "under_budget": false,
+          "mode": "live"
+        }
+      },
+      {
+        "route": "LIM-FLL",
+        "dep": "2026-02-15",
+        "ret": "2026-02-20",
+        "pax": 1,
+        "constraints": {
+          "carry_on_required": true,
+          "max_stops": 1
+        },
+        "providers": {
+          "meta": [],
+          "airlines": []
+        },
+        "best_offer": {
+          "total_usd": 390,
+          "under_budget": false,
+          "mode": "live"
+        }
+      },
+      {
+        "route": "LIM-FLL",
+        "dep": "2026-02-15",
+        "ret": "2026-02-21",
+        "pax": 1,
+        "constraints": {
+          "carry_on_required": true,
+          "max_stops": 1
+        },
+        "providers": {
+          "meta": [],
+          "airlines": []
+        },
+        "best_offer": {
+          "total_usd": 379,
+          "under_budget": false,
+          "mode": "live"
+        }
+      },
+      {
+        "route": "LIM-MCO",
+        "dep": "2026-02-15",
+        "ret": "2026-02-20",
+        "pax": 1,
+        "constraints": {
+          "carry_on_required": true,
+          "max_stops": 1
+        },
+        "providers": {
+          "meta": [],
+          "airlines": []
+        },
+        "best_offer": {
+          "total_usd": 382,
+          "under_budget": true,
+          "mode": "live"
+        }
+      },
+      {
+        "route": "LIM-MCO",
+        "dep": "2026-02-15",
+        "ret": "2026-02-21",
+        "pax": 1,
+        "constraints": {
+          "carry_on_required": true,
+          "max_stops": 1
+        },
+        "providers": {
+          "meta": [],
+          "airlines": []
+        },
+        "best_offer": {
+          "total_usd": 399,
+          "under_budget": true,
+          "mode": "live"
+        }
+      }
+    ]
   }
 ]
