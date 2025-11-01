@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ultra-LowFare · FrontWeb UX v1.4 (Full DB Viewer)</title>
+  <title>Ultra-LowFare · FrontWeb UX v1.4 (Full DB Viewer · RAW)</title>
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <style>
     :root{
@@ -59,11 +59,11 @@
 <body>
   <header>
     <h1>Ultra-LowFare · FrontWeb UX v1.4</h1>
-    <span class="badge">Dataset: <b>data.json</b> + <b>historico.json</b></span>
+    <span class="badge">Dataset: <b>data.json</b> + <b>historico.json</b> (RAW)</span>
     <span class="badge">Compat: v1.1 → v1.3.2</span>
     <span class="badge">Rutas LIM↔MIA/FLL/MCO</span>
     <div class="space"></div>
-    <span class="mininote">Actualiza con el botón de la barra lateral.</span>
+    <span class="mininote">Sin duplicados: lectura directa desde /data del repo (raw.githubusercontent.com)</span>
   </header>
 
   <section class="layout">
@@ -213,48 +213,44 @@
   </section>
 
 <script>
-/* ========= 0) Reglas terrestres (placeholder) ========= */
+/* ========= 0) Rutas RAW (sin duplicar data) ========= */
+const RAW_BASE = "https://raw.githubusercontent.com/fonchovega/ultra-lowfare-miami/main";
+const PATH_DATA = `${RAW_BASE}/data/data.json`;
+const PATH_HIST = `${RAW_BASE}/data/historico.json`;
+
+/* ========= Reglas terrestres (placeholder) ========= */
 function terrestrialRule(route){
   const r = route.replace(/\s/g,'').toUpperCase();
   if(r.includes("LIM") && r.includes("MCO")){
-    // auto obligatorio
     return { mode:"auto", cost: 45 };
   }
   if(r.includes("LIM") && (r.includes("MIA") || r.includes("FLL"))){
-    // tren preferente
     return { mode:"tren", cost: 18 };
   }
   return { mode:"n/a", cost: 0 };
 }
 
-/* ========= 1) Utilidades ========= */
+/* ========= Utilidades ========= */
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmtUSD = v => (v==null || isNaN(v)) ? "—" : "$" + Number(v).toFixed(0);
-function parseISO(s){ const d=new Date(s); return isNaN(d)?null:d; }
-function csvEscape(v){
-  if (v==null) return "";
-  const s = String(v).replace(/"/g,'""');
-  return /[",\n]/.test(s) ? `"${s}"` : s;
-}
+function csvEscape(v){ if (v==null) return ""; const s=String(v).replace(/"/g,'""'); return /[",\n]/.test(s)?`"${s}"`:s; }
 
-/* ========= 2) Normalización (mock viejo y live nuevo) ========= */
-// Devuelve filas normalizadas + filas “raw” para el explorador
+/* ========= Normalización (mock viejo y live nuevo) ========= */
 function normalizeFromSnapshot(snapshot){
   const out = [];
   const rawRows = [];
   const ts = snapshot?.meta?.generado || snapshot?.meta?.timestamp || snapshot?.fecha || new Date().toISOString();
   const list = snapshot?.resultados || snapshot?.resultado || [];
   for (const r of list){
-    // RAW (para explorador)
     rawRows.push({ ts, r });
 
-    // MOCK viejo
-    if ('precio_encontrado' in r){
+    if ('precio_encontrado' in r){ // MOCK
+      const iso = r.fecha || ts;
       out.push({
         ts,
-        date: (r.fecha||ts).slice(0,10),
-        time: (r.fecha||ts).slice(11,16),
+        date: iso.slice(0,10),
+        time: iso.slice(11,16),
         route: (r.ruta || "").replace(/\s+/g,''),
         air: +r.precio_encontrado || null,
         ok: String(r.cumple||'').includes('Sí'),
@@ -266,14 +262,14 @@ function normalizeFromSnapshot(snapshot){
       });
       continue;
     }
-    // LIVE nuevo
-    if (r.best_offer){
+    if (r.best_offer){ // LIVE
       const prov = [...(r.providers?.meta||[]),(r.providers?.airlines||[])].flat();
       const bestProv = prov.sort((a,b)=>(b.score??0)-(a.score??0))[0];
+      const iso = r.dep || ts;
       out.push({
         ts,
-        date: (r.dep||ts).slice(0,10),
-        time: (r.dep||ts).slice(11,16),
+        date: iso.slice(0,10),
+        time: iso.slice(11,16),
         route: (r.route||"").replace(/\s+/g,''),
         air: +r.best_offer.total_usd || null,
         ok: !!r.best_offer.under_budget,
@@ -289,12 +285,12 @@ function normalizeFromSnapshot(snapshot){
   return { rows: out, rawRows };
 }
 
-/* ========= 3) Carga de dataset completo ========= */
+/* ========= Carga dataset (RAW) ========= */
 async function loadDataset(){
   const bust = `?t=${Date.now()}`;
   const [hist, snap] = await Promise.all([
-    fetch('./data/historico.json'+bust).then(r=>r.json()).catch(()=>[]),
-    fetch('./data/data.json'+bust).then(r=>r.json()).catch(()=>null)
+    fetch(PATH_HIST + bust).then(r=>r.json()).catch(()=>[]),
+    fetch(PATH_DATA + bust).then(r=>r.json()).catch(()=>null)
   ]);
 
   const rows = [];
@@ -312,13 +308,12 @@ async function loadDataset(){
   }
 
   rows.sort((a,b)=> a.ts.localeCompare(b.ts));
-
   const routes = Array.from(new Set(rows.map(x=>x.route))).filter(Boolean).sort();
 
   return { rows, routes, raw };
 }
 
-/* ========= 4) Render común ========= */
+/* ========= Filtros, KPIs y Tabs ========= */
 function fillRoutesSelector(routes){
   const sel = $('#routeSel');
   sel.innerHTML = '';
@@ -350,7 +345,6 @@ function applyFilters(rows){
   });
 }
 
-/* ========= 5) KPIs ========= */
 function renderKPIs(rows){
   $('#kpiSnaps').textContent = rows.length;
   $('#kpiSnapsDetail').textContent = 'Registros (tras filtros)';
@@ -392,7 +386,6 @@ function renderKPIs(rows){
   $('#kpiTopProvDetail').textContent = top==='—' ? '—' : `${topn} veces como mínimo diario`;
 }
 
-/* ========= 6) Tabs ========= */
 function renderTab1(rows){
   const tb = $('#tblBest tbody'); tb.innerHTML='';
   rows.forEach(x=>{
@@ -463,11 +456,9 @@ function renderTab3(rows){
   });
 }
 
-// Explorador completo (sin filtros)
 function renderTab4(rawRows){
   const tb = $('#tblExplorer tbody'); tb.innerHTML='';
   rawRows.forEach(({ts, r})=>{
-    // Intentar extraer campos visibles sin normalizar
     const route = (r.route || r.ruta || '').replace(/\s+/g,'');
     const air   = r.best_offer?.total_usd ?? r.precio_encontrado ?? null;
     const ok    = r.best_offer?.under_budget ?? (typeof r.cumple==='string' ? r.cumple.includes('Sí') : r.cumple);
@@ -493,14 +484,13 @@ function renderTab4(rawRows){
   });
 }
 
-/* ========= 7) Orquestación ========= */
+/* ========= Orquestación ========= */
 let DATA = {rows:[], routes:[], raw:[]};
 
-function refreshAll(){
+function applyFiltersWrapper(){
   const route = $('#routeSel').value;
   $('#routeBadge').textContent = route || '—';
 
-  // Filtros para tabs 1–3
   const rows = applyFilters(DATA.rows).filter(x=> x.route===route);
   rows.sort((a,b)=> a.ts.localeCompare(b.ts));
 
@@ -508,24 +498,22 @@ function refreshAll(){
   renderTab1(rows);
   renderTab2(rows);
   renderTab3(rows);
-
-  // Tab 4 (sin filtros): muestra todo crudo
   renderTab4(DATA.raw);
 }
 
 async function init(){
-  DATA = await loadDataset();
+  const dataset = await loadDataset();
+  DATA = dataset;
   fillRoutesSelector(DATA.routes);
-  // preferir rutas LIM→MIA/FLL/MCO si existen
   const pref = DATA.routes.find(r=>/LIM.*(MIA|FLL|MCO)/.test(r)) || DATA.routes[0] || '';
   $('#routeSel').value = pref;
-  refreshAll();
+  applyFiltersWrapper();
 }
 
-/* ========= 8) Eventos ========= */
+/* ========= Eventos ========= */
 $$('#btnReload, #routeSel, #dateFrom, #dateTo, #prefCarry, #prefStops').forEach(el=>{
-  el.addEventListener('change', refreshAll);
-  el.addEventListener('click',  refreshAll);
+  el.addEventListener('change', applyFiltersWrapper);
+  el.addEventListener('click',  applyFiltersWrapper);
 });
 
 $$('.tab').forEach(btn=>{
@@ -540,7 +528,6 @@ $$('.tab').forEach(btn=>{
   });
 });
 
-// Export CSV (todos los registros crudos de ambos JSON)
 $('#btnCSV').addEventListener('click', ()=>{
   const headers = ["snapshot_ts","route","air_price","under_budget","limit","provider","equip","stops","origin_mode"];
   const lines = [headers.join(",")];
@@ -574,7 +561,7 @@ $('#btnCSV').addEventListener('click', ()=>{
   URL.revokeObjectURL(url);
 });
 
-/* ========= 9) Start ========= */
+/* ========= Start ========= */
 init();
 </script>
 </body>
