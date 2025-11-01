@@ -1,61 +1,44 @@
 # ============================================================
-# farebot.yml — Workflow principal de ejecución FareBot v1.3.1
-# Soporte LIVE adaptativo + screenshots + resumen + cache
+# FareBot v1.3.1 — LIVE Adaptive Run
+# Ejecuta búsquedas reales en proveedores y guarda histórico
 # ============================================================
 
 name: FareBot v1.3.1 - Live Adaptive Run
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 */6 * * *"  # Cada 6 horas
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
-      - name: 📦 Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js 20
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: ♻️ Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-
-      - name: 📦 Install dependencies
+      - name: Install deps (si existen)
         run: |
           npm ci || npm install
           npx playwright install --with-deps chromium
 
-      - name: 🚀 Run FareBot engine
-        run: node ./scripts/farebot_v131.js
+      - name: Preparar carpetas
+        run: |
+          mkdir -p data logs outputs
 
-      - name: 📊 Upload results (data + histórico)
-        uses: actions/upload-artifact@v4
-        with:
-          name: farebot-data
-          path: |
-            data.json
-            data/historico.json
+      - name: Ejecutar farebot_v131.js
+        run: node scripts/farebot_v131.js
 
-      - name: 🧾 Upload debug artifacts (screenshots + logs)
-        if: always()
+      - name: Publicar artefactos
         uses: actions/upload-artifact@v4
         with:
           name: debug-artifacts
           path: |
-            outputs/*.png
-            outputs/*.txt
-            logs/**
-            scripts/*.log
+            data/data.json
+            data/historico.json
+            outputs/
             
-        - name: ✅ Job completed
-        run: echo "🎯 FareBot v1.3.1 completed successfully."
