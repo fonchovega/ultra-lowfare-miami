@@ -1,63 +1,70 @@
 // ============================================================
-// helper.js — Utilidades comunes para FareBot / Historico / Sync
+// helper.js — utilidades comunes para Ultra-LowFare v1.3.2
 // ============================================================
 
 import fs from "fs";
 import path from "path";
 
 // ------------------------------------------------------------
-// 📁 Asegura que un directorio exista (si no, lo crea)
+// 🧩 Manejo de directorios y archivos JSON
 // ------------------------------------------------------------
-export const ensureDir = (dirPath) => {
+export function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-};
+}
 
-// ------------------------------------------------------------
-// 📖 Lee un JSON de forma segura (devuelve fallback si falla)
-// ------------------------------------------------------------
-export const readJsonSafe = (filePath, fallback = {}) => {
+export function readJsonSafe(filePath, fallback = {}) {
   try {
     if (!fs.existsSync(filePath)) return fallback;
-    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const raw = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(raw);
   } catch {
     return fallback;
   }
-};
+}
 
-// ------------------------------------------------------------
-// ✍️ Escribe datos JSON en disco (con formato legible)
-// ------------------------------------------------------------
-export const writeJson = (filePath, data) => {
+export function writeJson(filePath, data) {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
-};
+}
 
 // ------------------------------------------------------------
-// 🕒 Devuelve el timestamp actual en formato ISO (UTC)
+// 🧩 Manejo seguro de texto plano
 // ------------------------------------------------------------
-export const nowIsoUtc = () => new Date().toISOString();
-
-// ------------------------------------------------------------
-// 🪵 Logger formateado con fecha y etiqueta
-// ------------------------------------------------------------
-export const log = (msg, tag = "INFO") => {
-  const stamp = new Date().toISOString();
-  console.log(`[${stamp}] [${tag}] ${msg}`);
-};
-// ============================================================
-// Nuevos helpers para manejo seguro de archivos de texto
-// ============================================================
-
-export const readFileSafe = (filePath, fallback = "") => {
+export function readFileSafe(filePath, fallback = "") {
   try {
     if (!fs.existsSync(filePath)) return fallback;
     return fs.readFileSync(filePath, "utf8");
   } catch {
     return fallback;
   }
-};
+}
 
-export const writeFileSafe = (filePath, content = "") => {
+export function writeFileSafe(filePath, content = "") {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, content, "utf8");
-};
+}
+
+// ------------------------------------------------------------
+// 🧩 Registro técnico estandarizado
+// ------------------------------------------------------------
+export function log(msg, tag = "INFO") {
+  const stamp = new Date().toISOString();
+  console.log(`[${stamp}] [${tag}] ${msg}`);
+}
+
+// ------------------------------------------------------------
+// 🔗 buildDeepLink — genera enlaces dinámicos a partir de plantilla
+// ------------------------------------------------------------
+export function buildDeepLink(template, route = {}) {
+  if (!template) return null;
+  try {
+    let link = template;
+    if (route.from) link = link.replace("{from}", route.from);
+    if (route.to) link = link.replace("{to}", route.to);
+    if (route.dep) link = link.replace("{dep}", route.dep);
+    if (route.ret) link = link.replace("{ret}", route.ret);
+    return link;
+  } catch {
+    return null;
+  }
+}
