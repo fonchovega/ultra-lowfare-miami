@@ -12,7 +12,7 @@ import { fileURLToPath } from "url";
 
 import { selectProviders } from "./selector_proveedores.js";
 import { default as scoreProvider } from "./scoring.js";
-import { buildDeepLink } from "./fx-helpers.js";
+import { buildDeepLink } from "./helper.js";
 
 // ------------------------------------------------------------
 // Paths básicos
