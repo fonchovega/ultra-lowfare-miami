@@ -7,9 +7,11 @@ on:
         description: "Si 'true', solo imprime sin escribir data/historico"
         required: false
         default: "false"
-
   schedule:
-    - cron: "0 9 * * *"   # 09:00 UTC diario (ajústalo si quieres)
+    - cron: "9 9 * * *"   # 09:09 UTC diario (ajusta si deseas)
+
+permissions:
+  contents: write   # <— necesario para poder hacer push con GITHUB_TOKEN
 
 jobs:
   run-farebot:
@@ -17,7 +19,7 @@ jobs:
 
     env:
       NODE_ENV: production
-      SOURCE_MODE: live         # << Forzamos modo LIVE en v1.3.2
+      SOURCE_MODE: live            # v1.3.2: modo LIVE por defecto
       DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
 
     steps:
@@ -30,27 +32,32 @@ jobs:
           node-version: 20
 
       - name: Install deps (si existen)
-        run: npm ci || npm install
-
-      # === NUEVO en v1.3.2: instalación explícita de Playwright + navegadores ===
-      - name: Install Playwright
         run: |
-          npm install @playwright/test
-          npx playwright install --with-deps
+          npm ci || npm install
+          npx playwright install --with-deps || true
 
       - name: Preparar carpetas
         run: |
           mkdir -p data logs
 
       - name: Ejecutar farebot_v132.js
-        run: node scripts/farebot_v132.js
+        run: |
+          node scripts/farebot_v132.js
 
-      - name: Publicar artefactos
+      - name: Publicar artefactos (carpeta data)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: data-v132
-          path: |
-            data/data.json
-            data/historico.json
-            logs/*.log
+          name: data-${{ github.run_id }}
+          path: data/
+
+      - name: Commit & Push data/historico
+        if: ${{ env.DRY_RUN != 'true' }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git add -A
+          msg="chore: auto update data & histórico ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+          # --allow-empty fuerza commit aunque no haya cambios
+          git commit -m "$msg" --allow-empty
+          git push
