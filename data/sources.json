@@ -1,129 +1,48 @@
 {
-  "meta": {
-    "version": "v1.3.1",
-    "updated": "2025-10-29T00:00:00Z",
-    "notes": "Catálogo dinámico de metabuscadores y aerolíneas; incluye cobertura por país/continente y patrones de deep-link."
+  "_comment": "sources.json — Catálogo inicial de proveedores (metabuscadores y aerolíneas) v1.3.1",
+  "_note": "El motor adaptativo agregará nuevos proveedores detectados bajo la etiqueta 'learned'.",
+
+  "DEFAULT": {
+    "metabuscadores": [
+      { "id": "Skyscanner", "name": "Skyscanner", "link": "https://www.skyscanner.com" },
+      { "id": "Kayak", "name": "Kayak", "link": "https://www.kayak.com" },
+      { "id": "GoogleFlights", "name": "Google Flights", "link": "https://www.google.com/flights" },
+      { "id": "Expedia", "name": "Expedia", "link": "https://www.expedia.com" },
+      { "id": "Momondo", "name": "Momondo", "link": "https://www.momondo.com" }
+    ],
+    "aerolineas": [
+      { "id": "LATAM", "name": "LATAM Airlines", "link": "https://www.latamairlines.com" },
+      { "id": "Avianca", "name": "Avianca Airlines", "link": "https://www.avianca.com" },
+      { "id": "Sky", "name": "Sky Airlines", "link": "https://www.skyairline.com" },
+      { "id": "Spirit", "name": "Spirit Airlines", "link": "https://www.spirit.com" },
+      { "id": "American", "name": "American Airlines", "link": "https://www.aa.com" },
+      { "id": "United", "name": "United Airlines", "link": "https://www.united.com" },
+      { "id": "Delta", "name": "Delta Airlines", "link": "https://www.delta.com" }
+    ]
   },
 
-  "metabuscadores": [
-    {
-      "id": "kayak",
-      "name": "Kayak",
-      "continents": ["NA", "SA", "EU"],
-      "countries_origin": ["PE", "US"],
-      "deeplink": "https://www.kayak.com/flights/{FROM}-{TO}/{DEP}/{RET}?adults={ADT}&stops=0,1&cabin=economy"
-    },
-    {
-      "id": "skyscanner",
-      "name": "Skyscanner",
-      "continents": ["NA", "SA", "EU"],
-      "countries_origin": ["PE", "US"],
-      "deeplink": "https://www.skyscanner.com/transport/flights/{FROM}/{TO}/{DEP}/{RET}/?adults={ADT}&stops=1"
-    },
-    {
-      "id": "expedia",
-      "name": "Expedia",
-      "continents": ["NA", "SA"],
-      "countries_origin": ["PE", "US"],
-      "deeplink": "https://www.expedia.com/Flights-Search?trip=roundtrip&leg1=from:{FROM},to:{TO},departure:{DEP}TANYT&leg2=from:{TO},to:{FROM},departure:{RET}TANYT&passengers=adults:{ADT}"
-    },
-    {
-      "id": "googleflights",
-      "name": "Google Flights",
-      "continents": ["NA", "SA", "EU"],
-      "countries_origin": ["PE", "US"],
-      "deeplink": "https://www.google.com/travel/flights?q=Flights%20from%20{FROM}%20to%20{TO}%20on%20{DEP}%20return%20{RET}"
-    },
-    {
-      "id": "momondo",
-      "name": "Momondo",
-      "continents": ["NA", "SA", "EU"],
-      "countries_origin": ["PE", "US"],
-      "deeplink": "https://www.momondo.com/flight-search/{FROM}-{TO}/{DEP}/{RET}?adultsv2={ADT}&cabinClass=economy&stopover=1"
-    },
-    {
-      "id": "priceline",
-      "name": "Priceline",
-      "continents": ["NA", "SA"],
-      "countries_origin": ["US"],
-      "deeplink": "https://www.priceline.com/m/f/air/search/{FROM}-{TO}/{DEP}/{RET}?noStopMax=1&adt={ADT}"
-    },
-    {
-      "id": "cheapoair",
-      "name": "CheapOair",
-      "continents": ["NA", "SA"],
-      "countries_origin": ["US", "PE"],
-      "deeplink": "https://www.cheapoair.com/fpnext/Air/Listing?o={FROM}&d={TO}&dd={DEP}&rd={RET}&a={ADT}&ns=1&c=economy"
-    },
-    {
-      "id": "kiwi",
-      "name": "Kiwi",
-      "continents": ["NA", "SA", "EU"],
-      "countries_origin": ["PE", "US"],
-      "deeplink": "https://www.kiwi.com/en/search/results/{FROM}/{TO}/{DEP}/{RET}?adults={ADT}&maxStopovers=1"
-    }
-  ],
+  "MIA_AREA": {
+    "_comment": "Grupo de aeropuertos Miami/Fort Lauderdale/Palm Beach",
+    "metabuscadores": ["Skyscanner", "Kayak", "GoogleFlights", "Momondo"],
+    "aerolineas": ["LATAM", "Avianca", "American", "Spirit", "Delta", "United"]
+  },
 
-  "airlines": [
-    {
-      "id": "LA",
-      "name": "LATAM",
-      "countries_origin": ["PE", "CL", "BR"],
-      "deeplink": "https://www.latamairlines.com/us/en/booking?from={FROM}&to={TO}&departureDate={DEP}&returnDate={RET}&adults={ADT}"
-    },
-    {
-      "id": "AV",
-      "name": "Avianca",
-      "countries_origin": ["PE", "CO"],
-      "deeplink": "https://www.avianca.com/en/search-flight?itinerary={FROM}-{TO}-{DEP}-{RET}&adt={ADT}"
-    },
-    {
-      "id": "CM",
-      "name": "Copa",
-      "countries_origin": ["PE", "PA"],
-      "deeplink": "https://booking.copaair.com/CMGS/AirLowFareSearchExternal.do?origin={FROM}&destination={TO}&departdate={DEP}&returndate={RET}&adultcount={ADT}"
-    },
-    {
-      "id": "B6",
-      "name": "JetBlue",
-      "countries_origin": ["US", "PE"],
-      "deeplink": "https://www.jetblue.com/book?from={FROM}&to={TO}&depart={DEP}&return={RET}&adults={ADT}"
-    },
-    {
-      "id": "NK",
-      "name": "Spirit",
-      "countries_origin": ["US", "PE"],
-      "deeplink": "https://www.spirit.com/book/flights?from={FROM}&to={TO}&depDate={DEP}&retDate={RET}&adults={ADT}"
-    },
-    {
-      "id": "AA",
-      "name": "American",
-      "countries_origin": ["US", "PE"],
-      "deeplink": "https://www.aa.com/booking/flights/roundtrip/{FROM}/{TO}/{DEP}/{RET}?adult={ADT}"
-    },
-    {
-      "id": "H2",
-      "name": "Sky Airline",
-      "countries_origin": ["PE", "CL"],
-      "deeplink": "https://www.skyairline.com/english/booking?from={FROM}&to={TO}&depart={DEP}&return={RET}&adults={ADT}"
-    },
-    {
-      "id": "UA",
-      "name": "United",
-      "countries_origin": ["US", "PE"],
-      "deeplink": "https://www.united.com/en/us/fsr/choose-flights?f={FROM}&t={TO}&d={DEP}&r={RET}&sc=7&px={ADT}"
-    },
-    {
-      "id": "DL",
-      "name": "Delta",
-      "countries_origin": ["US", "PE"],
-      "deeplink": "https://www.delta.com/flight-search/book-a-flight?fromCity={FROM}&toCity={TO}&departureDate={DEP}&returnDate={RET}&paxCount={ADT}"
-    },
-    {
-      "id": "WN",
-      "name": "Southwest",
-      "countries_origin": ["US"],
-      "deeplink": "https://www.southwest.com/air/booking/select.html?originationAirportCode={FROM}&destinationAirportCode={TO}&returnDate={RET}&departureDate={DEP}&adultPassengersCount={ADT}"
-    }
-  ]
+  "SJU": {
+    "_comment": "San Juan, Puerto Rico",
+    "metabuscadores": ["Skyscanner", "Kayak", "GoogleFlights"],
+    "aerolineas": ["Spirit", "American", "JetBlue", "Delta", "United"]
+  },
+
+  "LIM": {
+    "_comment": "Lima, Perú",
+    "metabuscadores": ["Skyscanner", "Kayak", "GoogleFlights", "Momondo"],
+    "aerolineas": ["LATAM", "Avianca", "Sky"]
+  },
+
+  "DEFAULT_GROUPS": {
+    "_comment": "Grupos de aeropuertos por proximidad geográfica para normalización.",
+    "MIA_AREA": ["MIA", "FLL", "PBI"],
+    "CHI_AREA": ["ORD", "MDW"],
+    "WIS_AREA": ["MKE", "MSN", "GRB"]
+  }
 }
