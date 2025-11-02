@@ -23,7 +23,7 @@ jobs:
 
     env:
       NODE_ENV: production
-      SOURCE_MODE: live                 # v1.3.2: modo LIVE por defecto
+      SOURCE_MODE: live
       DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
 
     steps:
@@ -36,10 +36,9 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install deps (si existen)
+      - name: Instalar dependencias (si existen)
         run: |
           npm ci || npm install
-          # Si tu proyecto usa Playwright, instala navegadores (no falla si no está)
           npx --yes playwright install || true
 
       - name: Preparar carpetas
@@ -56,15 +55,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Forzar a stagear archivos JSON relevantes
+          # Forzar stage de JSON y logs relevantes
           git add -f data/data.json data/historico.json logs/*.log 2>/dev/null || true
+
+          echo "📋 Estado del repositorio:"
           git status
 
-          # Si hay cambios staged, hacer commit y push
+          # Verificar si hay cambios staged
           if [ -n "$(git diff --cached --name-only)" ]; then
-            echo "📦 Cambios detectados, realizando commit..."
+            echo "📦 Cambios detectados. Realizando commit..."
             git commit -m "chore: auto update ($(date -u +%F' '%T) UTC)"
             git push
+            echo "✅ Cambios enviados exitosamente."
           else
             echo "✅ Sin cambios para commitear."
           fi
