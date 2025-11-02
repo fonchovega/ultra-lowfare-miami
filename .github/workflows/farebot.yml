@@ -7,9 +7,10 @@ on:
         description: "Si 'true', solo imprime sin escribir data/historico"
         required: false
         default: "false"
-  schedule:
-    - cron: "9 9 * * *"   # 09:09 UTC diario (ajusta si deseas)
+schedule:
+    - cron: "0 */3 * * *"   # 👉 cada 3 horas (en UTC)
 
+        
 permissions:
   contents: write   # <— necesario para poder hacer push con GITHUB_TOKEN
 
