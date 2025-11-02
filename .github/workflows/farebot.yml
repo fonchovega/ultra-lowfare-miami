@@ -50,10 +50,10 @@ jobs:
 
       - name: Commit si cambió algo
         run: |
-          if [ -n "$(git status --porcelain data historico logs)" ]; then
+          git add data/*.json logs/*.log 2>/dev/null || true
+          if [ -n "$(git status --porcelain data logs)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data historico logs
             git commit -m "chore: auto update ($(date -u +%F' '%T) UTC)"
             git push
           else
