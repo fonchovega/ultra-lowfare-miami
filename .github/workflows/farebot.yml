@@ -8,8 +8,8 @@ on:
         required: false
         default: "false"
         
-schedule:
-    - cron: "0 */3 * * *"   # 👉 cada 3 horas (en UTC)
+   schedule:
+     - cron: "0 */3 * * *"   # 👉 cada 3 horas (en UTC)
         
 permissions:
   contents: write   # <— necesario para poder hacer push con GITHUB_TOKEN
