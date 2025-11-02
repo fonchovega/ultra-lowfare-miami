@@ -1,4 +1,5 @@
 name: FareBot v1.3.2 – Live Adaptive Run
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,10 +8,14 @@ on:
         required: false
         default: "false"
   schedule:
-    - cron: "0 */3 * * *"   # 👉 cada 3 horas (UTC)
+    - cron: "0 */3 * * *"   # cada 3 horas (UTC)
 
 permissions:
-  contents: write  # necesario para push automático con GITHUB_TOKEN
+  contents: write   # necesario para poder hacer push con GITHUB_TOKEN
+
+concurrency:
+  group: farebot-live
+  cancel-in-progress: false
 
 jobs:
   run-farebot:
@@ -18,7 +23,7 @@ jobs:
 
     env:
       NODE_ENV: production
-      SOURCE_MODE: live
+      SOURCE_MODE: live                 # v1.3.2: modo LIVE por defecto
       DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
 
     steps:
@@ -29,33 +34,37 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-ms-playwright-${{ hashFiles('**/package-lock.json') }}
+          cache: 'npm'
 
       - name: Install deps (si existen)
-        run: npm ci || npm install
+        run: |
+          npm ci || npm install
+          # Si tu proyecto usa Playwright, instala navegadores (no falla si no está)
+          npx --yes playwright install || true
+
+      - name: Preparar carpetas
+        run: |
+          mkdir -p data logs
 
       - name: Ejecutar FareBot v1.3.2
-        run: node scripts/farebot_v132.js
+        run: |
+          node scripts/farebot_v132.js
 
       - name: Commit si cambió algo
         run: |
-          git add data/*.json logs/*.log 2>/dev/null || true
-          if [ -n "$(git status --porcelain data logs)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "🔍 Verificando cambios..."
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Forzar a stagear archivos JSON relevantes
+          git add -f data/data.json data/historico.json logs/*.log 2>/dev/null || true
+          git status
+
+          # Si hay cambios staged, hacer commit y push
+          if [ -n "$(git diff --cached --name-only)" ]; then
+            echo "📦 Cambios detectados, realizando commit..."
             git commit -m "chore: auto update ($(date -u +%F' '%T) UTC)"
             git push
           else
-            echo "Sin cambios ─ no se commitea."
+            echo "✅ Sin cambios para commitear."
           fi
