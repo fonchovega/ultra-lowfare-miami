@@ -1,5 +1,4 @@
 name: FareBot v1.3.2 – Live Adaptive Run
-
 on:
   workflow_dispatch:
     inputs:
@@ -7,7 +6,6 @@ on:
         description: "Si 'true', solo imprime sin escribir data/historico"
         required: false
         default: "false"
-
   schedule:
     - cron: "0 */3 * * *"   # 👉 cada 3 horas (UTC)
 
@@ -60,4 +58,4 @@ jobs:
             git push
           else
             echo "Sin cambios ─ no se commitea."
-          fi
+          fio9 
