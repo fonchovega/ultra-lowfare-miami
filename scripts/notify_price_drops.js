@@ -1,72 +1,111 @@
-// ============================================================
-// notify_price_drops.js — Envía notificaciones de caídas de precio
-// ============================================================
+// scripts/notify_price_drops.js
+// ------------------------------------------------------------
+// Detecta bajadas de precio entre ejecuciones y dispara alertas.
+// ------------------------------------------------------------
 
-import fs from "fs";
 import path from "path";
-import { log, nowIsoUtc, writeJson, readJsonSafe } from "./helper.js"; // 🔧 ruta corregida
-import { sendTelegram } from "./helpers/alert.js"; // ya estaba correcto
+import {
+  log,
+  DATA_DIR,
+  readJson,
+  writeJson,
+  ensureDir,
+  nowIsoUtc,
+  resolvePath,
+} from "./helpers/helper.js";
+import { sendAlert } from "./alert.js";
 
-// ============================================================
-// CONFIGURACIÓN
-// ============================================================
-const DATA_DIR = "./data";
-const DATA_FILE = path.join(DATA_DIR, "data.json");
-const HIST_FILE = path.join(DATA_DIR, "historico.json");
-const ALERT_LOG = path.join(DATA_DIR, "alerts_log.json");
+const STATE_FILE = resolvePath("logs", "notify_state.json");
 
-const UMBRAL_ALERTA = 20; // Diferencia porcentual mínima para disparar alerta
+function loadState() {
+  return readJson(STATE_FILE, { byRoute: {} });
+}
 
-// ============================================================
-// FUNCIONES PRINCIPALES
-// ============================================================
+function saveState(state) {
+  ensureDir(path.dirname(STATE_FILE));
+  writeJson(STATE_FILE, state);
+}
 
-const calcularDiferencia = (anterior, actual) => {
-  if (!anterior || anterior <= 0) return 0;
-  return ((anterior - actual) / anterior) * 100;
-};
+function snapshotBestByRoute(currentData) {
+  const out = {};
+  try {
+    const resultados = currentData?.resultados ?? [];
+    for (const r of resultados) {
+      const route = r?.route || r?.ruta || "UNKNOWN";
+      const price =
+        r?.price ?? r?.precio ?? r?.mejor_precio ?? r?.summary?.best_price;
+      if (price == null) continue;
+      if (!(route in out) || Number(price) < Number(out[route])) {
+        out[route] = Number(price);
+      }
+    }
+  } catch (e) {
+    log(`[snapshotBestByRoute] error: ${e?.message || e}`);
+  }
+  return out;
+}
 
-const registrarAlerta = (detalle) => {
-  const logs = readJsonSafe(ALERT_LOG, []);
-  logs.push({ fecha: nowIsoUtc(), ...detalle });
-  writeJson(ALERT_LOG, logs);
-  log(`🟢 Alerta registrada: ${detalle.mensaje}`, "ALERT");
-};
+function buildAlertMessage({ route, oldPrice, newPrice, meta }) {
+  const diff = oldPrice - newPrice;
+  const pct = oldPrice > 0 ? Math.round((diff / oldPrice) * 100) : 0;
 
-const procesar = () => {
-  log("🚀 Iniciando verificación de caídas de precios...", "RUN");
+  return [
+    `🔻 Bajó el precio en ${route}`,
+    `• Antes: $${oldPrice}`,
+    `• Ahora: $${newPrice}`,
+    `• Ahorro: $${diff} (${pct}%)`,
+    `• Fuente: ${meta?.fuente || meta?.source || "desconocida"}`,
+    `• Generado: ${meta?.generado || nowIsoUtc()}`,
+  ].join("\n");
+}
 
-  const data = readJsonSafe(DATA_FILE, null);
-  const historico = readJsonSafe(HIST_FILE, []);
-  if (!data || !data.resultados) {
-    log("⚠️ No hay resultados recientes para analizar.", "WARN");
+async function main() {
+  log("🔎 notify_price_drops: iniciando comparación…");
+
+  const dataPath = path.join(DATA_DIR, "data.json");
+  const current = readJson(dataPath, null);
+  if (!current) {
+    log("⚠️ No se encontró data.json, nada que notificar.");
     return;
   }
 
-  const actuales = data.resultados;
-  const alertas = [];
+  const currentBest = snapshotBestByRoute(current);
+  const state = loadState();
+  const prevBest = state.byRoute || {};
 
-  for (const vuelo of actuales) {
-    const { route, precio } = vuelo;
-    const prev = historico
-      .filter((h) => h.resumen?.ruta?.includes(route))
-      .sort((a, b) => new Date(b.meta.generado) - new Date(a.meta.generado))[0];
+  let alerts = 0;
+  for (const [route, newPrice] of Object.entries(currentBest)) {
+    const oldPrice = prevBest[route];
+    if (oldPrice == null) continue;
 
-    if (prev?.resumen?.precio_encontrado) {
-      const diff = calcularDiferencia(prev.resumen.precio_encontrado, precio);
-      if (diff >= UMBRAL_ALERTA) {
-        const msg = `✈️ ${route}: bajó ${diff.toFixed(1)}% → ahora $${precio} (antes $${prev.resumen.precio_encontrado})`;
-        alertas.push(msg);
-        registrarAlerta({ ruta: route, mensaje: msg });
+    if (Number(newPrice) < Number(oldPrice)) {
+      alerts += 1;
+      const msg = buildAlertMessage({
+        route,
+        oldPrice: Number(oldPrice),
+        newPrice: Number(newPrice),
+        meta: current?.meta || {},
+      });
+
+      try {
+        await sendAlert(msg);
+        log(`📣 Alerta enviada (${route}): $${oldPrice} → $${newPrice}`);
+      } catch (e) {
+        log(`⚠️ Error enviando alerta (${route}): ${e?.message || e}`);
       }
     }
   }
 
-  if (alertas.length > 0) {
-    sendTelegram(`🔥 **Alerta de tarifas (${nowIsoUtc()})**\n${alertas.join("\n")}`);
-  } else {
-    log("Sin caídas de precio significativas.", "INFO");
-  }
-};
+  state.byRoute = currentBest;
+  state.updatedAt = nowIsoUtc();
+  saveState(state);
 
-procesar();
+  log(`✅ notify_price_drops: terminado. Alertas enviadas: ${alerts}`);
+}
+
+try {
+  await main();
+} catch (err) {
+  log(`❌ notify_price_drops error: ${err?.stack || err}`);
+  process.exitCode = 1;
+}
