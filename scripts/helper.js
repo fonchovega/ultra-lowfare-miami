@@ -1,18 +1,24 @@
 // ============================================================
-// helper.js — utilidades comunes para Ultra-LowFare v1.3.2
+// helper.js — Utilidades comunes (ESM) para FareBot / Front / Históricos
 // ============================================================
 
 import fs from "fs";
 import path from "path";
 
-// ------------------------------------------------------------
-// 🧩 Manejo de directorios y archivos JSON
-// ------------------------------------------------------------
-export function ensureDir(dirPath) {
+// ---------------------------
+// FS helpers
+// ---------------------------
+export const ensureDir = (dirPath) => {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
+};
 
-export function readJsonSafe(filePath, fallback = {}) {
+export const ensureFile = (filePath) => {
+  ensureDir(path.dirname(filePath));
+  if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, "", "utf8");
+  return filePath;
+};
+
+export const readJsonSafe = (filePath, fallback = {}) => {
   try {
     if (!fs.existsSync(filePath)) return fallback;
     const raw = fs.readFileSync(filePath, "utf8");
@@ -20,51 +26,79 @@ export function readJsonSafe(filePath, fallback = {}) {
   } catch {
     return fallback;
   }
-}
+};
 
-export function writeJson(filePath, data) {
+export const writeJson = (filePath, data) => {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
-}
+  return filePath;
+};
 
-// ------------------------------------------------------------
-// 🧩 Manejo seguro de texto plano
-// ------------------------------------------------------------
-export function readFileSafe(filePath, fallback = "") {
+export const writeJsonAtomic = (filePath, data) => {
+  ensureDir(path.dirname(filePath));
+  const tmp = `${filePath}.tmp-${Date.now()}`;
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
+  fs.renameSync(tmp, filePath);
+  return filePath;
+};
+
+export const readFileSafe = (filePath, fallback = "") => {
   try {
     if (!fs.existsSync(filePath)) return fallback;
     return fs.readFileSync(filePath, "utf8");
   } catch {
     return fallback;
   }
-}
+};
 
-export function writeFileSafe(filePath, content = "") {
+export const writeFileSafe = (filePath, content = "") => {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, content, "utf8");
-}
+  return filePath;
+};
 
-// ------------------------------------------------------------
-// 🧩 Registro técnico estandarizado
-// ------------------------------------------------------------
-export function log(msg, tag = "INFO") {
+// ---------------------------
+// Históricos con tope
+// ---------------------------
+export const appendJsonArrayCapped = (filePath, item, limit = 600, atomic = true) => {
+  let arr = readJsonSafe(filePath, []);
+  if (!Array.isArray(arr)) arr = [];
+  arr.push(item);
+  if (limit && arr.length > limit) arr = arr.slice(-limit);
+  return atomic ? writeJsonAtomic(filePath, arr) : writeJson(filePath, arr);
+};
+
+// ---------------------------
+// Utilidades varias
+// ---------------------------
+export const nowIsoUtc = () => new Date().toISOString();
+
+export const log = (msg, tag = "INFO") => {
   const stamp = new Date().toISOString();
   console.log(`[${stamp}] [${tag}] ${msg}`);
-}
+};
 
-// ------------------------------------------------------------
-// 🔗 buildDeepLink — genera enlaces dinámicos a partir de plantilla
-// ------------------------------------------------------------
-export function buildDeepLink(template, route = {}) {
-  if (!template) return null;
-  try {
-    let link = template;
-    if (route.from) link = link.replace("{from}", route.from);
-    if (route.to) link = link.replace("{to}", route.to);
-    if (route.dep) link = link.replace("{dep}", route.dep);
-    if (route.ret) link = link.replace("{ret}", route.ret);
-    return link;
-  } catch {
-    return null;
+export const normPath = (p) => p.replace(/^\.?\/*/, "");
+
+export const shortSha = () => {
+  const sha = process.env.GITHUB_SHA || "";
+  return sha ? sha.slice(0, 7) : "";
+};
+
+export const tryParseJson = (str) => {
+  try { return JSON.parse(str); } catch { return null; }
+};
+
+export const writeIfChanged = (filePath, content) => {
+  const prev = readFileSafe(filePath, null);
+  if (prev === null || prev !== content) {
+    writeFileSafe(filePath, content);
+    return true;
   }
-}
+  return false;
+};
+
+export const writeJsonIfChanged = (filePath, obj) => {
+  const next = JSON.stringify(obj, null, 2);
+  return writeIfChanged(filePath, next);
+};
