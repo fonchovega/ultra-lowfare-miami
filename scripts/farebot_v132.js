@@ -1,24 +1,24 @@
+// ============================================================
 // scripts/farebot_v132.js
 // ============================================================
-// FareBot v1.3.2 — Wrapper/Launcher (con trazas de modo activo)
-// - No ejecuta scraping por sí mismo (eso vive en farebot.js).
-// - Registra si el entorno está listo para LIVE (Playwright)
-//   o si quedará en fallback MOCK, según FAREBOT_MODE.
-// - Mantiene compatibilidad y facilita rollback.
+// FareBot v1.3.2 — Wrapper/Launcher del motor principal
+// - Detección automática de modo (live / mock / adaptative)
+// - Verifica si Playwright está disponible
+// - Ejecuta el motor real (farebot.js)
+// - Registra fuente activa, versión y timestamp
 // ============================================================
 
 import { log, nowIsoUtc } from "./helpers/helper.js";
 
-// -----------------------------
-// Variables de entorno/version
-// -----------------------------
-if (!process.env.FAREBOT_MODE) process.env.FAREBOT_MODE = "adaptative"; // live|mock|adaptative
+// ------------------------------------------------------------
+// Configuración inicial de entorno
+// ------------------------------------------------------------
+if (!process.env.FAREBOT_MODE) process.env.FAREBOT_MODE = "adaptative"; // live | mock | adaptative
 process.env.FAREBOT_VERSION = "1.3.2";
 
-// -----------------------------
-// Detección ligera de disponibilidad LIVE
-// (sin lanzar navegador; solo presence check de la lib)
-// -----------------------------
+// ------------------------------------------------------------
+// Verificación del modo activo y disponibilidad de Playwright
+// ------------------------------------------------------------
 async function detectLiveCapability() {
   let playwrightOk = false;
   try {
@@ -29,39 +29,42 @@ async function detectLiveCapability() {
   }
 
   const requestedMode = (process.env.FAREBOT_MODE || "adaptative").toLowerCase();
+  let effectiveMode;
 
-  // Determina el "modo efectivo" esperado según env + disponibilidad
-  let effective;
   if (requestedMode === "mock") {
-    effective = "mock (forzado por env)";
+    effectiveMode = "mock (forzado por entorno)";
   } else if (requestedMode === "live") {
-    effective = playwrightOk ? "live (ready)" : "mock (fallback: playwright no disponible)";
+    effectiveMode = playwrightOk
+      ? "live (playwright disponible)"
+      : "mock (fallback: playwright no disponible)";
   } else {
-    // adaptative
-    effective = playwrightOk ? "adaptative → live (ready)" : "adaptative → mock (fallback)";
+    effectiveMode = playwrightOk
+      ? "adaptative → live (playwright activo)"
+      : "adaptative → mock (fallback)";
   }
 
   log(
     [
       "▶️  FareBot v" + process.env.FAREBOT_VERSION,
-      `[env: ${requestedMode}]`,
-      `[effective: ${effective}]`,
-      `@ ${nowIsoUtc()}`,
+      `[modo solicitado: ${requestedMode}]`,
+      `[modo efectivo: ${effectiveMode}]`,
+      `@ ${nowIsoUtc()}`
     ].join(" ")
   );
+
+  // Registro de fuente de scraping (auditoría)
+  log(`📡 Fuente de scraping: ${requestedMode === "live" && playwrightOk ? "LIVE" : "MOCK"}`);
 }
 
-// -----------------------------
-// Lanzador del motor real
-// -----------------------------
-async function run() {
+// ------------------------------------------------------------
+// Ejecución del motor principal
+// ------------------------------------------------------------
+async function runFarebot() {
   await detectLiveCapability();
 
   try {
-    // Import dinámico del motor para mantener compatibilidad.
     const mod = await import("./farebot.js");
 
-    // Si el motor exporta main(), lo usamos; si no, el top-level ejecuta.
     if (typeof mod?.main === "function") {
       await mod.main();
     }
@@ -74,4 +77,7 @@ async function run() {
   }
 }
 
-await run();
+// ------------------------------------------------------------
+// Ejecución directa (workflow o manual)
+// ------------------------------------------------------------
+await runFarebot();
