@@ -1,84 +1,45 @@
 // ============================================================
-// notify_price_drops.js — Monitorea variaciones de precios
-// ============================================================
-// Ejecutado por el workflow GitHub Actions (`farebot.yml`)
-// Toma los datos del último dataset y envía alertas
-// si alguna tarifa baja del umbral definido por corredor.
+// notify_price_drops.js — Alerta automática de caídas de tarifas
 // ============================================================
 
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { enviarAlerta } from "./helpers/alert.js";
-import { log } from "./helpers/helper.js";
+import { sendAlert } from "./alert.js"; // ✅ CORREGIDO: ruta directa al archivo alert.js
+import { readJsonSafe, writeJson } from "./helper.js";
 
-// ------------------------------------------------------------
-// Configuración base
-// ------------------------------------------------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DATA_PATH = path.join(__dirname, "../data/data.json");
+const DATA_PATH = path.resolve(__dirname, "../data/data.json");
+const HIST_PATH = path.resolve(__dirname, "../data/historico.json");
+const ALERT_LOG = path.resolve(__dirname, "../logs/alertas.json");
 
-// Umbrales personalizados por corredor
-// (puedes ajustarlos libremente en USD)
-const UMBRALES = {
-  "LIM-MIA": 420,
-  "LIM-FLL": 400,
-  "LIM-MCO": 430,
-};
+const ALERT_THRESHOLD = process.env.ALERT_THRESHOLD
+  ? parseFloat(process.env.ALERT_THRESHOLD)
+  : 400; // valor por defecto, puede ajustarse
 
-// ------------------------------------------------------------
-// Función principal
-// ------------------------------------------------------------
-async function main() {
-  try {
-    log("🔍 Cargando dataset de tarifas...");
-    const raw = fs.readFileSync(DATA_PATH, "utf-8");
-    const data = JSON.parse(raw);
+console.log(`\n🚀 Ejecutando notify_price_drops.js con umbral: $${ALERT_THRESHOLD}\n`);
 
-    if (!Array.isArray(data)) {
-      throw new Error("El archivo data.json no contiene un arreglo válido");
-    }
+// ========================== FUNCIONES ==========================
+function findNewLowFares(data, historico, threshold) {
+  const nuevos = [];
 
-    const alertas = [];
+  for (const entry of data) {
+    const prev = historico.find(
+      (h) => h.route === entry.route && h.airline === entry.airline
+    );
 
-    for (const vuelo of data) {
-      const ruta = `${vuelo.origen}-${vuelo.destino}`;
-      const precio = parseFloat(vuelo.precio);
-
-      if (UMBRALES[ruta] && precio < UMBRALES[ruta]) {
-        alertas.push({
-          ruta,
-          precio,
-          umbral: UMBRALES[ruta],
-          airline: vuelo.aerolinea || "Desconocida",
-          fecha: vuelo.fecha || new Date().toISOString(),
+    if (!prev || entry.price < prev.price) {
+      if (entry.price <= threshold) {
+        nuevos.push({
+          ...entry,
+          previousPrice: prev ? prev.price : null,
+          drop: prev ? prev.price - entry.price : null,
+          timestamp: new Date().toISOString(),
         });
       }
     }
-
-    if (alertas.length === 0) {
-      log("✅ No se detectaron bajadas de precio significativas.");
-      return;
-    }
-
-    log(`🚨 Se detectaron ${alertas.length} bajadas de precio.`);
-    for (const alerta of alertas) {
-      const msg = `Ruta ${alerta.ruta} (${alerta.airline}) bajó a $${alerta.precio} USD (umbral ${alerta.umbral})`;
-      enviarAlerta(msg);
-    }
-  } catch (err) {
-    console.error("❌ Error en notify_price_drops:", err);
-    process.exit(1);
   }
-}
 
-// ------------------------------------------------------------
-// Ejecución directa (node scripts/notify_price_drops.js)
-// ------------------------------------------------------------
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
-}
-
-export default main;
+  return nuevos;
