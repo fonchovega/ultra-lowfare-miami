@@ -1,111 +1,84 @@
-// scripts/notify_price_drops.js
-// ------------------------------------------------------------
-// Detecta bajadas de precio entre ejecuciones y dispara alertas.
-// ------------------------------------------------------------
+// ============================================================
+// notify_price_drops.js — Monitorea variaciones de precios
+// ============================================================
+// Ejecutado por el workflow GitHub Actions (`farebot.yml`)
+// Toma los datos del último dataset y envía alertas
+// si alguna tarifa baja del umbral definido por corredor.
+// ============================================================
 
+import fs from "fs";
 import path from "path";
-import {
-  log,
-  DATA_DIR,
-  readJson,
-  writeJson,
-  ensureDir,
-  nowIsoUtc,
-  resolvePath,
-} from "./helpers/helper.js";
-import { sendAlert } from "./alert.js";
+import { fileURLToPath } from "url";
+import { enviarAlerta } from "./helpers/alert.js";
+import { log } from "./helpers/helper.js";
 
-const STATE_FILE = resolvePath("logs", "notify_state.json");
+// ------------------------------------------------------------
+// Configuración base
+// ------------------------------------------------------------
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-function loadState() {
-  return readJson(STATE_FILE, { byRoute: {} });
-}
+const DATA_PATH = path.join(__dirname, "../data/data.json");
 
-function saveState(state) {
-  ensureDir(path.dirname(STATE_FILE));
-  writeJson(STATE_FILE, state);
-}
+// Umbrales personalizados por corredor
+// (puedes ajustarlos libremente en USD)
+const UMBRALES = {
+  "LIM-MIA": 420,
+  "LIM-FLL": 400,
+  "LIM-MCO": 430,
+};
 
-function snapshotBestByRoute(currentData) {
-  const out = {};
-  try {
-    const resultados = currentData?.resultados ?? [];
-    for (const r of resultados) {
-      const route = r?.route || r?.ruta || "UNKNOWN";
-      const price =
-        r?.price ?? r?.precio ?? r?.mejor_precio ?? r?.summary?.best_price;
-      if (price == null) continue;
-      if (!(route in out) || Number(price) < Number(out[route])) {
-        out[route] = Number(price);
-      }
-    }
-  } catch (e) {
-    log(`[snapshotBestByRoute] error: ${e?.message || e}`);
-  }
-  return out;
-}
-
-function buildAlertMessage({ route, oldPrice, newPrice, meta }) {
-  const diff = oldPrice - newPrice;
-  const pct = oldPrice > 0 ? Math.round((diff / oldPrice) * 100) : 0;
-
-  return [
-    `🔻 Bajó el precio en ${route}`,
-    `• Antes: $${oldPrice}`,
-    `• Ahora: $${newPrice}`,
-    `• Ahorro: $${diff} (${pct}%)`,
-    `• Fuente: ${meta?.fuente || meta?.source || "desconocida"}`,
-    `• Generado: ${meta?.generado || nowIsoUtc()}`,
-  ].join("\n");
-}
-
+// ------------------------------------------------------------
+// Función principal
+// ------------------------------------------------------------
 async function main() {
-  log("🔎 notify_price_drops: iniciando comparación…");
+  try {
+    log("🔍 Cargando dataset de tarifas...");
+    const raw = fs.readFileSync(DATA_PATH, "utf-8");
+    const data = JSON.parse(raw);
 
-  const dataPath = path.join(DATA_DIR, "data.json");
-  const current = readJson(dataPath, null);
-  if (!current) {
-    log("⚠️ No se encontró data.json, nada que notificar.");
-    return;
-  }
+    if (!Array.isArray(data)) {
+      throw new Error("El archivo data.json no contiene un arreglo válido");
+    }
 
-  const currentBest = snapshotBestByRoute(current);
-  const state = loadState();
-  const prevBest = state.byRoute || {};
+    const alertas = [];
 
-  let alerts = 0;
-  for (const [route, newPrice] of Object.entries(currentBest)) {
-    const oldPrice = prevBest[route];
-    if (oldPrice == null) continue;
+    for (const vuelo of data) {
+      const ruta = `${vuelo.origen}-${vuelo.destino}`;
+      const precio = parseFloat(vuelo.precio);
 
-    if (Number(newPrice) < Number(oldPrice)) {
-      alerts += 1;
-      const msg = buildAlertMessage({
-        route,
-        oldPrice: Number(oldPrice),
-        newPrice: Number(newPrice),
-        meta: current?.meta || {},
-      });
-
-      try {
-        await sendAlert(msg);
-        log(`📣 Alerta enviada (${route}): $${oldPrice} → $${newPrice}`);
-      } catch (e) {
-        log(`⚠️ Error enviando alerta (${route}): ${e?.message || e}`);
+      if (UMBRALES[ruta] && precio < UMBRALES[ruta]) {
+        alertas.push({
+          ruta,
+          precio,
+          umbral: UMBRALES[ruta],
+          airline: vuelo.aerolinea || "Desconocida",
+          fecha: vuelo.fecha || new Date().toISOString(),
+        });
       }
     }
+
+    if (alertas.length === 0) {
+      log("✅ No se detectaron bajadas de precio significativas.");
+      return;
+    }
+
+    log(`🚨 Se detectaron ${alertas.length} bajadas de precio.`);
+    for (const alerta of alertas) {
+      const msg = `Ruta ${alerta.ruta} (${alerta.airline}) bajó a $${alerta.precio} USD (umbral ${alerta.umbral})`;
+      enviarAlerta(msg);
+    }
+  } catch (err) {
+    console.error("❌ Error en notify_price_drops:", err);
+    process.exit(1);
   }
-
-  state.byRoute = currentBest;
-  state.updatedAt = nowIsoUtc();
-  saveState(state);
-
-  log(`✅ notify_price_drops: terminado. Alertas enviadas: ${alerts}`);
 }
 
-try {
-  await main();
-} catch (err) {
-  log(`❌ notify_price_drops error: ${err?.stack || err}`);
-  process.exitCode = 1;
+// ------------------------------------------------------------
+// Ejecución directa (node scripts/notify_price_drops.js)
+// ------------------------------------------------------------
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
 }
+
+export default main;
