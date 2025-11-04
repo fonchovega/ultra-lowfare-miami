@@ -1,120 +1,78 @@
-// scripts/helpers/helper.js
 // ============================================================
-// Core utilidades base del sistema Ultra-LowFare
+// helper.js — utilidades comunes para Ultra-LowFare v1.3.2
 // ============================================================
 
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// === Paths base ===
+// ------------------------------------------------------------
+// Rutas y configuración base
+// ------------------------------------------------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ROOT apunta a la raíz del proyecto (2 niveles arriba)
-export const ROOT = path.resolve(__dirname, "..", "..");
-export const DATA_DIR = path.join(ROOT, "data");
-export const LOG_DIR = path.join(ROOT, "logs");
+// ------------------------------------------------------------
+// Funciones utilitarias de lectura/escritura JSON
+// ------------------------------------------------------------
 
-// ============================================================
-// Funciones de sistema de archivos
-// ============================================================
-
-/** Garantiza que exista un directorio, y si no, lo crea. */
-export function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
-
-/** Lee un JSON y devuelve su contenido, o un valor por defecto si falla. */
-export function readJson(filePath, fallback = null) {
+export function readJsonSafe(filePath, fallback = null) {
   try {
-    const raw = fs.readFileSync(filePath, "utf8");
-    return JSON.parse(raw);
+    if (!fs.existsSync(filePath)) return fallback;
+    const content = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(content);
   } catch (err) {
-    log(`[readJson] Error leyendo ${filePath}: ${err.message}`);
+    log(`⚠️ Error leyendo JSON (${filePath}): ${err.message}`);
     return fallback;
   }
 }
 
-/** Escribe datos JSON formateados en un archivo. */
 export function writeJson(filePath, data) {
   try {
-    ensureDir(path.dirname(filePath));
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+    const dir = path.dirname(filePath);
+    ensureDir(dir);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    log(`💾 Guardado JSON: ${filePath}`);
   } catch (err) {
-    log(`[writeJson] Error escribiendo ${filePath}: ${err.message}`);
+    log(`❌ Error escribiendo JSON (${filePath}): ${err.message}`);
   }
 }
 
-/** Resuelve rutas relativas desde la raíz del proyecto. */
-export function resolvePath(...parts) {
-  return path.join(ROOT, ...parts);
+export function ensureDir(dirPath) {
+  try {
+    if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+  } catch (err) {
+    log(`⚠️ No se pudo crear carpeta: ${dirPath} (${err.message})`);
+  }
 }
 
-// ============================================================
-// Utilidades de tiempo y logging
-// ============================================================
-
-/** Devuelve un timestamp ISO UTC. */
+// ------------------------------------------------------------
+// Logging y timestamp
+// ------------------------------------------------------------
 export function nowIsoUtc() {
   return new Date().toISOString();
 }
 
-/** Registra mensajes tanto en consola como en archivo. */
-export function log(...args) {
-  const msg = args.join(" ");
-  console.log(msg);
-
-  try {
-    ensureDir(LOG_DIR);
-    const logFile = path.join(LOG_DIR, `run_${nowIsoUtc().slice(0, 10)}.log`);
-    fs.appendFileSync(logFile, `[${nowIsoUtc()}] ${msg}\n`, "utf8");
-  } catch {
-    /* ignora errores de escritura */
-  }
+export function log(msg) {
+  const t = nowIsoUtc().replace("T", " ").split(".")[0];
+  console.log(`[${t}] ${msg}`);
 }
 
-// ============================================================
-// Funciones auxiliares generales
-// ============================================================
-
-/** Devuelve true si dos objetos JSON difieren. */
-export function diffJson(before, after) {
-  try {
-    const b = JSON.stringify(before);
-    const a = JSON.stringify(after);
-    return { changed: b !== a };
-  } catch (err) {
-    log(`[diffJson] Error comparando objetos: ${err.message}`);
-    return { changed: true };
-  }
+// ------------------------------------------------------------
+// Función delay y control de flujo (usada en scraper y wrapper)
+// ------------------------------------------------------------
+export async function delay(ms) {
+  return new Promise((res) => setTimeout(res, ms));
 }
 
-/** Retrasa la ejecución por cierto número de milisegundos. */
-export function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** Convierte un valor posiblemente string a número válido. */
-export function toNumber(v, fallback = 0) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-// ============================================================
-// Exportación por defecto (compatibilidad antigua)
-// ============================================================
+// ------------------------------------------------------------
+// Exportación por defecto
+// ------------------------------------------------------------
 export default {
-  ROOT,
-  DATA_DIR,
-  LOG_DIR,
-  ensureDir,
-  readJson,
+  readJsonSafe,
   writeJson,
-  resolvePath,
+  ensureDir,
   nowIsoUtc,
   log,
-  diffJson,
   delay,
-  toNumber,
 };
