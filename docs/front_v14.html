@@ -2,567 +2,491 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ultra-LowFare · FrontWeb UX v1.4 (Full DB Viewer · RAW)</title>
-  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <title>Ultra-LowFare v1.3.2 — Reporteador</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Estilos mínimos “tipo metabuscador” -->
   <style>
     :root{
-      --bg:#0b0f14; --panel:#101821; --card:#0f172a; --ink:#e2e8f0;
-      --muted:#94a3b8; --brand:#7cd4ff; --ok:#2bdc8c; --bad:#ff6b6b; --line:#1f2937;
-      --accent:#eab308;
+      --bg:#0c0f12; --card:#12161b; --muted:#9fb0c0; --text:#e9f1f5; --accent:#29b6f6; --ok:#1ec28a; --warn:#f7b733; --bad:#f45d48;
+      --chip:#1b222a; --chip2:#1f2832;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font:14px/1.5 system-ui, Segoe UI, Roboto, Arial; color:var(--ink); background:linear-gradient(180deg,#0c1118,#0b0f14)}
-    header{display:flex;gap:14px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0c1420,#0c1118)}
-    header h1{margin:0;font-size:18px}
-    .badge{padding:4px 10px;border:1px solid #2a3a4d;border-radius:99px;color:#9fb3c8;background:#0f1520}
-    .layout{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 60px)}
-    aside{background:var(--panel);border-right:1px solid var(--line);padding:14px}
-    aside h3{margin:10px 0 6px;font-size:13px;color:#a8c1d8}
-    aside label{display:block;font-size:13px;color:#cbd5e1;margin:8px 0}
-    aside input, aside select{width:100%;background:#0f1520;color:#e2e8f0;border:1px solid #2a3a4d;border-radius:8px;padding:8px}
-    aside .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    aside .btn{width:100%;margin-top:10px;padding:9px 10px;background:#102033;border:1px solid #25405c;border-radius:10px;color:#bfe3ff;cursor:pointer}
-    aside .btn:hover{background:#0f2036}
-    .main{display:grid;grid-template-rows:160px 1fr;gap:12px;padding:14px}
-    .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
-    .kpi-title{color:#9fb3c8;font-size:12px}
-    .kpi-value{font-size:28px;font-weight:700;margin-top:6px}
-    .tabs{display:flex;gap:8px;padding:8px;flex-wrap:wrap}
-    .tab{padding:7px 10px;border:1px solid #2a3a4d;border-radius:10px;background:#0f1520;color:#cbd5e1;cursor:pointer}
-    .tab.active{background:#193652;border-color:#2b5b86;color:#cfe9ff}
-    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-    .panel header{position:static;background:var(--card);border-bottom:1px solid var(--line);padding:10px 12px}
-    .panel .content{padding:0}
-    .table-wrap{overflow:auto;border-top:1px solid var(--line)}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto}
+    header{padding:18px 20px;border-bottom:1px solid #212a33;background:linear-gradient(180deg,#0c0f12 0,#0c0f12ee 100%)}
+    h1{margin:0;font-size:18px;display:flex;gap:10px;align-items:center}
+    .meta{font-size:12px;color:var(--muted)}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .controls{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:8px 0 16px}
+    .controls label{font-size:12px;color:var(--muted)}
+    .controls input,.controls select{width:100%;padding:8px 10px;border:1px solid #2a3440;background:#0f1318;color:var(--text);border-radius:10px}
+    .tabs{display:flex;gap:8px;margin:8px 0 16px}
+    .tab{padding:10px 14px;border-radius:999px;background:var(--chip);cursor:pointer;color:#cfe6f7;border:1px solid #233041}
+    .tab.active{background:var(--accent);color:#032436;border-color:transparent}
+    .card{background:var(--card);border:1px solid #222b35;border-radius:16px;padding:14px}
     table{width:100%;border-collapse:collapse}
-    th,td{padding:10px 12px;border-bottom:1px solid #0f1924;white-space:nowrap}
-    th{background:#0f1924;position:sticky;top:0}
-    tr:hover td{background:#0e1522}
-    .pill{padding:2px 8px;border-radius:999px;border:1px solid #2a3a4d;background:#0f1520;color:#bcd1e3;font-size:12px}
-    .mininote{font-size:12px;color:#93acc4}
-    .status-ok{color:var(--ok)} .status-bad{color:var(--bad)}
-    .route-tag{padding:2px 8px;border-radius:8px;background:#0f1928;border:1px solid #26445f;color:#9fd1ff}
+    th,td{padding:10px;border-bottom:1px dashed #233041;vertical-align:top}
+    th{font-weight:600;text-align:left;color:#cfe6f7;white-space:nowrap}
+    tr:hover td{background:#0f141a}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:8px 0 16px}
+    .kpi{background:var(--card);border:1px solid #223040;border-radius:14px;padding:14px}
+    .kpi h3{margin:0 0 4px;font-size:12px;color:var(--muted)}
+    .kpi .v{font-size:20px}
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:var(--chip2);border:1px solid #2a3746;color:#cfe6f7;font-size:12px}
+    .chip.ok{background:#07251b;border-color:#0d3b29;color:#b7f2d8}
+    .chip.bad{background:#2b1412;border-color:#3a1916;color:#ffcdc6}
+    .chip.tag{background:#17202a;border-color:#1c2833}
+    .rowchips{display:flex;flex-wrap:wrap;gap:6px}
+    .hint{color:var(--muted);font-size:12px}
     .muted{color:var(--muted)}
-    .flex{display:flex;align-items:center;gap:10px}
-    .space{flex:1}
-    .note{font-size:12px;color:#93acc4;margin-top:8px}
-    svg{display:block;width:100%;height:260px;background:#0b111a}
-    .legend{display:flex;gap:10px;align-items:center;font-size:12px;color:#9fb3c8;padding:6px 10px}
-    .tag{padding:2px 8px;border-radius:8px;background:#0f1928;border:1px solid #26445f}
-    .btn-sec{padding:6px 10px;border-radius:8px;border:1px solid #2a3a4d;background:#0f1520;color:#cfe9ff;cursor:pointer}
-    .btn-sec:hover{background:#11223a}
+    .right{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+    .flex{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .hidden{display:none}
+    .foot{margin-top:10px;font-size:12px;color:var(--muted)}
+    .calendar-hint{font-size:12px;color:var(--muted)}
+    .badge{padding:2px 6px;border-radius:6px;background:#1b2733;border:1px solid #243345;font-size:12px}
+    .live{background:#0e2d20;border-color:#124a34;color:#a9f2d3}
+    .mock{background:#302016;border-color:#4a2d1a;color:#ffd6bf}
+    .nowrap{white-space:nowrap}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 </head>
 <body>
   <header>
-    <h1>Ultra-LowFare · FrontWeb UX v1.4</h1>
-    <span class="badge">Dataset: <b>data.json</b> + <b>historico.json</b> (RAW)</span>
-    <span class="badge">Compat: v1.1 → v1.3.2</span>
-    <span class="badge">Rutas LIM↔MIA/FLL/MCO</span>
-    <div class="space"></div>
-    <span class="mininote">Sin duplicados: lectura directa desde /data del repo (raw.githubusercontent.com)</span>
+    <div class="wrap">
+      <h1>Ultra-LowFare — Reporteador v1.3.2
+        <span class="badge" id="modeBadge">–</span>
+      </h1>
+      <div class="meta" id="metaLine">Cargando datasets…</div>
+    </div>
   </header>
 
-  <section class="layout">
-    <aside>
-      <h3>Rutas</h3>
-      <select id="routeSel"></select>
-
-      <h3>Rango de fechas (histórico)</h3>
-      <div class="row">
-        <input id="dateFrom" type="date">
-        <input id="dateTo" type="date">
-      </div>
-
-      <h3>Preferencias</h3>
-      <label><input id="prefCarry" type="checkbox" checked> Solo carry-on</label>
-      <label><input id="prefStops" type="checkbox" checked> Máx 1 escala</label>
-
-      <button class="btn" id="btnReload">🔄 Actualizar datos</button>
-      <div class="note">
-        • “Mejor opción” = <b>precio aéreo más bajo</b> + terrestre aplicable.<br>
-        • <b>LIM→MCO</b>: fuerza alquiler de auto (regla).<br>
-        • <b>LIM→MIA/FLL</b>: intenta tren; si no hay, cae a auto.
-      </div>
-    </aside>
-
-    <main class="main">
-      <div class="kpis">
-        <div class="card">
-          <div class="kpi-title">Mejor total (aéreo+terrestre)</div>
-          <div class="kpi-value" id="kpiBestTotal">—</div>
-          <div class="mininote" id="kpiBestTotalDetail">—</div>
+  <div class="wrap">
+    <!-- Filtros -->
+    <div class="card">
+      <div class="controls">
+        <div>
+          <label>Desde (fecha de salida)</label>
+          <input type="date" id="fromDate"/>
+          <div class="calendar-hint" id="fromHint"></div>
         </div>
-        <div class="card">
-          <div class="kpi-title">Mejor aéreo</div>
-          <div class="kpi-value" id="kpiBestAir">—</div>
-          <div class="mininote" id="kpiBestAirDetail">—</div>
+        <div>
+          <label>Hasta (fecha de salida)</label>
+          <input type="date" id="toDate"/>
+          <div class="calendar-hint" id="toHint"></div>
         </div>
-        <div class="card">
-          <div class="kpi-title">Promedio histórico</div>
-          <div class="kpi-value" id="kpiAvg">—</div>
-          <div class="mininote" id="kpiAvgDetail">—</div>
+        <div>
+          <label>Ruta</label>
+          <select id="routeSel"><option value="">Todas</option></select>
         </div>
-        <div class="card">
-          <div class="kpi-title">Snapshots analizados</div>
-          <div class="kpi-value" id="kpiSnaps">0</div>
-          <div class="mininote" id="kpiSnapsDetail">Ventana temporal seleccionada</div>
+        <div>
+          <label>Modo</label>
+          <select id="modeSel">
+            <option value="">Live + Mock</option>
+            <option value="live">Solo Live</option>
+            <option value="mock">Solo Mock</option>
+          </select>
         </div>
-        <div class="card">
-          <div class="kpi-title">Proveedor top (frecuencia)</div>
-          <div class="kpi-value" id="kpiTopProv">—</div>
-          <div class="mininote" id="kpiTopProvDetail">Más veces “mejor precio”</div>
+        <div>
+          <label>Carry-on requerido</label>
+          <select id="carrySel">
+            <option value="">Cualquiera</option>
+            <option value="true">Sí</option>
+            <option value="false">No/Indef.</option>
+          </select>
+        </div>
+        <div class="right">
+          <button id="applyBtn" class="tab">Aplicar filtros</button>
+          <button id="clearBtn" class="tab">Limpiar</button>
         </div>
       </div>
+      <div class="hint">Las fechas resaltadas en el hint indican días con datos disponibles.</div>
+    </div>
 
-      <div class="panel">
-        <header class="flex">
-          <div class="tabs">
-            <button class="tab active" data-tab="t1">1) Mejor opción por día/hora</button>
-            <button class="tab" data-tab="t2">2) Histórico mínimo por día/hora</button>
-            <button class="tab" data-tab="t3">3) Detalle completo por día/hora</button>
-            <button class="tab" data-tab="t4">4) Explorador completo (sin filtros)</button>
-          </div>
-          <div class="space"></div>
-          <span class="route-tag" id="routeBadge">—</span>
-        </header>
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi"><h3>Snapshots histórico</h3><div class="v" id="kpiHist">–</div></div>
+      <div class="kpi"><h3>Mejor total (último snapshot)</h3><div class="v" id="kpiBest">–</div></div>
+      <div class="kpi"><h3>Resultados (filtrados)</h3><div class="v" id="kpiCount">–</div></div>
+      <div class="kpi"><h3>Última generación</h3><div class="v" id="kpiGen">–</div></div>
+    </div>
 
-        <!-- TAB 1 -->
-        <div class="content" id="viewT1">
-          <div class="table-wrap">
-            <table id="tblBest">
-              <thead>
-                <tr>
-                  <th>Fecha salida</th>
-                  <th>Hora salida</th>
-                  <th>Aéreo (USD)</th>
-                  <th>Proveedor</th>
-                  <th>Terrestre</th>
-                  <th>Costo terrestre (USD)</th>
-                  <th>Total (USD)</th>
-                  <th>Detalle</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
+    <!-- Pestañas -->
+    <div class="tabs">
+      <div class="tab active" data-tab="best">Mejor opción</div>
+      <div class="tab" data-tab="history">Historial</div>
+      <div class="tab" data-tab="all">Todas las búsquedas</div>
+    </div>
 
-        <!-- TAB 2 -->
-        <div class="content" id="viewT2" style="display:none">
-          <div class="legend">
-            <span class="tag">Serie: mínimo diario (aéreo)</span>
-            <span class="muted" id="chartMeta">—</span>
-          </div>
-          <svg id="chart"></svg>
-        </div>
+    <!-- Contenido pestañas -->
+    <div id="tab-best" class="card">
+      <table id="bestTable">
+        <thead>
+          <tr>
+            <th>Fecha/Hora</th>
+            <th>Ruta</th>
+            <th>Total USD</th>
+            <th>Vuelo USD</th>
+            <th>Terrestre</th>
+            <th>Proveedor</th>
+            <th>Equipaje</th>
+            <th>Modo</th>
+            <th>Restricciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="foot">Se muestra la mejor fila por ruta según filtros.</div>
+    </div>
 
-        <!-- TAB 3 -->
-        <div class="content" id="viewT3" style="display:none">
-          <div class="table-wrap">
-            <table id="tblFull">
-              <thead>
-                <tr>
-                  <th>Fecha/hora</th>
-                  <th>Ruta</th>
-                  <th>Aéreo (USD)</th>
-                  <th>Cumple límite</th>
-                  <th>Límite</th>
-                  <th>Fuente/Proveedor</th>
-                  <th>Equipaje</th>
-                  <th>Escalas</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
+    <div id="tab-history" class="card hidden">
+      <canvas id="chart" height="120"></canvas>
+      <div class="foot">Histórico del mejor total por ruta (por snapshot).</div>
+    </div>
 
-        <!-- TAB 4: Explorador completo -->
-        <div class="content" id="viewT4" style="display:none">
-          <div class="flex" style="padding:10px 12px;border-bottom:1px solid #0f1924;background:#0f1924">
-            <div class="mininote">Explora absolutamente todos los registros tal como existen en los JSON (sin filtros de carry/escala).</div>
-            <div class="space"></div>
-            <button id="btnCSV" class="btn-sec">⬇️ Exportar CSV (todos)</button>
-          </div>
-          <div class="table-wrap">
-            <table id="tblExplorer">
-              <thead>
-                <tr>
-                  <th>Snapshot TS</th>
-                  <th>Ruta</th>
-                  <th>Aéreo (USD)</th>
-                  <th>Under budget</th>
-                  <th>Límite</th>
-                  <th>Proveedor</th>
-                  <th>Equipaje</th>
-                  <th>Escalas</th>
-                  <th>Modo origen</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
+    <div id="tab-all" class="card hidden">
+      <table id="allTable">
+        <thead>
+          <tr>
+            <th>Fecha/Hora</th>
+            <th>Ruta</th>
+            <th>Total USD</th>
+            <th>Vuelo USD</th>
+            <th>Terrestre</th>
+            <th>Proveedor</th>
+            <th>Equipaje</th>
+            <th>Modo</th>
+            <th>Restricciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="foot">Todas las filas del último snapshot que cumplen filtros.</div>
+    </div>
+  </div>
 
-      </div>
-    </main>
-  </section>
+  <script>
+    // ------- Carga de datasets -------
+    const paths = {
+      snap: "../data/data.json",
+      hist: "../data/historico.json",
+      bagg: "../data/baggage_policies.json"
+    };
 
-<script>
-/* ========= 0) Rutas RAW (sin duplicar data) ========= */
-const RAW_BASE = "https://raw.githubusercontent.com/fonchovega/ultra-lowfare-miami/main";
-const PATH_DATA = `${RAW_BASE}/data/data.json`;
-const PATH_HIST = `${RAW_BASE}/data/historico.json`;
+    const state = {
+      snapshot: null,
+      historico: [],
+      baggage: null,
+      chart: null,
+      daysWithData: new Set()
+    };
 
-/* ========= Reglas terrestres (placeholder) ========= */
-function terrestrialRule(route){
-  const r = route.replace(/\s/g,'').toUpperCase();
-  if(r.includes("LIM") && r.includes("MCO")){
-    return { mode:"auto", cost: 45 };
-  }
-  if(r.includes("LIM") && (r.includes("MIA") || r.includes("FLL"))){
-    return { mode:"tren", cost: 18 };
-  }
-  return { mode:"n/a", cost: 0 };
-}
+    function $(q){return document.querySelector(q)}
+    function el(tag,cls){const n=document.createElement(tag); if(cls) n.className=cls; return n}
 
-/* ========= Utilidades ========= */
-const $  = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-const fmtUSD = v => (v==null || isNaN(v)) ? "—" : "$" + Number(v).toFixed(0);
-function csvEscape(v){ if (v==null) return ""; const s=String(v).replace(/"/g,'""'); return /[",\n]/.test(s)?`"${s}"`:s; }
+    async function safeFetchJSON(url){
+      try{ const r = await fetch(url, {cache:"no-store"}); if(!r.ok) throw new Error(r.status); return await r.json(); }
+      catch{ return null; }
+    }
 
-/* ========= Normalización (mock viejo y live nuevo) ========= */
-function normalizeFromSnapshot(snapshot){
-  const out = [];
-  const rawRows = [];
-  const ts = snapshot?.meta?.generado || snapshot?.meta?.timestamp || snapshot?.fecha || new Date().toISOString();
-  const list = snapshot?.resultados || snapshot?.resultado || [];
-  for (const r of list){
-    rawRows.push({ ts, r });
+    function fmtMoney(n){ return (typeof n==="number" && isFinite(n)) ? n.toFixed(2) : "–"; }
+    function fmtDateTime(iso){
+      if(!iso) return "–";
+      const d = new Date(iso);
+      if(Number.isNaN(+d)) return iso;
+      const dd = d.toISOString().slice(0,10);
+      const hh = d.toISOString().slice(11,16);
+      return `${dd} ${hh}`;
+    }
 
-    if ('precio_encontrado' in r){ // MOCK
-      const iso = r.fecha || ts;
-      out.push({
-        ts,
-        date: iso.slice(0,10),
-        time: iso.slice(11,16),
-        route: (r.ruta || "").replace(/\s+/g,''),
-        air: +r.precio_encontrado || null,
-        ok: String(r.cumple||'').includes('Sí'),
-        limit: r.limite ?? null,
-        provider: r.fuente || 'mock',
-        equip: r.detalles?.equipaje ?? '',
-        stops: r.detalles?.escalas_max ?? null,
-        origin_mode: "mock"
+    // Heurística simple para extraer un id de aerolínea desde provider (si viene texto)
+    function guessProviderId(provider){
+      if(!provider) return null;
+      const p = provider.toLowerCase();
+      // atajos comunes
+      if(p.includes("american")) return "aa";
+      if(p.includes("delta")) return "dl";
+      if(p.includes("united")) return "ua";
+      if(p.includes("jetblue")) return "b6";
+      if(p.includes("latam")) return "la";
+      if(p.includes("avianca")) return "av";
+      if(p.includes("spirit")) return "nk";
+      if(p.includes("frontier")) return "f9";
+      if(p.includes("copa")) return "cm";
+      if(p.includes("sky")) return "sky";
+      if(p.includes("jetsmart")) return "jb";
+      // metasearch
+      if(p.includes("google")) return "googleflights";
+      if(p.includes("skyscanner")) return "skyscanner";
+      if(p.includes("kayak")) return "kayak";
+      if(p.includes("momondo")) return "momondo";
+      return null;
+    }
+
+    function baggageLabel(policy){
+      if(!policy) return "–";
+      const carry = policy.carry_on_included===true ? "✔ carry-on" :
+                    policy.carry_on_included===false ? "✖ carry-on" : "carry-on: n/d";
+      let bag = "maleta: n/d";
+      if(typeof policy.checked_bag_first_usd==="number") bag = `1ª maleta: $${policy.checked_bag_first_usd}`;
+      if(typeof policy.checked_bag_base_usd==="string") bag = `maleta: ${policy.checked_bag_base_usd}`;
+      return `${policy.source || "Política"} · ${carry} · ${bag}`;
+    }
+
+    function policyFor(row){
+      const id = guessProviderId(row.provider);
+      if(!id || !state.baggage) return null;
+      // región aproximada según ruta
+      const dest = (row.route || "").split("-")[1] || "";
+      // heuristic: si llega a MCO/FLL/MIA desde LIM => latam_usa
+      const region = ["MIA","FLL","MCO"].includes(dest) ? "latam_usa" : "any";
+      // buscar
+      const air = (state.baggage.airlines || []).find(a=>a.id===id);
+      if(air){
+        return air.regions?.[region] || air.regions?.["any"] || { source: air.name };
+      }
+      const meta = (state.baggage.metasearch || []).find(m=>m.id===id);
+      if(meta){ return { source: meta.name, ...meta.policy }; }
+      return state.baggage.defaults?.unknown_airline || null;
+    }
+
+    function constraintChips(row){
+      const wrap = el("div","rowchips");
+      const c = row.meta?.constraints || {};
+      const carry = c.carry_on_only===true ? el("span","chip ok") : el("span","chip");
+      carry.textContent = c.carry_on_only===true ? "carry-on requerido" : "carry-on: libre";
+      const stops = el("span","chip");
+      stops.textContent = `máx escalas: ${c.max_stops ?? "n/d"}`;
+      wrap.append(carry,stops);
+      return wrap;
+    }
+
+    function terrestrialCol(row){
+      const t = [];
+      if(typeof row.terrestre_cost_usd==="number" && row.terrestre_cost_usd>0){
+        t.push(`$${fmtMoney(row.terrestre_cost_usd)}`);
+      } else {
+        t.push("—");
+      }
+      if(row.terrestre_tipo) t.push(`${row.terrestre_tipo} · ${row.terrestre_label || ""}`.trim());
+      return t.join(" ");
+    }
+
+    function modeBadge(mode){
+      const s = el("span","badge "+(mode==="live"?"live":"mock"));
+      s.textContent = mode==="live" ? "LIVE" : "MOCK";
+      return s;
+    }
+
+    function buildRoutesFromSnapshot(snap){
+      const set = new Set((snap?.resultados||[]).map(r=>r.route).filter(Boolean));
+      return Array.from(set.values());
+    }
+
+    function collectDaysWithData(hist){
+      const set = new Set();
+      (hist||[]).forEach(s => {
+        const d = (s.meta?.generado||"").slice(0,10);
+        if(d) set.add(d);
       });
-      continue;
+      return set;
     }
-    if (r.best_offer){ // LIVE
-      const prov = [...(r.providers?.meta||[]),(r.providers?.airlines||[])].flat();
-      const bestProv = prov.sort((a,b)=>(b.score??0)-(a.score??0))[0];
-      const iso = r.dep || ts;
-      out.push({
-        ts,
-        date: iso.slice(0,10),
-        time: iso.slice(11,16),
-        route: (r.route||"").replace(/\s+/g,''),
-        air: +r.best_offer.total_usd || null,
-        ok: !!r.best_offer.under_budget,
-        limit: null,
-        provider: bestProv?.name || bestProv?.id || 'live',
-        equip: (r.constraints?.carry_on_required ? "carry-on" : ''),
-        stops: r.constraints?.max_stops ?? null,
-        origin_mode: "live"
+
+    function updateCalendarHints(){
+      const arr = Array.from(state.daysWithData).sort();
+      $("#fromHint").textContent = arr.length ? `Días con data: ${arr.join(", ")}` : "Sin marcas";
+      $("#toHint").textContent = $("#fromHint").textContent;
+    }
+
+    function applyFilters(rows){
+      const route = $("#routeSel").value || "";
+      const mode  = $("#modeSel").value || "";
+      const cary  = $("#carrySel").value || "";
+
+      const from = $("#fromDate").value || "";
+      const to   = $("#toDate").value || "";
+
+      return (rows||[]).filter(r=>{
+        if(route && r.route!==route) return false;
+        if(mode && (r.meta?.mode||"")!==mode) return false;
+        if(cary==="true"  && r.meta?.constraints?.carry_on_only!==true) return false;
+        if(cary==="false" && r.meta?.constraints?.carry_on_only===true) return false;
+        const d = r.depart_date || r.dep || "";
+        if(from && d<from) return false;
+        if(to   && d>to) return false;
+        return true;
       });
-      continue;
     }
-  }
-  return { rows: out, rawRows };
-}
 
-/* ========= Carga dataset (RAW) ========= */
-async function loadDataset(){
-  const bust = `?t=${Date.now()}`;
-  const [hist, snap] = await Promise.all([
-    fetch(PATH_HIST + bust).then(r=>r.json()).catch(()=>[]),
-    fetch(PATH_DATA + bust).then(r=>r.json()).catch(()=>null)
-  ]);
-
-  const rows = [];
-  const raw = [];
-
-  if (Array.isArray(hist)){
-    for (const s of hist){
-      const {rows: rr, rawRows} = normalizeFromSnapshot(s);
-      rows.push(...rr); raw.push(...rawRows);
+    function bestByRoute(rows){
+      const map = new Map();
+      for(const r of rows){
+        const key = r.route;
+        if(!key) continue;
+        const tot = (typeof r.total_usd==="number") ? r.total_usd :
+                    (typeof r.aereo==="number") ? r.aereo : Number.POSITIVE_INFINITY;
+        if(!map.has(key) || tot < map.get(key).total) map.set(key, { row:r, total:tot });
+      }
+      return Array.from(map.values()).map(x=>x.row);
     }
-  }
-  if (snap && snap.resultados){
-    const {rows: rr, rawRows} = normalizeFromSnapshot(snap);
-    rows.push(...rr); raw.push(...rawRows);
-  }
 
-  rows.sort((a,b)=> a.ts.localeCompare(b.ts));
-  const routes = Array.from(new Set(rows.map(x=>x.route))).filter(Boolean).sort();
+    function fillTable(tbody, rows){
+      tbody.innerHTML = "";
+      for(const r of rows){
+        const tr = el("tr");
 
-  return { rows, routes, raw };
-}
+        const dt = el("td");
+        dt.innerHTML = `<div class="nowrap">${r.depart_date||r.dep||"—"} ${r.depart_time||"—"}</div><div class="muted">${fmtDateTime(r.meta?.generated)}</div>`;
 
-/* ========= Filtros, KPIs y Tabs ========= */
-function fillRoutesSelector(routes){
-  const sel = $('#routeSel');
-  sel.innerHTML = '';
-  routes.forEach(r=>{
-    const o = document.createElement('option');
-    o.value = r; o.textContent = r.replace('-',' → ');
-    sel.appendChild(o);
-  });
-  if(!routes.length){
-    const o = document.createElement('option');
-    o.value = ''; o.textContent = '—';
-    sel.appendChild(o);
-  }
-}
+        const route = el("td"); route.textContent = r.route || "—";
 
-function applyFilters(rows){
-  const r = $('#routeSel').value;
-  const d1 = $('#dateFrom').value || '0000-00-00';
-  const d2 = $('#dateTo').value   || '9999-12-31';
-  const onlyCarry = $('#prefCarry').checked;
-  const max1 = $('#prefStops').checked;
+        const total = el("td"); total.innerHTML = `<span class="chip ok">$${fmtMoney(r.total_usd)}</span>`;
 
-  return rows.filter(x=>{
-    if(r && x.route !== r) return false;
-    if(x.date < d1 || x.date > d2) return false;
-    if(onlyCarry && x.equip && !/carry/i.test(x.equip)) return false;
-    if(max1 && x.stops!=null && +x.stops>1) return false;
-    return true;
-  });
-}
+        const aereo = el("td"); aereo.textContent = fmtMoney(r.aereo);
 
-function renderKPIs(rows){
-  $('#kpiSnaps').textContent = rows.length;
-  $('#kpiSnapsDetail').textContent = 'Registros (tras filtros)';
+        const terr = el("td"); terr.textContent = terrestrialCol(r);
 
-  if(!rows.length){
-    $('#kpiBestTotal').textContent='—'; $('#kpiBestTotalDetail').textContent='—';
-    $('#kpiBestAir').textContent='—';   $('#kpiBestAirDetail').textContent='—';
-    $('#kpiAvg').textContent='—';       $('#kpiAvgDetail').textContent='—';
-    $('#kpiTopProv').textContent='—';   $('#kpiTopProvDetail').textContent='—';
-    return;
-  }
+        const prov = el("td");
+        const p = el("div","flex");
+        const m = modeBadge(r.meta?.mode||"mock");
+        const pv = el("span",""); pv.textContent = r.provider || "—";
+        p.append(m,pv);
+        prov.appendChild(p);
 
-  const bestAir = rows.reduce((m,x)=> (x.air!=null && x.air<m.air)?x:m, {air:Infinity});
-  $('#kpiBestAir').textContent = fmtUSD(bestAir.air);
-  $('#kpiBestAirDetail').textContent = `${bestAir.date} · ${bestAir.time} · ${bestAir.provider||'—'}`;
+        const bag = el("td");
+        const pol = policyFor(r);
+        bag.textContent = baggageLabel(pol);
 
-  const totals = rows.map(x=>{
-    const t = terrestrialRule(x.route);
-    return { ...x, terr:t.mode, terrCost:t.cost, total:(x.air??0)+t.cost }
-  });
-  const bestTotal = totals.reduce((m,x)=> (x.total<m.total)?x:m, {total:Infinity});
-  $('#kpiBestTotal').textContent = fmtUSD(bestTotal.total);
-  $('#kpiBestTotalDetail').textContent = `${bestTotal.date} · ${bestTotal.time} · ${bestTotal.provider||'—'} (+${bestTotal.terr} ${fmtUSD(bestTotal.terrCost)})`;
+        const modec = el("td");
+        modec.appendChild(modeBadge(r.meta?.mode||"mock"));
 
-  const avg = d3.mean(rows.filter(x=>x.air!=null), d=>d.air);
-  $('#kpiAvg').textContent = fmtUSD(avg||0);
-  $('#kpiAvgDetail').textContent = 'Promedio aéreo (filtros)';
+        const cons = el("td");
+        cons.appendChild(constraintChips(r));
 
-  const byDay = d3.group(rows, d=>d.date);
-  const winners = [];
-  for (const [day,arr] of byDay){
-    const min = arr.reduce((m,x)=> (x.air!=null && x.air<m.air)?x:m, {air:Infinity});
-    if(min.provider) winners.push(min.provider);
-  }
-  const freq = d3.rollup(winners, v=>v.length, d=>d);
-  let top='—', topn=0;
-  for (const [k,v] of freq.entries()) if (v>topn){ top=k; topn=v; }
-  $('#kpiTopProv').textContent = top==='—' ? '—' : top;
-  $('#kpiTopProvDetail').textContent = top==='—' ? '—' : `${topn} veces como mínimo diario`;
-}
+        [dt,route,total,aereo,terr,prov,bag,modec,cons].forEach(td=>tr.appendChild(td));
+        tbody.appendChild(tr);
+      }
+    }
 
-function renderTab1(rows){
-  const tb = $('#tblBest tbody'); tb.innerHTML='';
-  rows.forEach(x=>{
-    const t = terrestrialRule(x.route);
-    const total = (x.air??0) + (t.cost||0);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${x.date}</td>
-      <td>${x.time||'—'}</td>
-      <td>${fmtUSD(x.air)}</td>
-      <td>${x.provider||'—'}</td>
-      <td class="muted">${t.mode}</td>
-      <td>${fmtUSD(t.cost)}</td>
-      <td><b>${fmtUSD(total)}</b></td>
-      <td><span class="pill">${x.equip||'—'}</span> <span class="pill">esc: ${x.stops??'—'}</span></td>
-    `;
-    tb.appendChild(tr);
-  });
-}
+    function updateKpis(rows){
+      $("#kpiCount").textContent = rows.length.toString();
+      const best = rows.reduce((acc,r)=>{
+        const v = (typeof r.total_usd==="number") ? r.total_usd : (typeof r.aereo==="number" ? r.aereo : Infinity);
+        return v<acc ? v : acc;
+      }, Infinity);
+      $("#kpiBest").textContent = isFinite(best) ? `$${best.toFixed(2)}` : "–";
+    }
 
-function renderTab2(rows){
-  const byDay = d3.groups(rows, d=>d.date)
-    .map(([date,arr])=>{
-      const min = d3.min(arr.filter(x=>x.air!=null), d=>d.air);
-      return {date, value: (min==null? null : min)};
-    })
-    .filter(d=>d.value!=null)
-    .sort((a,b)=> a.date.localeCompare(b.date));
+    function buildChart(){
+      const ctx = $("#chart").getContext("2d");
+      if(state.chart){ state.chart.destroy(); state.chart = null; }
+      // Serie: por ruta, mejor total por snapshot
+      const byRoute = new Map();
+      (state.historico||[]).forEach(snap=>{
+        const ts = snap.meta?.generado;
+        const best = {};
+        (snap.resultados||[]).forEach(r=>{
+          const key = r.route;
+          const tot = (typeof r.total_usd==="number") ? r.total_usd :
+                      (typeof r.aereo==="number") ? r.aereo : Infinity;
+          if(!best[key] || tot < best[key]) best[key] = tot;
+        });
+        Object.entries(best).forEach(([route,val])=>{
+          if(!byRoute.has(route)) byRoute.set(route, []);
+          byRoute.get(route).push({x: ts, y: val});
+        });
+      });
 
-  $('#chartMeta').textContent = `${byDay.length} puntos (mínimo aéreo por día)`;
+      const datasets = Array.from(byRoute.entries()).map(([route,points])=>({
+        label: route, data: points, tension: 0.2
+      }));
 
-  const svg = d3.select('#chart'); svg.selectAll('*').remove();
-  const W = svg.node().clientWidth || 900, H = svg.node().clientHeight || 260;
-  const m = {t:20,r:20,b:30,l:48}, w=W-m.l-m.r, h=H-m.t-m.b;
+      state.chart = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          parsing: false,
+          scales: {
+            x: { type: 'time', time: { unit: 'day' } },
+            y: { title: { display: true, text: 'USD' }, beginAtZero: false }
+          },
+          plugins: {
+            legend: { display: true },
+            tooltip: {
+              callbacks: { label: (c)=> `${c.dataset.label}: $${fmtMoney(c.parsed.y)} (${c.parsed.x})` }
+            }
+          }
+        }
+      });
+    }
 
-  const g = svg.append('g').attr('transform',`translate(${m.l},${m.t})`);
-  const x = d3.scaleBand().domain(byDay.map(d=>d.date)).range([0,w]).padding(0.2);
-  const y = d3.scaleLinear().domain([0, d3.max(byDay,d=>d.value)||500]).nice().range([h,0]);
+    function populateFilters(){
+      // Rutas
+      const routes = buildRoutesFromSnapshot(state.snapshot);
+      const sel = $("#routeSel");
+      sel.innerHTML = `<option value="">Todas</option>` + routes.map(r=>`<option>${r}</option>`).join("");
+      // Días con data (hint)
+      state.daysWithData = collectDaysWithData(state.historico);
+      updateCalendarHints();
+      // KPI gen
+      $("#kpiHist").textContent = (state.historico||[]).length.toString();
+      $("#kpiGen").textContent = state.snapshot?.meta?.generado ? fmtDateTime(state.snapshot.meta.generado) : "–";
+      // Modo
+      const mode = (state.snapshot?.meta?.mode || "mock").toUpperCase();
+      const badge = $("#modeBadge");
+      badge.textContent = mode;
+      badge.className = "badge " + ((mode==="LIVE") ? "live" : "mock");
+      $("#metaLine").textContent = `Proyecto: ${state.snapshot?.meta?.project || "—"} · v${state.snapshot?.meta?.v || "1.3.x"} · ${routes.length} rutas en snapshot`;
+    }
 
-  g.append('g').attr('transform',`translate(0,${h})`)
-    .call(d3.axisBottom(x).tickValues(x.domain().filter((_,i)=>!(i%Math.ceil(byDay.length/8)))) )
-    .selectAll('text').attr('transform','translate(-10,10) rotate(-30)').style('font-size','11px').style('fill','#9fb3c8');
+    function refreshTables(){
+      const rows = applyFilters(state.snapshot?.resultados||[]);
+      // Best table
+      const best = bestByRoute(rows);
+      fillTable($("#bestTable tbody"), best);
+      // All table
+      fillTable($("#allTable tbody"), rows);
+      updateKpis(rows);
+    }
 
-  g.append('g').call(d3.axisLeft(y).ticks(5))
-    .selectAll('text').style('fill','#9fb3c8');
+    async function boot(){
+      const [snap,hist,bagg] = await Promise.all([
+        safeFetchJSON(paths.snap),
+        safeFetchJSON(paths.hist),
+        safeFetchJSON(paths.bagg)
+      ]);
+      state.snapshot = snap || { resultados:[], meta:{} };
+      state.historico = Array.isArray(hist) ? hist : (hist ? [hist] : []);
+      state.baggage = bagg;
 
-  g.selectAll('rect').data(byDay).enter().append('rect')
-    .attr('x', d=>x(d.date)).attr('y', d=>y(d.value))
-    .attr('width', x.bandwidth()).attr('height', d=>h - y(d.value))
-    .attr('fill', '#2b5b86');
-}
+      populateFilters();
+      refreshTables();
+      buildChart();
 
-function renderTab3(rows){
-  const tb = $('#tblFull tbody'); tb.innerHTML='';
-  rows.forEach(x=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${x.date} ${x.time||''}</td>
-      <td>${x.route}</td>
-      <td>${fmtUSD(x.air)}</td>
-      <td>${x.ok ? '<span class="status-ok">Sí</span>' : '<span class="status-bad">No</span>'}</td>
-      <td>${x.limit ?? '—'}</td>
-      <td>${x.provider||'—'}</td>
-      <td>${x.equip||'—'}</td>
-      <td>${x.stops ?? '—'}</td>
-    `;
-    tb.appendChild(tr);
-  });
-}
+      // Eventos UI
+      document.querySelectorAll(".tab").forEach(t=>{
+        t.addEventListener("click", ()=>{
+          document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+          t.classList.add("active");
+          const target = t.dataset.tab;
+          ["best","history","all"].forEach(id=>{
+            $("#tab-"+id).classList.toggle("hidden", id!==target);
+          });
+          if(target==="history") buildChart();
+        });
+      });
 
-function renderTab4(rawRows){
-  const tb = $('#tblExplorer tbody'); tb.innerHTML='';
-  rawRows.forEach(({ts, r})=>{
-    const route = (r.route || r.ruta || '').replace(/\s+/g,'');
-    const air   = r.best_offer?.total_usd ?? r.precio_encontrado ?? null;
-    const ok    = r.best_offer?.under_budget ?? (typeof r.cumple==='string' ? r.cumple.includes('Sí') : r.cumple);
-    const limit = r.limite ?? null;
-    const prov  = (r.providers?.meta?.[0]?.name || r.providers?.airlines?.[0]?.name || r.fuente || '—');
-    const equip = (r.constraints?.carry_on_required ? 'carry-on' : (r.detalles?.equipaje || '—'));
-    const stops = r.constraints?.max_stops ?? r.detalles?.escalas_max ?? '—';
-    const origin = ('best_offer' in r) ? 'live' : ( 'precio_encontrado' in r ? 'mock' : 'unknown' );
+      $("#applyBtn").onclick = ()=> refreshTables();
+      $("#clearBtn").onclick = ()=>{
+        $("#fromDate").value = "";
+        $("#toDate").value = "";
+        $("#routeSel").value = "";
+        $("#modeSel").value = "";
+        $("#carrySel").value = "";
+        refreshTables();
+      };
+    }
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${ts}</td>
-      <td>${route}</td>
-      <td>${fmtUSD(air)}</td>
-      <td>${ok===true ? 'Sí' : (ok===false ? 'No' : '—')}</td>
-      <td>${limit ?? '—'}</td>
-      <td>${prov}</td>
-      <td>${equip}</td>
-      <td>${stops}</td>
-      <td>${origin}</td>
-    `;
-    tb.appendChild(tr);
-  });
-}
-
-/* ========= Orquestación ========= */
-let DATA = {rows:[], routes:[], raw:[]};
-
-function applyFiltersWrapper(){
-  const route = $('#routeSel').value;
-  $('#routeBadge').textContent = route || '—';
-
-  const rows = applyFilters(DATA.rows).filter(x=> x.route===route);
-  rows.sort((a,b)=> a.ts.localeCompare(b.ts));
-
-  renderKPIs(rows);
-  renderTab1(rows);
-  renderTab2(rows);
-  renderTab3(rows);
-  renderTab4(DATA.raw);
-}
-
-async function init(){
-  const dataset = await loadDataset();
-  DATA = dataset;
-  fillRoutesSelector(DATA.routes);
-  const pref = DATA.routes.find(r=>/LIM.*(MIA|FLL|MCO)/.test(r)) || DATA.routes[0] || '';
-  $('#routeSel').value = pref;
-  applyFiltersWrapper();
-}
-
-/* ========= Eventos ========= */
-$$('#btnReload, #routeSel, #dateFrom, #dateTo, #prefCarry, #prefStops').forEach(el=>{
-  el.addEventListener('change', applyFiltersWrapper);
-  el.addEventListener('click',  applyFiltersWrapper);
-});
-
-$$('.tab').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    $$('.tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const t = btn.dataset.tab;
-    $('#viewT1').style.display = (t==='t1')?'block':'none';
-    $('#viewT2').style.display = (t==='t2')?'block':'none';
-    $('#viewT3').style.display = (t==='t3')?'block':'none';
-    $('#viewT4').style.display = (t==='t4')?'block':'none';
-  });
-});
-
-$('#btnCSV').addEventListener('click', ()=>{
-  const headers = ["snapshot_ts","route","air_price","under_budget","limit","provider","equip","stops","origin_mode"];
-  const lines = [headers.join(",")];
-  DATA.raw.forEach(({ts, r})=>{
-    const route = (r.route || r.ruta || '').replace(/\s+/g,'');
-    const air   = r.best_offer?.total_usd ?? r.precio_encontrado ?? "";
-    const ok    = r.best_offer?.under_budget ?? (typeof r.cumple==='string' ? r.cumple.includes('Sí') : r.cumple);
-    const limit = r.limite ?? "";
-    const prov  = (r.providers?.meta?.[0]?.name || r.providers?.airlines?.[0]?.name || r.fuente || "");
-    const equip = (r.constraints?.carry_on_required ? 'carry-on' : (r.detalles?.equipaje || ""));
-    const stops = r.constraints?.max_stops ?? r.detalles?.escalas_max ?? "";
-    const origin= ('best_offer' in r) ? 'live' : ( 'precio_encontrado' in r ? 'mock' : 'unknown' );
-
-    lines.push([
-      csvEscape(ts),
-      csvEscape(route),
-      csvEscape(air),
-      csvEscape(ok),
-      csvEscape(limit),
-      csvEscape(prov),
-      csvEscape(equip),
-      csvEscape(stops),
-      csvEscape(origin)
-    ].join(","));
-  });
-  const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = "ultra_lowfare_full_export.csv";
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-});
-
-/* ========= Start ========= */
-init();
-</script>
+    // Espera a que cargue Chart.js si hay red lenta
+    window.addEventListener("load", boot);
+  </script>
 </body>
 </html>
