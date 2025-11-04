@@ -1,0 +1,140 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "generated_utc": "2025-11-04T00:00:00Z",
+    "notes": [
+      "Valores indicativos en USD; pueden variar por ruta, tarifa, temporada y estatus del pasajero.",
+      "Este archivo es informativo para estimar costos en Front/Reporte; el precio final lo define el sitio oficial de la aerolínea o el ticket al momento de compra.",
+      "Si el proveedor es un metabuscador, no fija políticas propias; se muestra una referencia genérica y se delega la política final a la aerolínea del itinerario."
+    ]
+  },
+
+  "metasearch": [
+    {
+      "id": "googleflights",
+      "name": "Google Flights",
+      "policy": {
+        "type": "reference_only",
+        "carry_on_included": "depende de la aerolínea",
+        "personal_item_included": "depende de la aerolínea",
+        "checked_bag_base_usd": "depende de la aerolínea",
+        "notes": "Mostrador de tarifas; no vende. Política final es la de la aerolínea."
+      }
+    },
+    {
+      "id": "skyscanner",
+      "name": "Skyscanner",
+      "policy": {
+        "type": "reference_only",
+        "carry_on_included": "depende de la aerolínea",
+        "personal_item_included": "depende de la aerolínea",
+        "checked_bag_base_usd": "depende de la aerolínea",
+        "notes": "Comparador; condiciones finales según aerolínea/OTAs."
+      }
+    },
+    {
+      "id": "kayak",
+      "name": "Kayak",
+      "policy": {
+        "type": "reference_only",
+        "carry_on_included": "depende de la aerolínea",
+        "personal_item_included": "depende de la aerolínea",
+        "checked_bag_base_usd": "depende de la aerolínea",
+        "notes": "Comparador/derivador; ver política final en proveedor."
+      }
+    },
+    {
+      "id": "momondo",
+      "name": "Momondo",
+      "policy": {
+        "type": "reference_only",
+        "carry_on_included": "depende de la aerolínea",
+        "personal_item_included": "depende de la aerolínea",
+        "checked_bag_base_usd": "depende de la aerolínea",
+        "notes": "Referencia informativa; prevalece política de la aerolínea."
+      }
+    }
+  ],
+
+  "airlines": [
+    {
+      "id": "aa",
+      "name": "American Airlines",
+      "regions": {
+        "domestic_us": {
+          "carry_on_included": true,
+          "personal_item_included": true,
+          "checked_bag_first_usd": 35,
+          "checked_bag_second_usd": 45,
+          "basic_economy_carry_on": true,
+          "notes": "Rutas dentro de EE.UU.; puede variar por origen/estado."
+        },
+        "latam_usa": {
+          "carry_on_included": true,
+          "personal_item_included": true,
+          "checked_bag_first_usd": 30,
+          "checked_bag_second_usd": 50,
+          "basic_economy_carry_on": true,
+          "notes": "EE.UU. ⇄ Latinoamérica; ver restricciones de tarifa básica."
+        }
+      }
+    },
+    {
+      "id": "dl",
+      "name": "Delta",
+      "regions": {
+        "domestic_us": {
+          "carry_on_included": true,
+          "personal_item_included": true,
+          "checked_bag_first_usd": 35,
+          "checked_bag_second_usd": 45,
+          "basic_economy_carry_on": true,
+          "notes": "Política estándar doméstica; exceptuando rutas especiales."
+        },
+        "latam_usa": {
+          "carry_on_included": true,
+          "personal_item_included": true,
+          "checked_bag_first_usd": 30,
+          "checked_bag_second_usd": 50,
+          "basic_economy_carry_on": true,
+          "notes": "EE.UU. ⇄ LATAM (indicativo); revisar al cotizar."
+        }
+      }
+    },
+    {
+      "id": "b6",
+      "name": "JetBlue",
+      "regions": {
+        "domestic_us": {
+          "carry_on_included": true,
+          "personal_item_included": true,
+          "checked_bag_first_usd": 35,
+          "checked_bag_second_usd": 50,
+          "basic_economy_carry_on": false,
+          "notes": "En Blue Basic suele NO incluir carry-on de cabina completo."
+        },
+        "latam_usa": {
+          "carry_on_included": true,
+          "personal_item_included": true,
+          "checked_bag_first_usd": 35,
+          "checked_bag_second_usd": 50,
+          "basic_economy_carry_on": false,
+          "notes": "Puede variar por país en LATAM."
+        }
+      }
+    },
+    {
+      "id": "ua",
+      "name": "United",
+      "regions": {
+        "domestic_us": {
+          "carry_on_included": true,
+          "personal_item_included": true,
+          "checked_bag_first_usd": 35,
+          "checked_bag_second_usd": 45,
+          "basic_economy_carry_on": false,
+          "notes": "Basic Economy suele permitir solo artículo personal."
+        },
+        "latam_usa": {
+          "carry_on_included": true,
+          "personal_item_included
