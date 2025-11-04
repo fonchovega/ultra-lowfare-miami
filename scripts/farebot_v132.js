@@ -13,7 +13,7 @@ import {
   appendJsonArrayCapped,
   nowIsoUtc,
   log,
-} from "../helper.js";
+} from "../scripts/helper.js";
 
 // ----------------------------
 // Rutas de datasets
