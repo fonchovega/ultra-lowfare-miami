@@ -1,46 +1,23 @@
-name: FareBot v1.3.2 – Live Adaptive Run
+name: FareBot v1.3.2 – Adaptive Live Run
 
 on:
   schedule:
-    # Cada 3 horas en el minuto 0 (UTC)
-    - cron: "0 */3 * * *"
+    - cron: "0 */3 * * *" # cada 3 horas
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "SOURCE/FAREBOT mode (live/mock/adaptative)"
-        required: false
-        default: "live"
-        type: choice
-        options:
-          - live
-          - mock
-          - adaptative
-      price_threshold:
-        description: "Umbral de alerta (USD) para notify_price_drops"
-        required: false
-        default: "400"
-        type: string
 
 permissions:
-  contents: write  # necesario para commit condicional
-
-concurrency:
-  group: farebot-v132
-  cancel-in-progress: false
+  contents: write
 
 jobs:
   run-farebot:
-    name: run-farebot
     runs-on: ubuntu-latest
+    concurrency:
+      group: farebot-v132
+      cancel-in-progress: false
+
     env:
-      # Versionado y modo
+      FAREBOT_MODE: live
       FAREBOT_VERSION: "1.3.2"
-      FAREBOT_MODE: ${{ inputs.mode || 'live' }}
-
-      # Umbral de alerta (notify step)
-      PRICE_ALERT_THRESHOLD: ${{ inputs.price_threshold || '400' }}
-
-      # Secrets opcionales para Telegram (si están configurados en repo settings)
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
@@ -51,43 +28,20 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
-          cache: "npm"
+          node-version: 20
 
       - name: Install deps
-        run: |
-          npm ci || npm install
+        run: npm ci || npm install
 
-      - name: Run FareBot v1.3.2 (engine wrapper)
-        run: |
-          node scripts/farebot_v132.js
+      - name: Run FareBot engine
+        run: node scripts/farebot_v132.js
 
-      - name: Notify price drops (diff + persist)
-        run: |
-          node scripts/notify_price_drops.js
+      - name: Notify price changes
+        run: node scripts/notify_price_drops.js
 
-      # Commit condicional: solo si cambió algo en data/ o logs/
-      - name: Git status (pre-commit)
-        id: git_status
+      - name: Commit if data changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          CHANGED=$(git status --porcelain data logs | wc -l)
-          echo "changed_count=${CHANGED}" >> $GITHUB_OUTPUT
-
-      - name: Commit dataset changes (conditional)
-        if: steps.git_status.outputs.changed_count != '0'
-        run: |
-          git add data logs
-          git commit -m "chore(data): update datasets & logs (FareBot v${FAREBOT_VERSION}, mode=${FAREBOT_MODE}) [skip ci]" || true
-          git push
-
-      # Opcional: subir logs como artifact para inspección
-      - name: Upload logs artifact (optional)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: farebot-logs-${{ github.run_id }}
-          path: |
-            logs/
-          if-no-files-found: ignore
+          git add data logs || true
+          git diff --quiet && echo "No changes" || (git commit -m "auto: update data [v${FAREBOT_VERSION}]" && git push)
