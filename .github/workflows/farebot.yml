@@ -1,72 +1,33 @@
 name: FareBot v1.3.2 – Live Adaptive Run
 
 on:
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: "Si 'true', solo imprime sin escribir data/historico"
-        required: false
-        default: "false"
   schedule:
-    - cron: "0 */3 * * *"   # cada 3 horas (UTC)
-
-permissions:
-  contents: write   # necesario para poder hacer push con GITHUB_TOKEN
-
-concurrency:
-  group: farebot-live
-  cancel-in-progress: false
+    - cron: "0 */3 * * *"   # cada 3 horas
+  workflow_dispatch:
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
-
-    env:
-      NODE_ENV: production
-      SOURCE_MODE: live
-      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: "20"
 
-      - name: Instalar dependencias (si existen)
-        run: |
-          npm ci || npm install
-          npx --yes playwright install || true
+      - name: Install deps (if any)
+        run: npm ci || npm install
 
-      - name: Preparar carpetas
-        run: |
-          mkdir -p data logs
+      - name: Run FareBot
+        run: node scripts/farebot.js
 
-      - name: Ejecutar FareBot v1.3.2
-        run: |
-          node scripts/farebot_v132.js
+      - name: Notify price drops (diff + persist)
+        run: node scripts/notify_price_drops.js
 
-      - name: Commit si cambió algo
+      - name: Commit dataset changes (conditional)
         run: |
-          echo "🔍 Verificando cambios..."
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Forzar stage de JSON y logs relevantes
-          git add -f data/data.json data/historico.json logs/*.log 2>/dev/null || true
-
-          echo "📋 Estado del repositorio:"
-          git status
-
-          # Verificar si hay cambios staged
-          if [ -n "$(git diff --cached --name-only)" ]; then
-            echo "📦 Cambios detectados. Realizando commit..."
-            git commit -m "chore: auto update ($(date -u +%F' '%T) UTC)"
-            git push
-            echo "✅ Cambios enviados exitosamente."
-          else
-            echo "✅ Sin cambios para commitear."
-          fi
+          git add data/*.json docs/_last_run.json || true
+          git diff --cached --quiet || git commit -m "chore: dataset update (bot)"
+          git push
