@@ -1,5 +1,5 @@
 // ============================================================
-// farebot_v132.js — Ultra-LowFare Engine v1.3.2 (Stable Fix)
+// farebot_v132.js — Ultra-LowFare Engine v1.3.2 (LIVE + MOCK)
 // ============================================================
 
 import path from "path";
@@ -18,12 +18,28 @@ const __dirname = path.dirname(__filename);
 const DATA_PATH = path.join(__dirname, "../data/data.json");
 const HIST_PATH = path.join(__dirname, "../data/historico.json");
 
+const MODE = process.env.FAREBOT_MODE?.toLowerCase() || "live"; // 🟡 Control de modo: "live" o "mock"
+
+// ------------------------------------------------------------------
+// Función de simulación (MOCK)
+// ------------------------------------------------------------------
+
+function mockPrice(route) {
+  return {
+    bestPrice: 380 + Math.floor(Math.random() * 40) - 20, // rango 360–400
+    details: {
+      carrier: "Simulated Airways",
+      meta: "mocked run",
+    },
+  };
+}
+
 // ------------------------------------------------------------------
 // Ejecutor principal
 // ------------------------------------------------------------------
 
 async function runFarebot() {
-  log("🚀 Iniciando Farebot v1.3.2 (fix-import-helper)");
+  log(`🚀 Iniciando FareBot v1.3.2 [modo=${MODE}]`);
 
   const data = readJsonSafe(DATA_PATH, null);
   if (!data) {
@@ -36,15 +52,22 @@ async function runFarebot() {
 
   for (const ruta of rutas) {
     try {
-      log(`✈️ Buscando precios para ${ruta}...`);
-      const res = await fetchLivePrices(ruta);
+      log(`✈️ Procesando ${ruta}...`);
+
+      const res =
+        MODE === "mock"
+          ? mockPrice(ruta)
+          : await fetchLivePrices(ruta); // 🔄 modo dinámico
+
       resultados.push({
         ruta,
         mejor_precio: res.bestPrice,
         fecha: nowIsoUtc(),
-        fuente: "live",
+        fuente: MODE,
+        detalles: res.details || {},
       });
-      log(`✅ ${ruta} → Mejor precio: ${res.bestPrice}`);
+
+      log(`✅ ${ruta} → ${MODE === "mock" ? "(simulado)" : "(real)"} $${res.bestPrice}`);
     } catch (err) {
       log(`❌ Error al buscar ${ruta}: ${err.message}`);
     }
@@ -62,7 +85,7 @@ async function runFarebot() {
       proyecto: data.meta?.proyecto || "A",
       rutasKey: data.meta?.rutasKey,
       v: "1.3.2",
-      mode: "live",
+      mode: MODE,
     },
     resumen,
     resultados,
@@ -79,7 +102,7 @@ async function runFarebot() {
       ruta: data.meta?.rutasKey,
       fecha: nowIsoUtc(),
       mejor_precio: resumen.mejor_precio,
-      fuente: "live",
+      fuente: MODE,
       cumple: resumen.cumple_umbral ? "✅ Cumple" : "❌ No cumple",
     },
   });
@@ -89,8 +112,12 @@ async function runFarebot() {
   // Evaluar alertas
   await alertIfDrop(resumen.mejor_precio);
 
-  log("🏁 Ejecución completada con éxito.");
+  log(`🏁 FareBot finalizado en modo ${MODE.toUpperCase()}.`);
 }
+
+// ------------------------------------------------------------------
+// Ejecución segura
+// ------------------------------------------------------------------
 
 runFarebot().catch(err => {
   console.error("💥 Error crítico:", err);
