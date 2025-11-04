@@ -1,82 +1,90 @@
 // ============================================================
-// scripts/farebot.js (MOCK) — guarda snapshot atómico y histórico con tope
+// helper.js — Utilidades comunes para FareBot / Historico / Sync
 // ============================================================
 
-import { writeJsonAtomic, appendJsonArrayCapped, nowIsoUtc, log } from "../helper.js";
+import fs from "fs";
+import path from "path";
 
-// Destinos de datasets
-const DATA_PATH = "./data/data.json";        // snapshot actual (atómico)
-const HIST_PATH = "./data/historico.json";   // histórico (tope 600)
-
-// --------------------------
-// Función principal (MOCK)
-// --------------------------
-async function main() {
-  log("Iniciando búsqueda de tarifas (MOCK)…");
-
-  // Parámetros de ejemplo
-  const routes = [
-    { origin: "LIM", destination: "MIA", price_limit: 360 },
-    { origin: "LIM", destination: "FLL", price_limit: 360 },
-    { origin: "LIM", destination: "MCO", price_limit: 400 }
-  ];
-
-  const results = [];
-
-  for (const route of routes) {
-    try {
-      log(`Buscando ${route.origin} → ${route.destination} (tope $${route.price_limit})`);
-      // Simulación de precio
-      const simulatedPrice = Math.floor(Math.random() * 550) + 250; // 250..799
-      const cumple = simulatedPrice <= route.price_limit;
-      const timestamp = nowIsoUtc();
-
-      const record = {
-        ruta: `${route.origin} → ${route.destination}`,
-        route: `${route.origin}-${route.destination}`,
-        fecha: timestamp,
-        depart_date: timestamp.slice(0,10),
-        depart_time: timestamp.slice(11,16),
-        precio_encontrado: simulatedPrice,
-        aereo: simulatedPrice,
-        cumple: cumple ? "✅ Sí cumple" : "❌ No cumple",
-        limite: route.price_limit,
-        provider: "simulación interna",
-        meta: { mode: "mock" },
-        detalles: { equipaje: "carry-on only", escalas_max: 1 }
-      };
-
-      results.push(record);
-      log(`${route.origin}→${route.destination}: $${simulatedPrice} → ${cumple ? "Cumple" : "No cumple"}`, "OK");
-    } catch (err) {
-      log(`Error buscando ${route.origin}-${route.destination}: ${err?.message||err}`, "ERROR");
+// ------------------------------------------------------------
+// Creación segura de directorios
+// ------------------------------------------------------------
+export const ensureDir = (dirPath) => {
+  try {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
     }
-  }
-
-  // Snapshot + histórico
-  const snapshot = {
-    meta: { generado: nowIsoUtc(), mode: "mock", project: "default" },
-    resultados: results
-  };
-
-  try {
-    writeJsonAtomic(DATA_PATH, snapshot);
-    log("Snapshot guardado en data/data.json (atómico)", "SAVE");
   } catch (err) {
-    log(`Error guardando snapshot: ${err?.message||err}`, "ERROR");
+    console.error(`⚠️ Error creando directorio ${dirPath}:`, err.message);
   }
+};
 
+// ------------------------------------------------------------
+// Lectura segura de JSON
+// ------------------------------------------------------------
+export const readJsonSafe = (filePath, fallback = {}) => {
   try {
-    appendJsonArrayCapped(HIST_PATH, snapshot, 600, true);
-    log("Histórico actualizado en data/historico.json (tope=600)", "SAVE");
+    if (!fs.existsSync(filePath)) return fallback;
+    const content = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(content);
   } catch (err) {
-    log(`Error actualizando histórico: ${err?.message||err}`, "ERROR");
+    console.warn(`⚠️ Error leyendo ${filePath}:`, err.message);
+    return fallback;
   }
+};
 
-  log("Búsqueda finalizada correctamente.", "DONE");
-}
+// ------------------------------------------------------------
+// Escritura segura de JSON
+// ------------------------------------------------------------
+export const writeJson = (filePath, data) => {
+  try {
+    ensureDir(path.dirname(filePath));
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  } catch (err) {
+    console.error(`⚠️ Error escribiendo ${filePath}:`, err.message);
+  }
+};
 
-main().catch((e) => {
-  log(`Error inesperado en farebot.js: ${e?.message||e}`, "FATAL");
-  process.exit(1);
-});
+// ------------------------------------------------------------
+// Lectura / escritura de texto plano
+// ------------------------------------------------------------
+export const readFileSafe = (filePath, fallback = "") => {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    return fs.readFileSync(filePath, "utf8");
+  } catch (err) {
+    console.warn(`⚠️ Error leyendo archivo ${filePath}:`, err.message);
+    return fallback;
+  }
+};
+
+export const writeFileSafe = (filePath, content = "") => {
+  try {
+    ensureDir(path.dirname(filePath));
+    fs.writeFileSync(filePath, content, "utf8");
+  } catch (err) {
+    console.error(`⚠️ Error escribiendo archivo ${filePath}:`, err.message);
+  }
+};
+
+// ------------------------------------------------------------
+// Timestamps y logging
+// ------------------------------------------------------------
+export const nowIsoUtc = () => new Date().toISOString();
+
+export const log = (msg, tag = "INFO") => {
+  const stamp = new Date().toISOString();
+  console.log(`[${stamp}] [${tag}] ${msg}`);
+};
+
+// ------------------------------------------------------------
+// Exportación por defecto (compatibilidad)
+// ------------------------------------------------------------
+export default {
+  ensureDir,
+  readJsonSafe,
+  writeJson,
+  readFileSafe,
+  writeFileSafe,
+  nowIsoUtc,
+  log,
+};
