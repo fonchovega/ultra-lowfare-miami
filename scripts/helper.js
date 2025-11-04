@@ -1,104 +1,82 @@
 // ============================================================
-// helper.js — Utilidades comunes (ESM) para FareBot / Front / Históricos
+// scripts/farebot.js (MOCK) — guarda snapshot atómico y histórico con tope
 // ============================================================
 
-import fs from "fs";
-import path from "path";
+import { writeJsonAtomic, appendJsonArrayCapped, nowIsoUtc, log } from "../helper.js";
 
-// ---------------------------
-// FS helpers
-// ---------------------------
-export const ensureDir = (dirPath) => {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-};
+// Destinos de datasets
+const DATA_PATH = "./data/data.json";        // snapshot actual (atómico)
+const HIST_PATH = "./data/historico.json";   // histórico (tope 600)
 
-export const ensureFile = (filePath) => {
-  ensureDir(path.dirname(filePath));
-  if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, "", "utf8");
-  return filePath;
-};
+// --------------------------
+// Función principal (MOCK)
+// --------------------------
+async function main() {
+  log("Iniciando búsqueda de tarifas (MOCK)…");
 
-export const readJsonSafe = (filePath, fallback = {}) => {
+  // Parámetros de ejemplo
+  const routes = [
+    { origin: "LIM", destination: "MIA", price_limit: 360 },
+    { origin: "LIM", destination: "FLL", price_limit: 360 },
+    { origin: "LIM", destination: "MCO", price_limit: 400 }
+  ];
+
+  const results = [];
+
+  for (const route of routes) {
+    try {
+      log(`Buscando ${route.origin} → ${route.destination} (tope $${route.price_limit})`);
+      // Simulación de precio
+      const simulatedPrice = Math.floor(Math.random() * 550) + 250; // 250..799
+      const cumple = simulatedPrice <= route.price_limit;
+      const timestamp = nowIsoUtc();
+
+      const record = {
+        ruta: `${route.origin} → ${route.destination}`,
+        route: `${route.origin}-${route.destination}`,
+        fecha: timestamp,
+        depart_date: timestamp.slice(0,10),
+        depart_time: timestamp.slice(11,16),
+        precio_encontrado: simulatedPrice,
+        aereo: simulatedPrice,
+        cumple: cumple ? "✅ Sí cumple" : "❌ No cumple",
+        limite: route.price_limit,
+        provider: "simulación interna",
+        meta: { mode: "mock" },
+        detalles: { equipaje: "carry-on only", escalas_max: 1 }
+      };
+
+      results.push(record);
+      log(`${route.origin}→${route.destination}: $${simulatedPrice} → ${cumple ? "Cumple" : "No cumple"}`, "OK");
+    } catch (err) {
+      log(`Error buscando ${route.origin}-${route.destination}: ${err?.message||err}`, "ERROR");
+    }
+  }
+
+  // Snapshot + histórico
+  const snapshot = {
+    meta: { generado: nowIsoUtc(), mode: "mock", project: "default" },
+    resultados: results
+  };
+
   try {
-    if (!fs.existsSync(filePath)) return fallback;
-    const raw = fs.readFileSync(filePath, "utf8");
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
+    writeJsonAtomic(DATA_PATH, snapshot);
+    log("Snapshot guardado en data/data.json (atómico)", "SAVE");
+  } catch (err) {
+    log(`Error guardando snapshot: ${err?.message||err}`, "ERROR");
   }
-};
 
-export const writeJson = (filePath, data) => {
-  ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
-  return filePath;
-};
-
-export const writeJsonAtomic = (filePath, data) => {
-  ensureDir(path.dirname(filePath));
-  const tmp = `${filePath}.tmp-${Date.now()}`;
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
-  fs.renameSync(tmp, filePath);
-  return filePath;
-};
-
-export const readFileSafe = (filePath, fallback = "") => {
   try {
-    if (!fs.existsSync(filePath)) return fallback;
-    return fs.readFileSync(filePath, "utf8");
-  } catch {
-    return fallback;
+    appendJsonArrayCapped(HIST_PATH, snapshot, 600, true);
+    log("Histórico actualizado en data/historico.json (tope=600)", "SAVE");
+  } catch (err) {
+    log(`Error actualizando histórico: ${err?.message||err}`, "ERROR");
   }
-};
 
-export const writeFileSafe = (filePath, content = "") => {
-  ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, content, "utf8");
-  return filePath;
-};
+  log("Búsqueda finalizada correctamente.", "DONE");
+}
 
-// ---------------------------
-// Históricos con tope
-// ---------------------------
-export const appendJsonArrayCapped = (filePath, item, limit = 600, atomic = true) => {
-  let arr = readJsonSafe(filePath, []);
-  if (!Array.isArray(arr)) arr = [];
-  arr.push(item);
-  if (limit && arr.length > limit) arr = arr.slice(-limit);
-  return atomic ? writeJsonAtomic(filePath, arr) : writeJson(filePath, arr);
-};
-
-// ---------------------------
-// Utilidades varias
-// ---------------------------
-export const nowIsoUtc = () => new Date().toISOString();
-
-export const log = (msg, tag = "INFO") => {
-  const stamp = new Date().toISOString();
-  console.log(`[${stamp}] [${tag}] ${msg}`);
-};
-
-export const normPath = (p) => p.replace(/^\.?\/*/, "");
-
-export const shortSha = () => {
-  const sha = process.env.GITHUB_SHA || "";
-  return sha ? sha.slice(0, 7) : "";
-};
-
-export const tryParseJson = (str) => {
-  try { return JSON.parse(str); } catch { return null; }
-};
-
-export const writeIfChanged = (filePath, content) => {
-  const prev = readFileSafe(filePath, null);
-  if (prev === null || prev !== content) {
-    writeFileSafe(filePath, content);
-    return true;
-  }
-  return false;
-};
-
-export const writeJsonIfChanged = (filePath, obj) => {
-  const next = JSON.stringify(obj, null, 2);
-  return writeIfChanged(filePath, next);
-};
+main().catch((e) => {
+  log(`Error inesperado en farebot.js: ${e?.message||e}`, "FATAL");
+  process.exit(1);
+});
