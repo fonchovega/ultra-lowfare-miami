@@ -1,13 +1,20 @@
 // ============================================================
 // notify_price_drops.js — Alerta automática de caídas de tarifas
 // ============================================================
+// Compatible con:
+//   /scripts/alert.js
+//   /scripts/helpers/helper.js
+// ============================================================
 
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { sendAlert } from "./alert.js"; // ✅ CORREGIDO: ruta directa al archivo alert.js
-import { readJsonSafe, writeJson } from "./helper.js";
+import { enviarAlerta } from "./alert.js";
+import { readJsonSafe, writeJson, log } from "./helpers/helper.js";
 
+// ------------------------------------------------------------
+// Configuración de rutas y constantes
+// ------------------------------------------------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -15,31 +22,69 @@ const DATA_PATH = path.resolve(__dirname, "../data/data.json");
 const HIST_PATH = path.resolve(__dirname, "../data/historico.json");
 const ALERT_LOG = path.resolve(__dirname, "../logs/alertas.json");
 
-const ALERT_THRESHOLD = process.env.ALERT_THRESHOLD
-  ? parseFloat(process.env.ALERT_THRESHOLD)
-  : 400; // valor por defecto, puede ajustarse
+// Umbrales por corredor
+const UMBRALES = {
+  "LIM-MIA": 420,
+  "LIM-FLL": 400,
+  "LIM-MCO": 430,
+};
 
-console.log(`\n🚀 Ejecutando notify_price_drops.js con umbral: $${ALERT_THRESHOLD}\n`);
+// ------------------------------------------------------------
+// Función principal
+// ------------------------------------------------------------
+async function main() {
+  try {
+    log("🔍 Analizando dataset de tarifas...");
+    const data = readJsonSafe(DATA_PATH, []);
+    const historico = readJsonSafe(HIST_PATH, []);
 
-// ========================== FUNCIONES ==========================
-function findNewLowFares(data, historico, threshold) {
-  const nuevos = [];
+    if (!Array.isArray(data)) {
+      throw new Error("El archivo data.json no contiene un arreglo válido");
+    }
 
-  for (const entry of data) {
-    const prev = historico.find(
-      (h) => h.route === entry.route && h.airline === entry.airline
-    );
+    const alertas = [];
 
-    if (!prev || entry.price < prev.price) {
-      if (entry.price <= threshold) {
-        nuevos.push({
-          ...entry,
-          previousPrice: prev ? prev.price : null,
-          drop: prev ? prev.price - entry.price : null,
-          timestamp: new Date().toISOString(),
+    for (const vuelo of data) {
+      const ruta = `${vuelo.origen}-${vuelo.destino}`;
+      const precio = parseFloat(vuelo.precio);
+
+      if (UMBRALES[ruta] && precio < UMBRALES[ruta]) {
+        alertas.push({
+          ruta,
+          precio,
+          umbral: UMBRALES[ruta],
+          airline: vuelo.aerolinea || "Desconocida",
+          fecha: vuelo.fecha || new Date().toISOString(),
         });
       }
     }
-  }
 
-  return nuevos;
+    if (!alertas.length) {
+      log("✅ No se detectaron bajadas de precio significativas.");
+      return;
+    }
+
+    log(`🚨 Se detectaron ${alertas.length} bajadas de precio.`);
+    for (const alerta of alertas) {
+      const msg = `Ruta ${alerta.ruta} (${alerta.airline}) bajó a $${alerta.precio} (umbral ${alerta.umbral})`;
+      enviarAlerta(msg);
+    }
+
+    // Guardar alerta en log
+    const registro = { timestamp: new Date().toISOString(), alertas };
+    writeJson(ALERT_LOG, registro);
+    log("💾 Registro de alertas actualizado correctamente.");
+  } catch (err) {
+    log(`❌ Error en notify_price_drops.js: ${err.message}`);
+    process.exit(1);
+  }
+}
+
+// ------------------------------------------------------------
+// Ejecución directa o importable
+// ------------------------------------------------------------
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}
+
+export default main;
