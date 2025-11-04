@@ -14,10 +14,11 @@
     "reconstruir:historico": "node scripts/rebuild_historico_from_git.js",
     "guard": "node scripts/guard_run.js",
     "start": "http-server -c-1 -p 8080"
-      },
+  },
   "dependencies": {
     "node-fetch": "^3.3.2",
-    "glob": "^10.3.10"
+    "glob": "^10.3.10",
+    "playwright": "^1.48.0"
   },
   "devDependencies": {
     "http-server": "^14.1.1"
