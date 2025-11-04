@@ -1,125 +1,107 @@
 // ============================================================
-// farebot_v132.js — Ultra-LowFare Engine v1.3.2 (LIVE + MOCK)
+// alert.js — Sistema de alertas FareBot v1.3.2
 // ============================================================
 
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { readJsonSafe, writeJson, ensureDir, nowIsoUtc, log } from "./helper.js"; // ✅ Ruta corregida
-import { fetchLivePrices } from "./fetch_live_html.js";
-import { dedupe } from "./dedupe.js";
-import { alertIfDrop } from "./alert.js";
+import { nowIsoUtc, log } from "./helper.js";
 
-// ------------------------------------------------------------------
-// Configuración base
-// ------------------------------------------------------------------
-
+// ------------------------------------------------------------
+// Configuración
+// ------------------------------------------------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_PATH = path.join(__dirname, "../data/data.json");
-const HIST_PATH = path.join(__dirname, "../data/historico.json");
+const ALERT_LOG = path.join(__dirname, "../data/alert_log.json");
 
-const MODE = process.env.FAREBOT_MODE?.toLowerCase() || "live"; // 🟡 Control de modo: "live" o "mock"
+const TELEGRAM_API_URL = process.env.TELEGRAM_API_URL || "";
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 
-// ------------------------------------------------------------------
-// Función de simulación (MOCK)
-// ------------------------------------------------------------------
-
-function mockPrice(route) {
-  return {
-    bestPrice: 380 + Math.floor(Math.random() * 40) - 20, // rango 360–400
-    details: {
-      carrier: "Simulated Airways",
-      meta: "mocked run",
-    },
-  };
+// ------------------------------------------------------------
+// Utilidades
+// ------------------------------------------------------------
+function readJsonSafe(file, fallback = []) {
+  try {
+    if (!fs.existsSync(file)) return fallback;
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    return Array.isArray(data) ? data : fallback;
+  } catch (err) {
+    log(`⚠️ Error leyendo ${file}: ${err.message}`);
+    return fallback;
+  }
 }
 
-// ------------------------------------------------------------------
-// Ejecutor principal
-// ------------------------------------------------------------------
+function writeJson(file, data) {
+  try {
+    fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+  } catch (err) {
+    log(`⚠️ Error escribiendo ${file}: ${err.message}`);
+  }
+}
 
-async function runFarebot() {
-  log(`🚀 Iniciando FareBot v1.3.2 [modo=${MODE}]`);
+// ------------------------------------------------------------
+// Alerta si hay caída de precio
+// ------------------------------------------------------------
+export async function alertIfDrop(precioActual) {
+  const logs = readJsonSafe(ALERT_LOG, []);
+  const ultimaAlerta = logs[logs.length - 1];
+  const ultimaFecha = ultimaAlerta?.fecha || "n/a";
+  const ultimoPrecio = ultimaAlerta?.precio || null;
 
-  const data = readJsonSafe(DATA_PATH, null);
-  if (!data) {
-    log("⚠️ No se encontró data.json. Abortando.");
+  if (ultimoPrecio && precioActual >= ultimoPrecio) {
+    log(`🔸 Sin cambios relevantes: $${precioActual} ≥ $${ultimoPrecio}`);
     return;
   }
 
-  const rutas = data.meta?.rutasKey?.split("|") || [];
-  const resultados = [];
+  const mensaje = [
+    `**Alerta de tarifas - ${new Date().toISOString()}**`,
+    "",
+    `🟢 Nuevo precio más bajo detectado: $${precioActual}`,
+    ultimoPrecio
+      ? `📉 Anterior: $${ultimoPrecio} (del ${ultimaFecha})`
+      : "Primer registro detectado.",
+    "",
+    `🕓 Generado: ${nowIsoUtc()}`,
+  ].join("\n");
 
-  for (const ruta of rutas) {
-    try {
-      log(`✈️ Procesando ${ruta}...`);
+  log("📩 Enviando alerta de Telegram...");
+  const enviado = await sendTelegramMessage(mensaje);
 
-      const res =
-        MODE === "mock"
-          ? mockPrice(ruta)
-          : await fetchLivePrices(ruta); // 🔄 modo dinámico
-
-      resultados.push({
-        ruta,
-        mejor_precio: res.bestPrice,
-        fecha: nowIsoUtc(),
-        fuente: MODE,
-        detalles: res.details || {},
-      });
-
-      log(`✅ ${ruta} → ${MODE === "mock" ? "(simulado)" : "(real)"} $${res.bestPrice}`);
-    } catch (err) {
-      log(`❌ Error al buscar ${ruta}: ${err.message}`);
-    }
-  }
-
-  const resumen = {
-    mejor_precio: Math.min(...resultados.map(r => r.mejor_precio)),
-    cumple_umbral: resultados.some(r => r.mejor_precio <= (data.resumen?.umbral || 400)),
-    iteraciones: (data.resumen?.iteraciones || 0) + 1,
-  };
-
-  const nuevoData = {
-    meta: {
-      generado: nowIsoUtc(),
-      proyecto: data.meta?.proyecto || "A",
-      rutasKey: data.meta?.rutasKey,
-      v: "1.3.2",
-      mode: MODE,
-    },
-    resumen,
-    resultados,
-  };
-
-  writeJson(DATA_PATH, nuevoData);
-  log("💾 data.json actualizado correctamente.");
-
-  // Actualizar histórico
-  const historico = readJsonSafe(HIST_PATH, []);
-  historico.push({
-    meta: { generado: nowIsoUtc() },
-    resumen: {
-      ruta: data.meta?.rutasKey,
-      fecha: nowIsoUtc(),
-      mejor_precio: resumen.mejor_precio,
-      fuente: MODE,
-      cumple: resumen.cumple_umbral ? "✅ Cumple" : "❌ No cumple",
-    },
+  logs.push({
+    fecha: nowIsoUtc(),
+    precio: precioActual,
+    enviado: enviado ? "✅" : "❌",
   });
-  writeJson(HIST_PATH, historico);
-  log("📜 Histórico actualizado correctamente.");
 
-  // Evaluar alertas
-  await alertIfDrop(resumen.mejor_precio);
-
-  log(`🏁 FareBot finalizado en modo ${MODE.toUpperCase()}.`);
+  writeJson(ALERT_LOG, logs);
+  log("🗂️ Log de alertas actualizado.");
 }
 
-// ------------------------------------------------------------------
-// Ejecución segura
-// ------------------------------------------------------------------
+// ------------------------------------------------------------
+// Envío a Telegram (si configurado)
+// ------------------------------------------------------------
+async function sendTelegramMessage(text) {
+  if (!TELEGRAM_API_URL || !TELEGRAM_CHAT_ID) {
+    log("⚠️ No se configuró Telegram; alerta no enviada.");
+    return false;
+  }
 
-runFarebot().catch(err => {
-  console.error("💥 Error crítico:", err);
-  process.exit(1);
-});
+  try {
+    const res = await fetch(
+      `${TELEGRAM_API_URL}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(
+        text
+      )}&parse_mode=Markdown`
+    );
+
+    if (!res.ok) {
+      log(`⚠️ Error al enviar Telegram: ${res.statusText}`);
+      return false;
+    }
+
+    log("✅ Alerta enviada correctamente a Telegram.");
+    return true;
+  } catch (err) {
+    log(`❌ Error enviando alerta: ${err.message}`);
+    return false;
+  }
+}
