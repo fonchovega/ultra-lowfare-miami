@@ -18,8 +18,8 @@ jobs:
       - name: Install deps (if any)
         run: npm ci || npm install
 
-      - name: Run FareBot
-        run: node scripts/farebot.js
+      - name: Run FareBot v.1.3.2 (adaptative)
+        run: node scripts/farebot_v132.js
 
       - name: Notify price drops (diff + persist)
         run: node scripts/notify_price_drops.js
