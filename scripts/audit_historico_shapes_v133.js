@@ -15,34 +15,27 @@ function loadJSON(p) {
   return JSON.parse(raw);
 }
 
-// ---- Detectores tolerantes (solo informativos) ----
+// Detector informativo (tolerante)
 function detectShapeLoose(entry) {
   try {
     if (Array.isArray(entry)) {
-      // V8 u otras variantes por bloques anidados
       const ok = entry.every(b =>
         b && typeof b === "object" &&
         b.meta &&
         (Array.isArray(b.resultados) || Array.isArray(b.resumen))
       );
-      if (ok) return "V8";
-      return "unknown-array";
+      return ok ? "V8" : "unknown-array";
     }
 
     if (!entry || typeof entry !== "object") return "unknown";
 
-    const hasMeta = !!entry.meta;
     const hasResumen = Array.isArray(entry.resumen);
     const hasResultados = Array.isArray(entry.resultados);
-    const hasDetalles = !!entry.detalles;
-    const hasTitulo = !!entry.meta?.titulo;
 
-    if (hasTitulo && hasResumen && hasDetalles) return "V5";
+    if (entry?.meta?.titulo && hasResumen && entry?.detalles) return "V5";
     if (hasResumen && (entry.resumen[0]?.salida || entry.resumen[0]?.retorno)) return "V6";
     if (hasResumen && entry.resumen[0]?.destino) return "V7";
     if (hasResultados) return "V1-4";
-
-    // Otras variantes antiguas que traían "historico"/"historico_detallado"
     if (Array.isArray(entry.historico) || Array.isArray(entry.historico_detallado)) return "V1-4*";
 
     return "unknown";
@@ -51,14 +44,13 @@ function detectShapeLoose(entry) {
   }
 }
 
-// ---- Auditor principal: prioriza el normalizador ----
 function main() {
   const raw = loadJSON(DATA);
   const entries = Array.isArray(raw) ? raw : [raw];
 
   const stats = {
-    "V1-4": 0, "V1-4*": 0, V5: 0, V6: 0, V7: 0, V8: 0, recognized_via_normalizer: 0,
-    "unknown": 0, "error": 0
+    "V1-4": 0, "V1-4*": 0, V5: 0, V6: 0, V7: 0, V8: 0,
+    recognized_via_normalizer: 0, unknown: 0
   };
   const unknownSamples = [];
   const lines = [];
@@ -66,42 +58,38 @@ function main() {
   entries.forEach((entry, index) => {
     const tag = detectShapeLoose(entry);
 
-    // 1) Intento normalizar SIEMPRE.
-    let normBlocks;
+    let normBlocks = [];
+    let normOk = false;
     let normErr = null;
+
     try {
       normBlocks = normalizeHistoricoEntryV133(entry);
+      normOk =
+        Array.isArray(normBlocks) &&
+        normBlocks.length > 0 &&
+        normBlocks.some(b => Array.isArray(b?.resultados) && b.resultados.length > 0);
     } catch (e) {
       normErr = e;
     }
 
-    const hasValid =
-      Array.isArray(normBlocks) &&
-      normBlocks.length > 0 &&
-      normBlocks.some(b => Array.isArray(b?.resultados) && b.resultados.length > 0 && !b?.meta?._shape);
-
-    if (hasValid) {
-      // Contabiliza por tag si es reconocido, si no, cuenta como “recognized_via_normalizer”
+    if (normOk) {
       if (stats[tag] !== undefined && tag !== "unknown" && !tag.startsWith("unknown")) {
         stats[tag]++;
         lines.push(`✔ index ${index}: ${tag} (normalizado OK)`);
       } else {
         stats.recognized_via_normalizer++;
-        lines.push(`✔ index ${index}: reconocido por normalizador (tag: ${tag})`);
+        lines.push(`✔ index ${index}: reconocido por normalizador (tag:${tag})`);
       }
     } else {
-      // No se logró normalizar: unknown real
-      stats[tag] !== undefined ? stats[tag]++ : stats.unknown++;
-      unknownSamples.push({ index, sample: entry });
-      const reason = normErr ? `error:${String(normErr?.message || normErr)}` : `tag:${tag}`;
-      lines.push(`✖ index ${index}: UNKNOWN (${reason})`);
+      stats.unknown++;
+      unknownSamples.push({ index, sample: entry, reason: normErr ? String(normErr?.message || normErr) : `tag:${tag}` });
+      lines.push(`✖ index ${index}: UNKNOWN (${normErr ? String(normErr?.message || normErr) : `tag:${tag}`})`);
     }
   });
 
   fs.writeFileSync(OUT_UNKNOWN, JSON.stringify(unknownSamples, null, 2));
 
-  // Reporte
-  const report = [
+  console.log([
     "✅ Auditoría v1.3.3 (revisado)",
     `  V1-4  : ${stats["V1-4"]}`,
     `  V1-4* : ${stats["V1-4*"]}`,
@@ -112,13 +100,11 @@ function main() {
     `  Reconocidos solo por normalizador: ${stats["recognized_via_normalizer"]}`,
     `  Unknown: ${stats["unknown"]}`,
     "",
-    `Muestras desconocidas guardadas en ${path.relative(ROOT, OUT_UNKNOWN)}`,
+    `Muestras desconocidas: data/historico_unknown_samples.json`,
     "",
     "Detalle:",
     ...lines
-  ].join("\n");
-
-  console.log(report);
+  ].join("\n"));
 }
 
 main();
