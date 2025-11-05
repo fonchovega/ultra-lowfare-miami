@@ -29,9 +29,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install deps
         run: npm ci || npm install
+
+      - name: Install Playwright browsers (with deps)
+        run: npx playwright install --with-deps
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: 0 #evita rutas globales
 
       - name: Run FareBot engine
         run: node scripts/farebot_v132.js
