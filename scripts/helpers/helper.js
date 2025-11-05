@@ -1,142 +1,105 @@
 // ===================================================================
-// helper.js  — versión limpia (sin backticks / Node 20+ compatible)
-// Proyecto: Ultra-LowFare v1.3.3
-// Autor: Víctor A. Vega Huertas
-// Descripción: Funciones utilitarias para lectura, escritura y logs.
+// scripts/helpers/helper.js
+// Utilidades generales usadas por todos los módulos de Ultra-LowFare
 // ===================================================================
 
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
-import { fileURLToPath } from "url";
 
-// -------------------------------------------------------------------
-// Resolver rutas base
-// -------------------------------------------------------------------
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export function resolvePath(relPath) {
-  return path.resolve(__dirname, "..", relPath);
-}
-
-// -------------------------------------------------------------------
-// Funciones de lectura / escritura JSON
-// -------------------------------------------------------------------
-export function readJsonSafe(filePath, defaultValue = null) {
-  try {
-    const content = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(content);
-  } catch (err) {
-    logWarn("No se pudo leer o parsear el archivo: " + filePath, "readJsonSafe");
-    return defaultValue;
-  }
-}
-
-export function writeJson(filePath, data, pretty = true) {
-  try {
-    const json = pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data);
-    fs.writeFileSync(filePath, json, "utf-8");
-    logInfo("Archivo guardado correctamente en: " + filePath, "writeJson");
-  } catch (err) {
-    logError("Error al escribir archivo JSON: " + filePath, "writeJson", err);
-  }
-}
-
-// -------------------------------------------------------------------
-// Funciones auxiliares de fecha y hora
-// -------------------------------------------------------------------
+// ---------------------------------------------------------------
+// Formato fecha y hora ISO UTC
+// ---------------------------------------------------------------
 export function nowIsoUtc() {
   return new Date().toISOString();
 }
 
-export function formatDateTime(date = new Date()) {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mi = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
-  return yyyy + "-" + mm + "-" + dd + " " + hh + ":" + mi + ":" + ss;
+// ---------------------------------------------------------------
+// Limpieza de texto
+// ---------------------------------------------------------------
+export function cleanString(str) {
+  if (typeof str !== "string") return str;
+  return str.trim().replace(/\s+/g, " ");
 }
 
-export function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-    logInfo("Carpeta creada: " + dirPath, "ensureDir");
-  }
+// ---------------------------------------------------------------
+// Logs unificados (sin backticks)
+// ---------------------------------------------------------------
+function prefixMsg(level) {
+  return "[" + level.toUpperCase() + "]";
 }
 
-// -------------------------------------------------------------------
-// Utilidad para limpiar texto
-// -------------------------------------------------------------------
-export function cleanString(text) {
-  if (!text || typeof text !== "string") return "";
-  return text
-    .replace(/\r?\n|\r/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// -------------------------------------------------------------------
-// Funciones para archivos genéricos
-// -------------------------------------------------------------------
-export function listFilesRecursive(dir, extFilter = null) {
-  let results = [];
-  const list = fs.readdirSync(dir);
-  list.forEach((file) => {
-    const fullPath = path.join(dir, file);
-    const stat = fs.statSync(fullPath);
-    if (stat && stat.isDirectory()) {
-      results = results.concat(listFilesRecursive(fullPath, extFilter));
-    } else {
-      if (!extFilter || file.endsWith(extFilter)) {
-        results.push(fullPath);
-      }
-    }
-  });
-  return results;
-}
-
-// -------------------------------------------------------------------
-// Logging helpers (sin backticks, resistentes a WhatsApp)
-// -------------------------------------------------------------------
-export function logInfo(msg, ctx = null) {
-  const prefix = "ℹ️ INFO:";
+export function logInfo(msg, ctx) {
+  const prefix = prefixMsg("info");
   if (ctx) console.log(prefix + " [" + ctx + "] " + msg);
   else console.log(prefix + " " + msg);
 }
 
-export function logWarn(msg, ctx = null) {
-  const prefix = "⚠️ WARN:";
+export function logWarn(msg, ctx) {
+  const prefix = prefixMsg("warn");
   if (ctx) console.warn(prefix + " [" + ctx + "] " + msg);
   else console.warn(prefix + " " + msg);
 }
 
-export function logError(msg, ctx = null, err = null) {
-  const prefix = "❌ ERROR:";
-  if (ctx && err)
-    console.error(prefix + " [" + ctx + "] " + msg + "\n" + (err.stack || err));
-  else if (ctx)
-    console.error(prefix + " [" + ctx + "] " + msg);
-  else if (err)
-    console.error(prefix + " " + msg + "\n" + (err.stack || err));
-  else
-    console.error(prefix + " " + msg);
+export function logError(msg, ctx, err) {
+  const prefix = prefixMsg("error");
+  if (ctx) console.error(prefix + " [" + ctx + "] " + msg, err);
+  else console.error(prefix + " " + msg, err);
 }
 
-// -------------------------------------------------------------------
-// Exportaciones principales
-// -------------------------------------------------------------------
-export default {
-  resolvePath,
-  readJsonSafe,
-  writeJson,
-  nowIsoUtc,
-  formatDateTime,
-  ensureDir,
-  cleanString,
-  listFilesRecursive,
-  logInfo,
-  logWarn,
-  logError,
-};
+// ---------------------------------------------------------------
+// Lectura y escritura de JSON segura
+// ---------------------------------------------------------------
+export async function readJsonSafe(filepath, defaultValue) {
+  try {
+    const data = await fs.readFile(filepath, "utf-8");
+    return JSON.parse(data);
+  } catch (e) {
+    logWarn("No se pudo leer " + filepath + " (" + e.message + ")", "readJsonSafe");
+    return defaultValue;
+  }
+}
+
+export async function writeJson(filepath, data) {
+  try {
+    const dir = path.dirname(filepath);
+    await fs.mkdir(dir, { recursive: true });
+    const json = JSON.stringify(data, null, 2);
+    await fs.writeFile(filepath, json, "utf-8");
+    logInfo("Archivo guardado: " + filepath, "writeJson");
+  } catch (e) {
+    logError("No se pudo escribir JSON en " + filepath, "writeJson", e);
+  }
+}
+
+// ---------------------------------------------------------------
+// Crear carpeta si no existe
+// ---------------------------------------------------------------
+export async function ensureDir(dirPath) {
+  try {
+    await fs.mkdir(dirPath, { recursive: true });
+  } catch (e) {
+    logError("No se pudo crear directorio: " + dirPath, "ensureDir", e);
+  }
+}
+
+// ---------------------------------------------------------------
+// Otras utilidades menores
+// ---------------------------------------------------------------
+export function readJsonSync(filePath, defaultValue) {
+  try {
+    const data = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(data);
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
+export function delay(ms) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, ms);
+  });
+}
+
+// ---------------------------------------------------------------
+// Fin del módulo
+// ---------------------------------------------------------------
