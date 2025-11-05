@@ -1,224 +1,160 @@
-// ===================================================================
-// scripts/writer_historico_v133_full.js
-// Ultra-LowFare v1.3.3 — Normaliza TODO el histórico y genera:
-//   - data/historico_v133_merged.json  (único dataset unificado)
-//   - data/historico_audit_v133.json   (resumen de auditoría)
-//   - data/historico_unknown_samples.json (muestras no reconocidas)
-// Requiere: scripts/helpers/helper.js y scripts/helpers/schema_v133.js
-// ===================================================================
+/**
 
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
+* writer_historico_v133_full.js
+* Escritura robusta del histórico y snapshot actual (v1.3.3)
+* 
+*    - Anexa uno o varios bloques "canónicos" al archivo data/historico.json
+*    - Actualiza data/data.json con el último bloque recibido (snapshot actual)
+*    - No usa template literals para evitar problemas al copiar desde WhatsApp
+*/
 
+import fs from 'node:fs';
+import path from 'node:path';
 import {
-  ensureDir,
-  readJsonSafe,
-  writeJson,
-  logInfo,
-  logWarn,
-  logError,
-  cleanString,
-  nowIsoUtc
-} from "./helpers/helper.js";
+WRITER_VERSION,
+isBlockLike,
+isMeta
+} from './schema_v133.js';
 
-import {
-  detectSampleVersion,
-  normalizeToV133,
-  normalizeHistoricoArray,
-  mergeNormalized,
-  isValidV133
-} from "./helpers/schema_v133.js";
+// --------------------------- Utilitarios I/O ---------------------------
 
-// ---------------------------------------------------------------
-// Resolución de rutas base
-// ---------------------------------------------------------------
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const ROOT = path.resolve(__dirname, "..", "..");
-const DATA_DIR = path.join(ROOT, "data");
-
-const HISTORICO_JSON = path.join(DATA_DIR, "historico.json");
-const OUT_MERGED = path.join(DATA_DIR, "historico_v133_merged.json");
-const OUT_AUDIT = path.join(DATA_DIR, "historico_audit_v133.json");
-const OUT_UNKNOWN = path.join(DATA_DIR, "historico_unknown_samples.json");
-
-// ---------------------------------------------------------------
-// Utilidades locales
-// ---------------------------------------------------------------
-function countBy(arr) {
-  var map = {};
-  arr.forEach(function(k) {
-    var kk = k || "unknown";
-    if (!map[kk]) map[kk] = 0;
-    map[kk]++;
-  });
-  return map;
+function ensureDir(p) {
+fs.mkdirSync(p, { recursive: true });
 }
 
-function humanTag(vtag) {
-  // para compatibilidad con el reporte que has venido viendo
-  if (vtag === "V1-4") return "V1-4";
-  if (vtag === "V5") return "V5";
-  if (vtag === "V6") return "V6";
-  if (vtag === "V7") return "V7";
-  if (vtag === "V8") return "V8";
-  if (vtag === "V1-4*") return "V1-4*";
-  if (!vtag) return "unknown";
-  return String(vtag);
+function readJsonSafe(p, fallback) {
+try {
+const raw = fs.readFileSync(p, 'utf8');
+return JSON.parse(raw);
+} catch (_) {
+return fallback;
+}
 }
 
-// Clasifica si una muestra normalizada terminó con items vacíos
-function isEmptyNormalized(n) {
-  return !n || !Array.isArray(n.items) || n.items.length === 0;
+function writeJsonAtomic(p, data) {
+const tmp = p + '.tmp';
+const txt = JSON.stringify(data, null, 2);
+fs.writeFileSync(tmp, txt, 'utf8');
+fs.renameSync(tmp, p);
 }
 
-// ---------------------------------------------------------------
-// Auditoría
-// ---------------------------------------------------------------
-function buildAuditReport(samples, normalizedList, detectedTags) {
-  var unknownIdx = [];
-  var recognizedOnlyByNormalizer = 0; // reservado si luego queremos distinguir heurísticas
-
-  for (var i = 0; i < samples.length; i++) {
-    var n = normalizedList[i];
-    if (isEmptyNormalized(n)) unknownIdx.push(i);
-  }
-
-  var counts = countBy(detectedTags.map(humanTag));
-
-  // Reordena llaves de interés para mostrar primero
-  var orderedKeys = ["V1-4", "V1-4*", "V5", "V6", "V7", "V8", "unknown"];
-  var summary = {};
-  orderedKeys.forEach(function(k) {
-    if (counts[k]) summary[k] = counts[k];
-    else summary[k] = 0;
-  });
-
-  var audit = {
-    generated_at: nowIsoUtc(),
-    totals: {
-      V1_4: summary["V1-4"] || 0,
-      V1_4_star: summary["V1-4*"] || 0,
-      V5: summary["V5"] || 0,
-      V6: summary["V6"] || 0,
-      V7: summary["V7"] || 0,
-      V8: summary["V8"] || 0,
-      recognized_only_by_normalizer: recognizedOnlyByNormalizer,
-      unknown: summary["unknown"] || 0
-    },
-    unknown_indexes: unknownIdx
-  };
-
-  return audit;
+function nowIso() {
+try {
+return new Date().toISOString();
+} catch (_) {
+return '1970-01-01T00:00:00.000Z';
+}
 }
 
-function formatConsoleAudit(audit) {
-  var lines = [];
-  lines.push("✅ Auditoría v1.3.3 (revisado)");
-  lines.push("  V1-4  : " + audit.totals.V1_4);
-  lines.push("  V1-4* : " + audit.totals.V1_4_star);
-  lines.push("  V5    : " + audit.totals.V5);
-  lines.push("  V6    : " + audit.totals.V6);
-  lines.push("  V7    : " + audit.totals.V7);
-  lines.push("  V8    : " + audit.totals.V8);
-  lines.push("  Reconocidos solo por normalizador: " + audit.totals.recognized_only_by_normalizer);
-  lines.push("  Unknown: " + audit.totals.unknown);
-  lines.push("");
-  if (audit.unknown_indexes && audit.unknown_indexes.length > 0) {
-    lines.push("Muestras desconocidas: " + path.relative(ROOT, OUT_UNKNOWN));
-    lines.push("");
-    lines.push("Detalle:");
-    audit.unknown_indexes.forEach(function(i) {
-      lines.push("✖ index " + i + ": UNKNOWN (tag:unknown)");
-    });
-  } else {
-    lines.push("No hay muestras desconocidas.");
-  }
-  return lines.join("\n");
+// --------------------------- Normalización mínima ---------------------------
+
+function coerceBlock(entry) {
+// Si ya parece bloque válido, lo regresamos tal cual
+if (isBlockLike(entry)) return entry;
+
+// Caso especial: algunos payloads venían como { meta, resumen } sueltos
+if (entry && typeof entry === 'object') {
+const meta = isMeta(entry.meta) ? entry.meta : { generado: nowIso() };
+const out = {
+meta: Object.assign({}, meta, { writer_version: WRITER_VERSION }),
+resumen: Array.isArray(entry.resumen) ? entry.resumen : [],
+resultados: Array.isArray(entry.resultados) ? entry.resultados : []
+};
+if (isBlockLike(out)) return out;
 }
 
-// ---------------------------------------------------------------
-// Proceso principal
-// ---------------------------------------------------------------
-async function main() {
-  try {
-    await ensureDir(DATA_DIR);
-
-    var historico = await readJsonSafe(HISTORICO_JSON, null);
-    if (!historico) {
-      logWarn("No se encontró data/historico.json. Nada que normalizar.", "writer_v133");
-      return;
-    }
-
-    if (!Array.isArray(historico)) {
-      logWarn("El archivo historico.json no es un arreglo. Intentando envolverlo...", "writer_v133");
-      historico = [historico];
-    }
-
-    var total = historico.length;
-    logInfo("Cargando " + total + " muestras desde " + path.relative(ROOT, HISTORICO_JSON), "writer_v133");
-
-    // Detecta etiquetas por muestra
-    var detectedTags = historico.map(function(entry) {
-      try {
-        var s = entry && entry.sample ? entry.sample : entry;
-        return detectSampleVersion(s);
-      } catch (e) {
-        return "unknown";
-      }
-    });
-
-    // Normaliza por muestra (a objeto v1.3.3 cada una)
-    var normalizedList = historico.map(function(entry) {
-      var s = entry && entry.sample ? entry.sample : entry;
-      var norm = normalizeToV133(s);
-      if (!isValidV133(norm)) {
-        // fallback: marcamos unknown
-        norm = {
-          version: "v1.3.3",
-          meta: { generado: nowIsoUtc(), fuente_version: "UNKNOWN", modo: "live" },
-          items: []
-        };
-      }
-      return norm;
-    });
-
-    // Genera merged único para front
-    var merged = mergeNormalized(normalizedList);
-    await writeJson(OUT_MERGED, merged);
-    logInfo("Escrito " + path.relative(ROOT, OUT_MERGED) + " con " + merged.items.length + " items.", "writer_v133");
-
-    // Construye muestras "unknown" para inspección
-    var unknownSamples = [];
-    for (var i = 0; i < historico.length; i++) {
-      var tag = detectedTags[i] || "unknown";
-      var n = normalizedList[i];
-      if (tag === "UNKNOWN" || isEmptyNormalized(n)) {
-        unknownSamples.push({
-          index: i,
-          tag: tag,
-          original: historico[i]
-        });
-      }
-    }
-    await writeJson(OUT_UNKNOWN, unknownSamples);
-    logInfo("Escrito " + path.relative(ROOT, OUT_UNKNOWN) + " (" + unknownSamples.length + " muestras).", "writer_v133");
-
-    // Reporte de auditoría
-    var audit = buildAuditReport(historico, normalizedList, detectedTags);
-    await writeJson(OUT_AUDIT, audit);
-    logInfo("Escrito " + path.relative(ROOT, OUT_AUDIT) + ".", "writer_v133");
-
-    // Salida amigable en consola (mismo formato que vienes viendo)
-    var pretty = formatConsoleAudit(audit);
-    console.log(pretty);
-
-  } catch (err) {
-    logError("Fallo procesando writer_historico_v133_full", "writer_v133", err);
-    process.exitCode = 1;
-  }
+// Último recurso: envolver en un bloque mínimo
+return {
+meta: { generado: nowIso(), writer_version: WRITER_VERSION },
+resumen: [],
+resultados: []
+};
 }
 
-main();
+function toBlocks(payload) {
+if (Array.isArray(payload)) {
+const blocks = [];
+for (const it of payload) {
+const b = coerceBlock(it);
+if (isBlockLike(b)) blocks.push(b);
+}
+return blocks;
+}
+return [coerceBlock(payload)];
+}
+
+// --------------------------- API pública ---------------------------
+
+/**
+
+* Escribe en:
+*    - data/historico.json: append de bloques
+*    - data/data.json: último snapshot
+* 
+* @param {object|object[]} payload  Bloque o lista de bloques canónicos
+* @param {object} opts               { baseDir?: string }
+* @returns {{written:number, historicoPath:string, snapshotPath:string}}
+*/
+export function writeHistoricoFull(payload, opts = {}) {
+const ROOT = path.resolve(opts.baseDir || '.');
+const DATA_DIR = path.join(ROOT, 'data');
+const HISTORICO = path.join(DATA_DIR, 'historico.json');
+const SNAPSHOT = path.join(DATA_DIR, 'data.json');
+
+ensureDir(DATA_DIR);
+
+const blocks = toBlocks(payload);
+const prev = readJsonSafe(HISTORICO, []);
+const next = Array.isArray(prev) ? prev.slice() : [];
+
+for (const b of blocks) {
+// Garantizamos versionado mínimo
+if (!b.meta || typeof b.meta !== 'object') b.meta = {};
+if (!b.meta.generado) b.meta.generado = nowIso();
+b.meta.writer_version = WRITER_VERSION;
+next.push(b);
+}
+
+writeJsonAtomic(HISTORICO, next);
+
+// Snapshot: el último bloque recibido
+const last = blocks.length > 0 ? blocks[blocks.length - 1] : {
+meta: { generado: nowIso(), writer_version: WRITER_VERSION },
+resumen: [],
+resultados: []
+};
+writeJsonAtomic(SNAPSHOT, last);
+
+return {
+written: blocks.length,
+historicoPath: HISTORICO,
+snapshotPath: SNAPSHOT
+};
+}
+
+/**
+
+* CLI opcional:
+* node scripts/helpers/writer_historico_v133_full.js data/historico_unknown_samples.json
+* Si pasas una ruta a un JSON, lo carga y lo escribe como blocks.
+*/
+if (import.meta && import.meta.url && process.argv && process.argv[1]) {
+try {
+const arg = process.argv[2];
+if (arg) {
+const abs = path.resolve(arg);
+const obj = readJsonSafe(abs, null);
+if (!obj) {
+console.log('No se pudo leer el archivo: ' + abs);
+process.exit(2);
+}
+const result = writeHistoricoFull(obj, { baseDir: '.' });
+console.log('Escritura completa. Bloques: ' + String(result.written));
+console.log('Historico: ' + result.historicoPath);
+console.log('Snapshot : ' + result.snapshotPath);
+}
+} catch (e) {
+console.error('Error en CLI writer_historico_v133_full:', e && e.message ? e.message : String(e));
+process.exit(1);
+}
+}
