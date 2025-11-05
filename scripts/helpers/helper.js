@@ -139,12 +139,16 @@ export function logWarn(msg, ctx = "") {
   console.warn(ctx ? `${prefix} [${ctx}] ${msg}` : `${prefix} ${msg}`);
 }
 
-export function logError(msg, ctx = "", err = null) {
-  const prefix = `[ERROR] ${new Date().toISOString()}`;
-  if (err) {
-    console.error(ctx ? `${prefix} [${ctx}] ${msg}`, err);
+export function logError(msg, ctx = null, err = null) {
+  const prefix = "❌ ERROR:";
+  if (ctx && err) {
+    console.error(`${prefix} [${ctx}] ${msg}\n`, err);
+  } else if (ctx) {
+    console.error(`${prefix} [${ctx}] ${msg}`);
+  } else if (err) {
+    console.error(`${prefix} ${msg}\n`, err);
   } else {
-    console.error(ctx ? `${prefix} [${ctx}] ${msg}` : `${prefix} ${msg}`);
+    console.error(`${prefix} ${msg}`);
   }
 }
 
