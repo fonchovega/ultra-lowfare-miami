@@ -3,11 +3,13 @@ name: FareBot v1.3.2 - Adaptive Live Run
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *" # Ejecuta cada 3 horas (ajustable)
+    - cron: "0 */3 * * *" # Ejecuta cada 3 horas
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # 🔐 Permite commits automáticos del bot
 
     steps:
       - name: Checkout
@@ -25,12 +27,12 @@ jobs:
       - name: Install Playwright browsers (with deps)
         run: npx playwright install --with-deps
         env:
-          PLAYWRIGHT_BROWSERS_PATH: 0   # instala en ruta local node_modules/.cache/ms-playwright
+          PLAYWRIGHT_BROWSERS_PATH: 0  # instala en ruta local node_modules/.cache/ms-playwright
 
       - name: Run FareBot engine
         run: node scripts/farebot_v132.js
         env:
-          PLAYWRIGHT_BROWSERS_PATH: 0   # usa la misma ruta local al ejecutar
+          PLAYWRIGHT_BROWSERS_PATH: 0  # usa la misma ruta local al ejecutar
 
       - name: Notify price changes
         run: node scripts/notify_price_drops.js
