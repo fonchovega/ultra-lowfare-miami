@@ -1,7 +1,6 @@
 // scripts/audit_historico_shapes_v133.js
-// Auditor de formas para historico.json — v1.3.3
+// Auditoría de formas para data/historico.json — v1.3.3 (revisado)
 // Uso: node scripts/audit_historico_shapes_v133.js
-// Reporta cuántas entradas caen en V1–V8 y recolecta muestras "unknown" en data/historico_unknown_samples.json
 
 import fs from "node:fs";
 import path from "node:path";
@@ -12,52 +11,111 @@ const DATA = path.join(ROOT, "data", "historico.json");
 const OUT_UNKNOWN = path.join(ROOT, "data", "historico_unknown_samples.json");
 
 function loadJSON(p) {
-  return JSON.parse(fs.readFileSync(p, "utf8"));
+  const raw = fs.readFileSync(p, "utf8");
+  return JSON.parse(raw);
 }
 
-function detectShape(entry) {
-  // devuelvo etiqueta aproximada
-  const s = JSON.stringify(entry);
-  if (Array.isArray(entry) && entry[0]?.meta && Array.isArray(entry[0]?.resultados)) return "V8";
-  if (entry?.meta?.titulo && entry?.detalles && Array.isArray(entry?.resumen)) return "V5";
-  if (Array.isArray(entry?.resumen) && entry.resumen[0]?.salida) return "V6";
-  if (Array.isArray(entry?.resumen) && entry.resumen[0]?.destino) return "V7";
-  if (Array.isArray(entry?.resultados)) return "V1-4";
-  return "unknown";
+// ---- Detectores tolerantes (solo informativos) ----
+function detectShapeLoose(entry) {
+  try {
+    if (Array.isArray(entry)) {
+      // V8 u otras variantes por bloques anidados
+      const ok = entry.every(b =>
+        b && typeof b === "object" &&
+        b.meta &&
+        (Array.isArray(b.resultados) || Array.isArray(b.resumen))
+      );
+      if (ok) return "V8";
+      return "unknown-array";
+    }
+
+    if (!entry || typeof entry !== "object") return "unknown";
+
+    const hasMeta = !!entry.meta;
+    const hasResumen = Array.isArray(entry.resumen);
+    const hasResultados = Array.isArray(entry.resultados);
+    const hasDetalles = !!entry.detalles;
+    const hasTitulo = !!entry.meta?.titulo;
+
+    if (hasTitulo && hasResumen && hasDetalles) return "V5";
+    if (hasResumen && (entry.resumen[0]?.salida || entry.resumen[0]?.retorno)) return "V6";
+    if (hasResumen && entry.resumen[0]?.destino) return "V7";
+    if (hasResultados) return "V1-4";
+
+    // Otras variantes antiguas que traían "historico"/"historico_detallado"
+    if (Array.isArray(entry.historico) || Array.isArray(entry.historico_detallado)) return "V1-4*";
+
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
 }
 
+// ---- Auditor principal: prioriza el normalizador ----
 function main() {
   const raw = loadJSON(DATA);
-  const arr = Array.isArray(raw) ? raw : [raw];
+  const entries = Array.isArray(raw) ? raw : [raw];
 
-  const stats = { "V1-4": 0, V5: 0, V6: 0, V7: 0, V8: 0, unknown: 0, error: 0 };
+  const stats = {
+    "V1-4": 0, "V1-4*": 0, V5: 0, V6: 0, V7: 0, V8: 0, recognized_via_normalizer: 0,
+    "unknown": 0, "error": 0
+  };
   const unknownSamples = [];
+  const lines = [];
 
-  arr.forEach((entry, index) => {
-    const tag = detectShape(entry);
-    stats[tag] = (stats[tag] || 0) + 1;
+  entries.forEach((entry, index) => {
+    const tag = detectShapeLoose(entry);
 
-    // Si el normalizador dice "unknown/error", guardamos muestra
-    const norm = normalizeHistoricoEntryV133(entry);
-    const flagged = norm.some(b => (b?.meta?._shape === "unknown" || b?.meta?._shape === "error"));
-    if (tag === "unknown" || flagged) {
-      if (unknownSamples.length < 50) {
-        unknownSamples.push({ index, sample: entry });
+    // 1) Intento normalizar SIEMPRE.
+    let normBlocks;
+    let normErr = null;
+    try {
+      normBlocks = normalizeHistoricoEntryV133(entry);
+    } catch (e) {
+      normErr = e;
+    }
+
+    const hasValid =
+      Array.isArray(normBlocks) &&
+      normBlocks.length > 0 &&
+      normBlocks.some(b => Array.isArray(b?.resultados) && b.resultados.length > 0 && !b?.meta?._shape);
+
+    if (hasValid) {
+      // Contabiliza por tag si es reconocido, si no, cuenta como “recognized_via_normalizer”
+      if (stats[tag] !== undefined && tag !== "unknown" && !tag.startsWith("unknown")) {
+        stats[tag]++;
+        lines.push(`✔ index ${index}: ${tag} (normalizado OK)`);
+      } else {
+        stats.recognized_via_normalizer++;
+        lines.push(`✔ index ${index}: reconocido por normalizador (tag: ${tag})`);
       }
+    } else {
+      // No se logró normalizar: unknown real
+      stats[tag] !== undefined ? stats[tag]++ : stats.unknown++;
+      unknownSamples.push({ index, sample: entry });
+      const reason = normErr ? `error:${String(normErr?.message || normErr)}` : `tag:${tag}`;
+      lines.push(`✖ index ${index}: UNKNOWN (${reason})`);
     }
   });
 
   fs.writeFileSync(OUT_UNKNOWN, JSON.stringify(unknownSamples, null, 2));
+
+  // Reporte
   const report = [
-    "✅ Auditoría v1.3.3",
-    `  V1-4: ${stats["V1-4"]}`,
-    `  V5  : ${stats["V5"]}`,
-    `  V6  : ${stats["V6"]}`,
-    `  V7  : ${stats["V7"]}`,
-    `  V8  : ${stats["V8"]}`,
-    `  unknown: ${stats["unknown"]}`,
+    "✅ Auditoría v1.3.3 (revisado)",
+    `  V1-4  : ${stats["V1-4"]}`,
+    `  V1-4* : ${stats["V1-4*"]}`,
+    `  V5    : ${stats["V5"]}`,
+    `  V6    : ${stats["V6"]}`,
+    `  V7    : ${stats["V7"]}`,
+    `  V8    : ${stats["V8"]}`,
+    `  Reconocidos solo por normalizador: ${stats["recognized_via_normalizer"]}`,
+    `  Unknown: ${stats["unknown"]}`,
     "",
-    `Muestras desconocidas guardadas en ${path.relative(ROOT, OUT_UNKNOWN)}`
+    `Muestras desconocidas guardadas en ${path.relative(ROOT, OUT_UNKNOWN)}`,
+    "",
+    "Detalle:",
+    ...lines
   ].join("\n");
 
   console.log(report);
