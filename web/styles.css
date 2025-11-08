@@ -1,0 +1,37 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: system-ui, Arial, sans-serif; background: #f8fafc; color: #0f172a; }
+
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #0ea5e9; color: white; }
+.topbar .brand { font-weight: 700; }
+.topbar .meta span { margin-left: 12px; opacity: 0.9; }
+
+.container { max-width: 1200px; margin: 18px auto; padding: 0 12px; }
+.controls { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.control label { display: block; font-size: 12px; color: #334155; margin-bottom: 6px; }
+.control select, .btn { padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; }
+.btn { background: #0ea5e9; color: white; border: none; cursor: pointer; }
+.btn:hover { background: #0284c7; }
+
+.table-wrap { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+.tabla { width: 100%; border-collapse: collapse; }
+.tabla th, .tabla td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; text-align: left; }
+.tabla thead { background: #eff6ff; }
+.tabla tbody tr:hover { background: #f8fafc; }
+
+.badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #cbd5e1; background: #f1f5f9; }
+.trend-up { color: #16a34a; font-weight: 700; }
+.trend-down { color: #dc2626; font-weight: 700; }
+.trend-flat { color: #475569; font-weight: 700; }
+.mono { font-variant-numeric: tabular-nums; font-family: ui-monospace, monospace; }
+.small { font-size: 12px; color: #64748b; }
+.hidden { display: none; }
+
+.details { background: #fafafa; padding: 8px 12px 14px; }
+.details table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.details th, .details td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+.details th { background: #f1f5f9; }
+
+.legend { margin: 14px 2px; font-size: 13px; color: #475569; }
+.legend ul { margin: 6px 0 0 16px; }
+
+.foot { margin: 24px 0 40px; display: flex; justify-content: space-between; padding: 0 12px; color: #64748b; font-size: 12px; }
