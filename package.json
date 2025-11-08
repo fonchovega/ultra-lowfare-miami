@@ -8,13 +8,11 @@
     "node": ">=20"
   },
   "scripts": {
-    "farebot": "node scripts/farebot.js",
-    "historico": "node scripts/historico.js",
-    "rebuild:history": "node scripts/rebuild_historico_from_git.js",
-    "reconstruir:historico": "node scripts/rebuild_historico_from_git.js",
-    "guard": "node scripts/guard_run.js",
-    "start": "http-server -c-1 -p 8080"
-  },
+    "verify:v133": "node scripts/helpers/auditor_v133.js && node scripts/helpers/healthcheck_v133.js && node scripts/audit_historico_shapes_v133.js",
+    "fix:unknowns": "node scripts/helpers/fix_unknowns_v133.js --apply",
+    "farebot": "node scripts/farebot_v132.js",
+    "farebot:mock": "FAREBOT_MODE=mock node scripts/farebot_v132.js"
+  }
   "dependencies": {
     "node-fetch": "^3.3.2",
     "glob": "^10.3.10",
