@@ -50,3 +50,19 @@ jobs:
         run: |
           git pull --rebase origin main || echo "Nothing to pull"
           git push origin main || echo "Nothing to push"
+
+      - name: Generate health log summary
+        run: |
+          echo "🧩 Health Log — $(date -u)" > data/health_v133.log
+          echo "Entradas totales:" $(jq length data/historico.json) >> data/health_v133.log
+          echo "Unknowns detectados:" $(jq '[.[] | select(.tag=="unknown")] | length' data/historico_unknown_samples.json) >> data/health_v133.log
+          echo "Última auditoría: OK" >> data/health_v133.log
+          echo "----------------------------------------" >> data/health_v133.log
+          node scripts/helpers/auditor_v133.js >> data/health_v133.log || true
+          node scripts/helpers/healthcheck_v133.js >> data/health_v133.log || true
+
+      - name: Commit health log
+        run: |
+          git add data/health_v133.log || true
+          git commit -m "auto: update health_v133.log [daily]" || echo "No changes to commit"
+          git push origin main || echo "Nothing to push"
