@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Ultra-Low Fare · FrontWeb v1.3.3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Ultra-Low Fare · Dashboard</h1>
+    <div class="meta">
+      <span id="meta-generado">Cargando…</span>
+      <button id="btn-reload" title="Recargar datos">Recargar</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="kpis" id="kpis">
+      <div class="kpi"><div class="kpi-title">Entradas</div><div class="kpi-value" id="kpi-rows">—</div></div>
+      <div class="kpi"><div class="kpi-title">Rutas</div><div class="kpi-value" id="kpi-rutas">—</div></div>
+      <div class="kpi"><div class="kpi-title">Precio mínimo</div><div class="kpi-value" id="kpi-min">—</div></div>
+      <div class="kpi"><div class="kpi-title">Precio promedio</div><div class="kpi-value" id="kpi-avg">—</div></div>
+    </section>
+
+    <section>
+      <h2>Resumen por ruta</h2>
+      <table id="tabla-resumen">
+        <thead>
+          <tr>
+            <th>Ruta</th>
+            <th>Mín</th>
+            <th>Prom</th>
+            <th>Máx</th>
+            <th>Último</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Serie temporal</h2>
+      <div class="controls">
+        <label>Ruta: <select id="sel-ruta"></select></label>
+      </div>
+      <canvas id="chart" width="900" height="300" aria-label="Serie por ruta"></canvas>
+      <div class="hint">Selecciona una ruta para graficar precios en el tiempo.</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <small>FrontWeb v1.3.3 · Lee data/historico_normalizado.json</small>
+  </footer>
+
+  <script type="module" src="./app_frontweb_v133.js"></script>
+</body>
+</html>
