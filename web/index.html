@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Ultra-Low Fare · Dashboard v1.3.3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Ultra-Low Fare · v1.3.3</div>
+    <div class="meta">
+      <span id="meta-generado">Generado: —</span>
+      <span id="meta-zona">TZ: —</span>
+      <span id="meta-frecuencia">Frecuencia: —</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="controls">
+      <div class="control">
+        <label>Filtro ruta</label>
+        <select id="filter-ruta">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="control">
+        <label>Rango de días</label>
+        <select id="filter-days">
+          <option value="7">7 días</option>
+          <option value="14">14 días</option>
+          <option value="30" selected>30 días</option>
+          <option value="90">90 días</option>
+          <option value="0">Todo</option>
+        </select>
+      </div>
+      <div class="control">
+        <label>Ordenar por</label>
+        <select id="sort-by">
+          <option value="ultimo">Último precio</option>
+          <option value="minimo" selected>Mínimo histórico</option>
+          <option value="promedio">Promedio reciente</option>
+          <option value="tendencia">Tendencia</option>
+        </select>
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <button id="btn-recargar" class="btn">Recargar</button>
+      </div>
+    </section>
+
+    <section class="table-wrap">
+      <table id="tabla" class="tabla">
+        <thead>
+          <tr>
+            <th>Ruta</th>
+            <th>Último (USD)</th>
+            <th>Mín. histórico</th>
+            <th>Promedio reciente</th>
+            <th>Tendencia</th>
+            <th>Última ejecución</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty" class="empty hidden">Sin datos con el filtro actual.</div>
+    </section>
+
+    <section class="legend">
+      <div>Notas:</div>
+      <ul>
+        <li>Tendencia sobre últimos 5 puntos: ↑ sube, ↓ baja, → estable.</li>
+        <li>Promedio según rango de días o todo el histórico.</li>
+        <li>Detalle muestra las 10 últimas observaciones por ruta.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>Fuente: data/historico_normalizado.json</span>
+    <span>Salud: data/health_v133.log</span>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
