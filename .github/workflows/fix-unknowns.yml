@@ -1,16 +1,20 @@
 name: Fix Unknowns v1.3.3
 
 on:
+  push:
+    paths:
+      - "data/historico.json"
+      - "scripts/helpers/**"
+      - ".github/workflows/fix_unknowns.yml"
   schedule:
-    - cron: "0 6 * * 1"   # Lunes 06:00 UTC
+    - cron: "0 6 * * *"   # higiene diaria 06:00 UTC
   workflow_dispatch:
 
 jobs:
   fix-unknowns:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-
+      contents: write        # permite commit/push del bot
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,19 +23,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install deps
         run: npm ci || npm install
 
-      - name: Run fixer
-        run: npm run fix:unknowns
+      - name: Verify current state (auditor + healthcheck)
+        run: |
+          node scripts/helpers/auditor_v133.js || true
+          node scripts/helpers/healthcheck_v133.js || true
 
-      - name: Commit and push
+      - name: Fix Unknowns (apply)
+        run: node scripts/helpers/fix_unknowns_v133.js --apply
+
+      - name: Show diff (if any)
+        run: git status --porcelain && git --no-pager diff -- data/historico.json || true
+
+      - name: Commit normalized data if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/historico.json data/historico_unknown_samples.json || true
-          git commit -m "auto: fix unknowns [v1.3.3]" || echo "No changes to commit"
-          git pull --rebase origin main || true
-          git push origin main || true
+          git commit -m "fix: normalize unknowns v1.3.3 (auto)" || echo "No changes to commit"
+
+      - name: Pull rebase (resolve drift) and push
+        run: |
+          git pull --rebase origin main || echo "Nothing to pull"
+          git push origin main || echo "Nothing to push"
