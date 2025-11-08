@@ -12,7 +12,7 @@
     "fix:unknowns": "node scripts/helpers/fix_unknowns_v133.js --apply",
     "farebot": "node scripts/farebot_v132.js",
     "farebot:mock": "FAREBOT_MODE=mock node scripts/farebot_v132.js"
-  }
+  },
   "dependencies": {
     "node-fetch": "^3.3.2",
     "glob": "^10.3.10",
