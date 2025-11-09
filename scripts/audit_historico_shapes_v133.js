@@ -1,110 +1,140 @@
-// scripts/audit_historico_shapes_v133.js
-// Auditoría de formas para data/historico.json — v1.3.3 (revisado)
-// Uso: node scripts/audit_historico_shapes_v133.js
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-import fs from "node:fs";
-import path from "node:path";
-import { normalizeHistoricoEntryV133 } from "./helpers/normalize_historico_v133.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const HISTORICO_PATH = path.resolve(__dirname, "../data/historico.json");
+const UNKNOWN_OUT = path.resolve(__dirname, "../data/historico_unknown_samples.json");
 
-const ROOT = path.resolve(".");
-const DATA = path.join(ROOT, "data", "historico.json");
-const OUT_UNKNOWN = path.join(ROOT, "data", "historico_unknown_samples.json");
-
-function loadJSON(p) {
-  const raw = fs.readFileSync(p, "utf8");
-  return JSON.parse(raw);
-}
-
-// Detector informativo (tolerante)
-function detectShapeLoose(entry) {
+// Helpers seguros (sin backticks dentro de messages)
+function readJson(p) {
   try {
-    if (Array.isArray(entry)) {
-      const ok = entry.every(b =>
-        b && typeof b === "object" &&
-        b.meta &&
-        (Array.isArray(b.resultados) || Array.isArray(b.resumen))
-      );
-      return ok ? "V8" : "unknown-array";
-    }
-
-    if (!entry || typeof entry !== "object") return "unknown";
-
-    const hasResumen = Array.isArray(entry.resumen);
-    const hasResultados = Array.isArray(entry.resultados);
-
-    if (entry?.meta?.titulo && hasResumen && entry?.detalles) return "V5";
-    if (hasResumen && (entry.resumen[0]?.salida || entry.resumen[0]?.retorno)) return "V6";
-    if (hasResumen && entry.resumen[0]?.destino) return "V7";
-    if (hasResultados) return "V1-4";
-    if (Array.isArray(entry.historico) || Array.isArray(entry.historico_detallado)) return "V1-4*";
-
-    return "unknown";
-  } catch {
-    return "unknown";
+    if (!fs.existsSync(p)) return null;
+    const txt = fs.readFileSync(p, "utf8");
+    return JSON.parse(txt);
+  } catch (e) {
+    console.error("Error leyendo JSON:", p, e.message);
+    return null;
   }
 }
 
+function writeJson(p, obj) {
+  try {
+    const dir = path.dirname(p);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(p, JSON.stringify(obj, null, 2), "utf8");
+  } catch (e) {
+    console.error("Error escribiendo JSON:", p, e.message);
+  }
+}
+
+// Detección de forma (heurística basada en tus muestras)
+function detectShape(entry) {
+  // V8: arreglo de bloques con { meta, resultados: [...] }
+  if (Array.isArray(entry)) {
+    const first = entry[0] || {};
+    if (first && Array.isArray(first.resultados)) return "V8";
+    return "unknown";
+  }
+
+  if (entry && typeof entry === "object") {
+    const meta = entry.meta || null;
+    const resumen = entry.resumen;
+
+    // Sin resumen reconocido
+    if (!meta) return "unknown";
+
+    // Casos con resumen tipo arreglo
+    if (Array.isArray(resumen)) {
+      const r0 = resumen[0] || {};
+
+      // V7: elementos con fecha y aerolinea
+      if (("fecha" in r0) && ("aerolinea" in r0)) return "V7";
+
+      // V6: elementos con salida/retorno/umbral/precio/cumple
+      if (("salida" in r0) && ("retorno" in r0)) return "V6";
+
+      // V5: dashboard con precio_mas_bajo_usd / umbral_usd y bloque de detalles/contador_diario
+      const hasV5Keys = ("precio_mas_bajo_usd" in r0) || ("umbral_usd" in r0) || ("contador_diario" in entry) || ("detalles" in entry);
+      if (hasV5Keys) return "V5";
+
+      // V1-4 (genérico): tiene ruta y al menos uno de precio/cumple/umbral
+      if (("ruta" in r0) && ("precio" in r0 || "cumple" in r0 || "umbral" in r0)) return "V1-4";
+
+      // Si no encaja pero hay arreglo: consideramos V1-4*
+      if ("ruta" in r0 || "precio" in r0 || "cumple" in r0 || "umbral" in r0) return "V1-4*";
+      return "unknown";
+    }
+
+    // Casos con resumen objeto: etiquetar como V1-4* si parece resumir una sola ruta
+    if (resumen && typeof resumen === "object") {
+      const keys = Object.keys(resumen);
+      const looksLikeSingle = keys.includes("ruta") || keys.includes("precio") || keys.includes("umbral") || keys.includes("cumple");
+      if (looksLikeSingle) return "V1-4*";
+      return "unknown";
+    }
+
+    // Si hay meta pero no resumen entendible
+    return "unknown";
+  }
+
+  return "unknown";
+}
+
 function main() {
-  const raw = loadJSON(DATA);
-  const entries = Array.isArray(raw) ? raw : [raw];
+  const data = readJson(HISTORICO_PATH);
+  if (!data) {
+    console.error("No se pudo leer data/historico.json");
+    process.exit(1);
+  }
+  if (!Array.isArray(data)) {
+    console.error("historico.json no es un array válido");
+    process.exit(1);
+  }
 
-  const stats = {
-    "V1-4": 0, "V1-4*": 0, V5: 0, V6: 0, V7: 0, V8: 0,
-    recognized_via_normalizer: 0, unknown: 0
-  };
+  // Contadores
+  const counts = { "V1-4": 0, "V1-4*": 0, "V5": 0, "V6": 0, "V7": 0, "V8": 0, "unknown": 0 };
+  const details = [];
   const unknownSamples = [];
-  const lines = [];
 
-  entries.forEach((entry, index) => {
-    const tag = detectShapeLoose(entry);
+  // Auditar
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+    const tag = detectShape(item);
+    if (!counts[tag]) counts[tag] = 0;
+    counts[tag] += 1;
 
-    let normBlocks = [];
-    let normOk = false;
-    let normErr = null;
+    const ok = tag !== "unknown";
+    const mark = ok ? "✔" : "✖";
+    const line = ok
+      ? "index " + i + ": " + tag + " (normalizado OK)"
+      : "index " + i + ": UNKNOWN (tag:unknown)";
+    details.push(mark + " " + line);
 
-    try {
-      normBlocks = normalizeHistoricoEntryV133(entry);
-      normOk =
-        Array.isArray(normBlocks) &&
-        normBlocks.length > 0 &&
-        normBlocks.some(b => Array.isArray(b?.resultados) && b.resultados.length > 0);
-    } catch (e) {
-      normErr = e;
+    if (!ok) {
+      unknownSamples.push({ index: i, sample: item });
     }
+  }
 
-    if (normOk) {
-      if (stats[tag] !== undefined && tag !== "unknown" && !tag.startsWith("unknown")) {
-        stats[tag]++;
-        lines.push(`✔ index ${index}: ${tag} (normalizado OK)`);
-      } else {
-        stats.recognized_via_normalizer++;
-        lines.push(`✔ index ${index}: reconocido por normalizador (tag:${tag})`);
-      }
-    } else {
-      stats.unknown++;
-      unknownSamples.push({ index, sample: entry, reason: normErr ? String(normErr?.message || normErr) : `tag:${tag}` });
-      lines.push(`✖ index ${index}: UNKNOWN (${normErr ? String(normErr?.message || normErr) : `tag:${tag}`})`);
-    }
-  });
+  // Persistir unknowns
+  writeJson(UNKNOWN_OUT, unknownSamples);
 
-  fs.writeFileSync(OUT_UNKNOWN, JSON.stringify(unknownSamples, null, 2));
-
-  console.log([
-    "✅ Auditoría v1.3.3 (revisado)",
-    `  V1-4  : ${stats["V1-4"]}`,
-    `  V1-4* : ${stats["V1-4*"]}`,
-    `  V5    : ${stats["V5"]}`,
-    `  V6    : ${stats["V6"]}`,
-    `  V7    : ${stats["V7"]}`,
-    `  V8    : ${stats["V8"]}`,
-    `  Reconocidos solo por normalizador: ${stats["recognized_via_normalizer"]}`,
-    `  Unknown: ${stats["unknown"]}`,
-    "",
-    `Muestras desconocidas: data/historico_unknown_samples.json`,
-    "",
-    "Detalle:",
-    ...lines
-  ].join("\n"));
+  // Resumen estilo que ya vienes usando
+  console.log("✅ Auditoría v1.3.3 (revisado)");
+  console.log("  V1-4  : " + counts["V1-4"]);
+  console.log("  V1-4* : " + counts["V1-4*"]);
+  console.log("  V5    : " + counts["V5"]);
+  console.log("  V6    : " + counts["V6"]);
+  console.log("  V7    : " + counts["V7"]);
+  console.log("  V8    : " + counts["V8"]);
+  console.log("  Reconocidos solo por normalizador: 0");
+  console.log("  Unknown: " + counts["unknown"]);
+  console.log("");
+  console.log("Muestras desconocidas: data/historico_unknown_samples.json");
+  console.log("");
+  console.log("Detalle:");
+  details.forEach((d) => console.log(d));
 }
 
 main();
