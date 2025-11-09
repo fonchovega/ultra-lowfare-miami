@@ -3,7 +3,7 @@ name: FareBot v1.3.3 - Adaptive Live Run
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *" # Ejecuta cada 3 horas
+    - cron: "0 */3 * * *" # cada 3 horas
 
 jobs:
   run-farebot:
@@ -21,35 +21,21 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm ci || npm install
 
-      - name: Install Playwright browsers
+      - name: Install Playwright browsers (with deps)
         run: npx playwright install --with-deps
         env:
           PLAYWRIGHT_BROWSERS_PATH: 0
+
+      - name: Full maintenance v1.3.3 (verify + fix + replace + commit/push)
+        run: COMMIT=1 PUSH=1 npm run maintain:full
 
       - name: Run FareBot engine
         run: node scripts/farebot_v132.js
         env:
           PLAYWRIGHT_BROWSERS_PATH: 0
 
-      - name: Normalize and verify database
-        run: |
-          node scripts/helpers/normalize_historico_v133.js
-          node scripts/helpers/auditor_v133.js
-          node scripts/helpers/healthcheck_v133.js
-          node scripts/audit_historico_shapes_v133.js
-          node scripts/helpers/fix_unknowns_v133.js --auto
-
       - name: Notify price changes
         run: node scripts/notify_price_drops.js
-
-      - name: Commit if data changed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          git commit -m "auto: update data [v1.3.3]" || echo "No changes to commit"
-          git pull --rebase origin main || echo "Nothing to pull"
-          git push origin main --force
