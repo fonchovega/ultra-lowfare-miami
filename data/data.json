@@ -1,25 +1,13 @@
 {
   "meta": {
-    "generado": "2025-11-08T21:28:08.037Z",
+    "generado": "2025-11-09T03:37:50.632Z",
     "modo": "mock"
   },
   "resultados": [
     {
       "ruta": "LIM → MIA",
-      "fecha": "2025-11-08T21:28:08.037Z",
-      "precio_encontrado": 422,
-      "cumple": "❌ No cumple",
-      "limite": 360,
-      "fuente": "simulación interna (mock)",
-      "detalles": {
-        "equipaje": "carry-on only",
-        "escalas_max": 1
-      }
-    },
-    {
-      "ruta": "LIM → FLL",
-      "fecha": "2025-11-08T21:28:08.037Z",
-      "precio_encontrado": 324,
+      "fecha": "2025-11-09T03:37:50.631Z",
+      "precio_encontrado": 355,
       "cumple": "✅ Sí cumple",
       "limite": 360,
       "fuente": "simulación interna (mock)",
@@ -29,10 +17,22 @@
       }
     },
     {
-      "ruta": "LIM → MCO",
-      "fecha": "2025-11-08T21:28:08.037Z",
-      "precio_encontrado": 570,
+      "ruta": "LIM → FLL",
+      "fecha": "2025-11-09T03:37:50.632Z",
+      "precio_encontrado": 773,
       "cumple": "❌ No cumple",
+      "limite": 360,
+      "fuente": "simulación interna (mock)",
+      "detalles": {
+        "equipaje": "carry-on only",
+        "escalas_max": 1
+      }
+    },
+    {
+      "ruta": "LIM → MCO",
+      "fecha": "2025-11-09T03:37:50.632Z",
+      "precio_encontrado": 354,
+      "cumple": "✅ Sí cumple",
       "limite": 400,
       "fuente": "simulación interna (mock)",
       "detalles": {
