@@ -1,0 +1,48 @@
+{
+  "_comment": "sources.json — Catálogo inicial de proveedores (metabuscadores y aerolíneas) v1.3.1",
+  "_note": "El motor adaptativo agregará nuevos proveedores detectados bajo la etiqueta 'learned'.",
+
+  "DEFAULT": {
+    "metabuscadores": [
+      { "id": "Skyscanner", "name": "Skyscanner", "link": "https://www.skyscanner.com" },
+      { "id": "Kayak", "name": "Kayak", "link": "https://www.kayak.com" },
+      { "id": "GoogleFlights", "name": "Google Flights", "link": "https://www.google.com/flights" },
+      { "id": "Expedia", "name": "Expedia", "link": "https://www.expedia.com" },
+      { "id": "Momondo", "name": "Momondo", "link": "https://www.momondo.com" }
+    ],
+    "aerolineas": [
+      { "id": "LATAM", "name": "LATAM Airlines", "link": "https://www.latamairlines.com" },
+      { "id": "Avianca", "name": "Avianca Airlines", "link": "https://www.avianca.com" },
+      { "id": "Sky", "name": "Sky Airlines", "link": "https://www.skyairline.com" },
+      { "id": "Spirit", "name": "Spirit Airlines", "link": "https://www.spirit.com" },
+      { "id": "American", "name": "American Airlines", "link": "https://www.aa.com" },
+      { "id": "United", "name": "United Airlines", "link": "https://www.united.com" },
+      { "id": "Delta", "name": "Delta Airlines", "link": "https://www.delta.com" }
+    ]
+  },
+
+  "MIA_AREA": {
+    "_comment": "Grupo de aeropuertos Miami/Fort Lauderdale/Palm Beach",
+    "metabuscadores": ["Skyscanner", "Kayak", "GoogleFlights", "Momondo"],
+    "aerolineas": ["LATAM", "Avianca", "American", "Spirit", "Delta", "United"]
+  },
+
+  "SJU": {
+    "_comment": "San Juan, Puerto Rico",
+    "metabuscadores": ["Skyscanner", "Kayak", "GoogleFlights"],
+    "aerolineas": ["Spirit", "American", "JetBlue", "Delta", "United"]
+  },
+
+  "LIM": {
+    "_comment": "Lima, Perú",
+    "metabuscadores": ["Skyscanner", "Kayak", "GoogleFlights", "Momondo"],
+    "aerolineas": ["LATAM", "Avianca", "Sky"]
+  },
+
+  "DEFAULT_GROUPS": {
+    "_comment": "Grupos de aeropuertos por proximidad geográfica para normalización.",
+    "MIA_AREA": ["MIA", "FLL", "PBI"],
+    "CHI_AREA": ["ORD", "MDW"],
+    "WIS_AREA": ["MKE", "MSN", "GRB"]
+  }
+}

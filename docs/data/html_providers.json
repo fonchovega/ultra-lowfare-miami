@@ -1,0 +1,70 @@
+{
+  "_comment": "html_providers.json — Definición de fuentes HTML para modo LIVE adaptativo v1.3.1",
+  "_note": "Rellena los selectores con los valores reales del DOM según la web elegida.",
+
+  "SampleMeta": {
+    "name": "Skyscanner",
+    "urlTemplate": "https://www.skyscanner.com/transport/flights/{FROM}/{TO}/{DEP}/{RET}/?adultsv2={ADT}&cabinclass=economy",
+    "waitFor": "[data-testid='results']",
+    "priceSelector": "[data-testid='result-card-price']",
+    "priceSelectorAlt": ".BpkText_bpk-text__price",
+    "providerSelector": "[data-testid='result-card-carrier']",
+    "providerSelectorAlt": ".BpkText_bpk-text__carrier",
+    "currency": "USD"
+  },
+
+  "Kayak": {
+    "name": "Kayak",
+    "urlTemplate": "https://www.kayak.com/flights/{FROM}-{TO}/{DEP}/{RET}?adults={ADT}&sort=bestflight_a",
+    "waitFor": ".Flights-Results-ListView",
+    "priceSelector": ".resultWrapper .price-text",
+    "priceSelectorAlt": ".priceOption",
+    "providerSelector": ".resultWrapper .airline-name",
+    "providerSelectorAlt": ".bottom-airline-name",
+    "currency": "USD"
+  },
+
+  "GoogleFlights": {
+    "name": "Google Flights",
+    "urlTemplate": "https://www.google.com/travel/flights?q=flights%20{FROM}%20to%20{TO}%20on%20{DEP}%20return%20{RET}",
+    "waitFor": "div[role='main']",
+    "priceSelector": "div[aria-label*='$']",
+    "priceSelectorAlt": "div[aria-label*='USD']",
+    "providerSelector": "span[aria-label*='operated by']",
+    "providerSelectorAlt": "span[aria-label*='by']",
+    "currency": "USD"
+  },
+
+  "LATAM": {
+    "name": "LATAM Airlines",
+    "urlTemplate": "https://www.latamairlines.com/us/en/offers/flights?origin={FROM}&destination={TO}&outbound={DEP}&inbound={RET}&adults={ADT}",
+    "waitFor": ".trip-result",
+    "priceSelector": ".price .amount",
+    "priceSelectorAlt": ".fare-price",
+    "providerSelector": ".trip-result .airline-name",
+    "providerSelectorAlt": ".flight-info .name",
+    "currency": "USD"
+  },
+
+  "Spirit": {
+    "name": "Spirit Airlines",
+    "urlTemplate": "https://booking.spirit.com/Booking/Search?from={FROM}&to={TO}&departDate={DEP}&returnDate={RET}&adultCount={ADT}",
+    "waitFor": ".flight-card",
+    "priceSelector": ".price-amount",
+    "priceSelectorAlt": ".fare-total",
+    "providerSelector": ".flight-card .carrier",
+    "providerSelectorAlt": ".airline-name",
+    "currency": "USD"
+  },
+
+  "Avianca": {
+    "name": "Avianca",
+    "urlTemplate": "https://www.avianca.com/en/?from={FROM}&to={TO}&departure={DEP}&return={RET}&adults={ADT}",
+    "waitFor": ".flight-card",
+    "priceSelector": ".amount-value",
+    "priceSelectorAlt": ".total-price",
+    "providerSelector": ".flight-card .airline-name",
+    "providerSelectorAlt": ".provider-label",
+    "currency": "USD"
+  }
+}

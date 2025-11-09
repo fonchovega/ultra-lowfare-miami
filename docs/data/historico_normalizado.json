@@ -1,0 +1,7 @@
+git pull --rebase origin main
+npm ci || npm install
+node scripts/helpers/normalize_historico_v133.js --in data/historico.json --out data/historico_normalizado.json
+ls -lh data/historico_normalizado.json
+git add data/historico_normalizado.json
+git commit -m "build: generar data/historico_normalizado.json para FrontWeb v1.33"
+git push origin main
