@@ -1,41 +1,83 @@
-name: FareBot v1.3.3 - Adaptive Live Run
+name: run-farebot
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *" # cada 3 horas
+    # Ejecuta 2 veces al día (ajusta el cron si quieres otra frecuencia)
+    - cron: "5 5,17 * * *"
+
+permissions:
+  contents: write        # para commit/push
+  pages: write           # para desplegar GitHub Pages (opcional)
+  id-token: write
+
+concurrency:
+  group: run-farebot
+  cancel-in-progress: false
 
 jobs:
-  run-farebot:
+  run:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install deps
-        run: npm ci || npm install
+        run: |
+          npm ci || npm install
 
       - name: Install Playwright browsers (with deps)
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
+
+      # --- MANTENIMIENTO (verifica/fix + commit/push automático si aplica) ---
+      - name: Full maintenance v1.3.3 (verify + fix + repackage + commit/push)
         env:
-          PLAYWRIGHT_BROWSERS_PATH: 0
+          COMMIT: "1"
+          PUSH: "1"
+        run: npm run maintain:full
 
-      - name: Full maintenance v1.3.3 (verify + fix + replace + commit/push)
-        run: COMMIT=1 PUSH=1 npm run maintain:full
-
+      # --- EJECUCIÓN DEL BOT EN MODO LIVE ---
       - name: Run FareBot engine
-        run: node scripts/farebot_v132.js
         env:
-          PLAYWRIGHT_BROWSERS_PATH: 0
+          FAREBOT_MODE: "live"
+        run: node scripts/farebot_v132.js
 
+      # --- NOTIFICACIONES (opcional; no falla el job si no hay cambios) ---
       - name: Notify price changes
-        run: node scripts/notify_price_drops.js
+        run: |
+          if [ -f scripts/notify_price_drops.js ]; then
+            node scripts/notify_price_drops.js || true
+          fi
+
+      # --- COMMIT & PUSH DE CUALQUIER CAMBIO EN data/ ó snapshots/ ---
+      - name: Commit & push data changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/*.json data/snapshots/*.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "auto: update data [v1.3.3]"
+            git push
+          else
+            echo "No hay cambios que commitear."
+          fi
+
+      # --- PUBLICAR /public A GITHUB PAGES (si lo usas como hosting) ---
+      - name: Upload /public as Pages artifact
+        if: ${{ always() }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        if: ${{ always() }}
+        uses: actions/deploy-pages@v4
