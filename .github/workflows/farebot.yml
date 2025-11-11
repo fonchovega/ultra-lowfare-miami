@@ -1,83 +1,82 @@
+# .github/workflows/run-farebot.yml
 name: run-farebot
 
 on:
   workflow_dispatch:
   schedule:
-    # Ejecuta 2 veces al día (ajusta el cron si quieres otra frecuencia)
-    - cron: "5 5,17 * * *"
+    - cron: "25 */6 * * *"   # cada 6 horas aprox.
 
 permissions:
-  contents: write        # para commit/push
-  pages: write           # para desplegar GitHub Pages (opcional)
+  contents: write      # para commit/push
+  pages: write         # para publicar GitHub Pages
   id-token: write
 
 concurrency:
-  group: run-farebot
+  group: "pages"
   cancel-in-progress: false
 
 jobs:
   run:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install deps
-        run: |
-          npm ci || npm install
+        run: npm ci || npm install
 
       - name: Install Playwright browsers (with deps)
         run: npx playwright install --with-deps chromium
 
-      # --- MANTENIMIENTO (verifica/fix + commit/push automático si aplica) ---
-      - name: Full maintenance v1.3.3 (verify + fix + repackage + commit/push)
-        env:
-          COMMIT: "1"
-          PUSH: "1"
-        run: npm run maintain:full
+      # Opcional: mantenimiento. Si no existe, no falla el workflow.
+      - name: Full maintenance v1.3.3 (verify + fix + repackage)
+        run: |
+          if npm run | grep -q "maintain:full"; then
+            COMMIT=0 PUSH=0 npm run maintain:full || true
+          else
+            echo "No 'maintain:full' script. Continuando…"
+          fi
 
-      # --- EJECUCIÓN DEL BOT EN MODO LIVE ---
-      - name: Run FareBot engine
+      - name: Run FareBot engine (LIVE)
         env:
-          FAREBOT_MODE: "live"
+          FAREBOT_MODE: live
         run: node scripts/farebot_v132.js
 
-      # --- NOTIFICACIONES (opcional; no falla el job si no hay cambios) ---
+        # Si tienes notificaciones por bajadas de precio
       - name: Notify price changes
         run: |
-          if [ -f scripts/notify_price_drops.js ]; then
+          if [ -f "scripts/notify_price_drops.js" ]; then
             node scripts/notify_price_drops.js || true
-          fi
-
-      # --- COMMIT & PUSH DE CUALQUIER CAMBIO EN data/ ó snapshots/ ---
-      - name: Commit & push data changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/*.json data/snapshots/*.json 2>/dev/null || true
-          if ! git diff --cached --quiet; then
-            git commit -m "auto: update data [v1.3.3]"
-            git push
           else
-            echo "No hay cambios que commitear."
+            echo "notify_price_drops.js no encontrado. Saltando…"
           fi
 
-      # --- PUBLICAR /public A GITHUB PAGES (si lo usas como hosting) ---
+      - name: Commit & push data changes (data/ y public/)
+        shell: bash
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/ || true
+          git add public/ || true
+
+          if ! git diff --cached --quiet; then
+            git commit -m "auto: update data (run-farebot)"
+            git push origin "${GITHUB_REF_NAME:-main}"
+          else
+            echo "Sin cambios para commitear."
+          fi
+
+      # Publicar la carpeta /public a GitHub Pages
       - name: Upload /public as Pages artifact
-        if: ${{ always() }}
         uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: ./public
 
       - name: Deploy to GitHub Pages
-        if: ${{ always() }}
         uses: actions/deploy-pages@v4
