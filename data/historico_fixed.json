@@ -1,0 +1,867 @@
+[
+  {
+    "meta": {
+      "generado": "2025-10-18T06:00:00.000Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-20T00:00:00.000Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-20T21:00:00.000Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-20T13:38:34.080Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-20T15:34:19.498Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-20T18:53:43.402Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-20T21:30:32.674Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-21T03:18:52.583Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-21T04:49:53.797Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-21T06:51:57.083Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-21T15:00:00.000Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-25T18:48:23.954Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-25T21:27:53.908Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-26T03:32:14.124Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-26T06:48:15.390Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-26T09:29:02.892Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-26T13:06:12.989Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-23T11:02:05.278Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-23T11:05:06.565Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-23T11:05:12.416Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T06:30:17.722Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T06:50:13.284Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T07:14:47.497Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T07:32:26.751Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T07:34:46.946Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T07:52:53.480Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T08:31:17.463Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T09:35:33.603Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T13:41:05.444Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T15:38:10.056Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T18:53:59.404Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-24T21:28:25.608Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-25T03:15:11.183Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-25T06:44:59.088Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-25T09:29:48.432Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-25T13:05:06.928Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-25T15:30:39.459Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-25T18:48:23.954Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-25T21:27:53.908Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-26T03:32:14.124Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-26T06:48:15.390Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-26T09:29:02.892Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-10-26T13:06:12.989Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-04T18:47:25.546Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-04T18:52:04.886Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-04T21:31:34.231Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T03:35:30.949Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T06:53:58.041Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T09:46:17.584Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T13:45:18.192Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T15:37:55.660Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T20:48:38.523Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T21:02:56.896Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T21:07:44.553Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T21:22:22.280Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-05T21:32:43.242Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-06T03:41:56.036Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-06T06:57:43.930Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-06T09:41:58.217Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-06T13:44:43.313Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-06T15:45:11.146Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-06T18:58:58.462Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-06T21:34:00.379Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-07T03:36:37.381Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-07T06:58:50.247Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-07T09:37:52.730Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-07T13:39:03.596Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-07T15:39:31.415Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-07T17:53:48.642Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-07T18:49:08.580Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-07T21:28:12.514Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-08T03:17:31.147Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-08T06:49:50.193Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-08T09:32:39.880Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-08T13:09:05.983Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-08T15:33:11.852Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-08T18:47:03.415Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-08T19:03:40.181Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-08T19:53:46.980Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-08T21:28:08.037Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-09T03:37:50.632Z"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-09T06:50:59.667Z",
+      "modo": "mock"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-09T09:33:04.533Z",
+      "modo": "mock"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-09T13:07:58.656Z",
+      "modo": "mock"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-09T14:59:53.448Z",
+      "modo": "mock"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  },
+  {
+    "meta": {
+      "generado": "2025-11-09T15:32:31.354Z",
+      "modo": "mock"
+    },
+    "resumen": {
+      "placeholder": true,
+      "original_type": "object"
+    },
+    "detalles": null
+  }
+]
