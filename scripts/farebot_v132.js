@@ -1,93 +1,109 @@
-// scripts/farebot_v132.js
 // ============================================================
-// FareBot v1.3.2 – Wrapper/Launcher del motor principal
-// ------------------------------------------------------------
-// - Detección automática de modo (live / mock / adaptative)
-// - Verifica si Playwright está disponible
-// - Ejecuta el motor real (farebot.js)
-// - Registra fuente activa, versión y timestamp
+// FAREBOT v1.3.2 (modo LIVE permanente)
 // ============================================================
+// Motor principal para ejecutar búsquedas reales de tarifas
+// entre LIM y MIA/FLL/MCO, guardar data.json y actualizar histórico.
 
-import { log, nowIso } from "./helpers/helper.js";
-import path from "node:path";
-import { spawn } from "node:child_process";
-import fs from "node:fs";
+// 🔒 Bloqueo permanente del modo LIVE
+process.env.FAREBOT_MODE = "live";
+console.log("[LIVE LOCK] FareBot bloqueado en modo LIVE permanente.");
 
-// ============================================================
-// Configuración inicial del entorno
-// ============================================================
+import fs from "fs";
+import path from "path";
+import { chromium } from "playwright";
 
-if (!process.env.FAREBOT_MODE) process.env.FAREBOT_MODE = "adaptative"; // live | mock | adaptative
-process.env.FAREBOT_VERSION = "1.3.2";
+// ===============================
+// CONFIGURACIÓN BASE
+// ===============================
+const DATA_PATH = "./data/data.json";
+const HIST_PATH = "./data/historico.json";
+const SNAPSHOT_DIR = "./data/snapshots";
+const BASE_URLS = [
+  { code: "MIA", url: "https://www.google.com/travel/flights?q=flights+from+LIM+to+MIA" },
+  { code: "FLL", url: "https://www.google.com/travel/flights?q=flights+from+LIM+to+FLL" },
+  { code: "MCO", url: "https://www.google.com/travel/flights?q=flights+from+LIM+to+MCO" }
+];
 
-// ============================================================
-// Verificación del modo activo y disponibilidad de Playwright
-// ============================================================
+// ===============================
+// FUNCIONES UTILITARIAS
+// ===============================
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
 
-async function detectLiveCapability() {
-  let playwrightOk = false;
+function readJsonSafe(filePath, fallback = []) {
   try {
-    const { chromium } = await import("playwright");
-    const browser = await chromium.launch();
-    await browser.close();
-    playwrightOk = true;
-    log(`🟢 Playwright disponible @ ${nowIso()}`);
-  } catch (err) {
-    log(`⚠️  Playwright no disponible @ ${nowIso()} → ${err.message}`);
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return fallback;
   }
-  return playwrightOk;
 }
 
-// ============================================================
-// Ejecutor principal
-// ============================================================
-
-async function runFarebot() {
-  const mode = process.env.FAREBOT_MODE;
-  const root = path.resolve(".");
-  const scriptPath = path.join(root, "scripts", "farebot.js");
-
-  log(`🚀 Iniciando FareBot v${process.env.FAREBOT_VERSION} en modo [${mode}] @ ${nowIso()}`);
-
-  let canRun = false;
-  if (mode === "live" || mode === "adaptative") {
-    canRun = await detectLiveCapability();
-  }
-
-  const finalMode = canRun ? "live" : "mock";
-  log(`🧩 Modo efectivo: ${finalMode}`);
-
-  if (finalMode === "mock") {
-    log(`🟡 Ejecutando simulación interna…`);
-    await import("./farebot.js"); // fallback simple
-    return;
-  }
-
-  // ========================================================
-  // Ejecución del motor real
-  // ========================================================
-
-  const proc = spawn("node", [scriptPath], {
-    stdio: "inherit",
-    env: { ...process.env, FAREBOT_MODE: finalMode },
-  });
-
-  proc.on("close", (code) => {
-    log(`✅ FareBot finalizado con código ${code} @ ${nowIso()}`);
-  });
-
-  proc.on("error", (err) => {
-    log(`❌ Error en ejecución de FareBot: ${err.message}`);
-  });
+function writeJson(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
-// ============================================================
-// Ejecución directa (si se llama desde Node)
-// ============================================================
+// ===============================
+// CAPTURA DE TARIFAS CON PLAYWRIGHT
+// ===============================
+async function scrapeGoogleFlights(url) {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  await page.goto(url, { timeout: 90000, waitUntil: "domcontentloaded" });
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runFarebot().catch((err) => {
-    log(`💥 Error fatal en FareBot: ${err.message}`);
-    process.exit(1);
-  });
+  // Esperar que aparezcan precios
+  await page.waitForSelector("div[role='grid'] span[jsname]", { timeout: 30000 }).catch(() => {});
+
+  const results = await page.$$eval("div[role='grid'] div[aria-label*='S/']", elements =>
+    elements.slice(0, 5).map(el => el.innerText.trim())
+  );
+
+  await browser.close();
+  return results.length ? results : ["sin datos"];
 }
+
+// ===============================
+// PROCESO PRINCIPAL
+// ===============================
+async function main() {
+  console.log("===============================================");
+  console.log("🚀 Iniciando FareBot v1.3.2 (modo LIVE)");
+  console.log("===============================================");
+
+  ensureDir("./data");
+  ensureDir(SNAPSHOT_DIR);
+
+  const results = {};
+  for (const { code, url } of BASE_URLS) {
+    console.log(`🔍 Buscando vuelos LIM → ${code} ...`);
+    const fares = await scrapeGoogleFlights(url);
+    results[code] = {
+      timestamp: new Date().toISOString(),
+      fares
+    };
+    console.log(`✅ ${code}: ${fares.join(", ")}`);
+  }
+
+  // Guardar snapshot actual
+  const snapshotFile = path.join(SNAPSHOT_DIR, `snapshot_${Date.now()}.json`);
+  writeJson(snapshotFile, results);
+  console.log(`💾 Snapshot guardado: ${snapshotFile}`);
+
+  // Actualizar data.json
+  writeJson(DATA_PATH, results);
+  console.log("📦 data.json actualizado");
+
+  // Actualizar histórico
+  const historico = readJsonSafe(HIST_PATH, []);
+  historico.push({ timestamp: new Date().toISOString(), data: results });
+  writeJson(HIST_PATH, historico);
+  console.log(`🕓 Histórico actualizado (${historico.length} registros totales)`);
+
+  console.log("✅ FareBot ejecutado correctamente en modo LIVE.");
+  console.log("===============================================");
+}
+
+main().catch(err => {
+  console.error("❌ Error al ejecutar FareBot:", err);
+  process.exit(1);
+});
