@@ -3,16 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Dashboard y bots para monitorear tarifas LIM⇄MIA/FLL/MCO con histórico.",
+  "description": "Dashboard y bots para monitorear tarifas LIM/MIAMI/FLL/MCO con histórico.",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "verify:v133": "node scripts/helpers/auditor_v133.js && node scripts/helpers/healthcheck_v133.js && node scripts/audit_historico_shapes_v133.js",
-    "fix:unknowns": "node scripts/helpers/fix_unknowns_v133.js --apply",
+    "fix:unknowns": "node scripts/helpers/fix_unknowns_v133.js",
     "farebot": "node scripts/farebot_v132.js",
-    "farebot:mock": "FAREBOT_MODE=mock node scripts/farebot_v132.js"
-    "maintain:full": "node scripts/maintenance/run_full_maintenance_v133.js"
+    "farebot:mock": "FAREBOT_MODE=mock node scripts/farebot_v132.js",
+    "maintain:full": "node scripts/maintenance/run_full_maintenance_v133.js",
+    "rebuild:historico": "node scripts/rebuild_historico_from_git.js",
+    "sync:docs": "bash scripts/git_sync_docs.sh",
+    "sync:repo": "bash scripts/git_sync.sh",
+    "serve": "npx http-server ./public -p 8080"
   },
   "dependencies": {
     "node-fetch": "^3.3.2",
