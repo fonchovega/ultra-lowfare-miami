@@ -3,7 +3,7 @@ name: run-farebot
 on:
   workflow_dispatch:
   schedule:
-    - cron: "7 */6 * * *"   # opcional: cada 6h
+    - cron: "7 */3 * * *"   # opcional: cada 3 horas
 
 permissions:
   contents: write
@@ -59,7 +59,6 @@ jobs:
           git pull --rebase
           git push || true
 
-      # --- SNIPPET INCLUIDO: asegurar carpetas para Pages artifact ---
       - name: Ensure public and data folders exist
         run: |
           mkdir -p public data
