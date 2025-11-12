@@ -1,28 +1,46 @@
-name: Mirror data to docs/ (on push)
+name: sync-pages
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
     paths:
       - "data/**"
+      - "public/**"
+      - ".github/workflows/sync_pages.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-pages
+  cancel-in-progress: true
 
 jobs:
-  mirror:
+  sync:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Mirror data -> docs/data
+      - name: Ensure docs/ structure exists
         run: |
           mkdir -p docs/data
-          cp -f data/*.json docs/data/ || true
+          touch docs/.nojekyll
+
+      - name: Mirror /data → /docs/data (clean)
+        run: |
+          rsync -a --delete data/ docs/data/ || true
+
+      - name: Mirror /public → /docs (keep files)
+        run: |
+          rsync -a public/ docs/ || true
+
+      - name: Commit & push mirrored content
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/data
-          git commit -m "auto: mirror data to docs/" || echo "No changes"
-          git pull --rebase origin main || echo "Nothing to pull"
-          git push origin main
+          git add docs
+          git commit -m "auto: mirror data/public to docs (sync-pages)" || echo "No changes to commit"
+          git pull --rebase
+          git push || true
