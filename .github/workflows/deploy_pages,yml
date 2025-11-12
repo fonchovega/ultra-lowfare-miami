@@ -1,13 +1,14 @@
-name: Deploy Frontend (/public + /data)
+name: Deploy Frontend (public + data)
 
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
     paths:
-      - "public/**"
-      - "data/**"
-      - ".github/workflows/deploy_pages.yml"
+      - 'public/**'
+      - 'data/**'
+      - 'docs/**'
+      - '.github/workflows/deploy_pages.yml'
 
 permissions:
   contents: read
@@ -15,26 +16,43 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages-deploy
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Build _site (merge public + data + docs)
+        run: |
+          set -e
+          rm -rf _site
+          mkdir -p _site
+          mkdir -p public data
+          # Copiamos si existen; si no, continuamos sin error
+          [ -d public ] && cp -r public _site/public || true
+          [ -d data ]   && cp -r data   _site/data   || true
+          # Si tienes archivos raíz en docs (index.html, etc.), tómalo como base
+          if [ -d docs ]; then
+            cp -r docs/* _site/ 2>/dev/null || true
+          fi
+          touch _site/.nojekyll
+          echo "[Contenido de _site]" && ls -la _site
 
-      - name: Upload /public and /data as Pages artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: |
-            ./public
-            ./data
+          path: _site
 
-      - name: Deploy to GitHub Pages
-        id: deployment
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
         uses: actions/deploy-pages@v4
