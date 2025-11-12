@@ -1,14 +1,14 @@
-# .github/workflows/run-farebot.yml
 name: run-farebot
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "25 */6 * * *"   # cada 6 horas aprox.
+    # Ejecuta cada 6 horas
+    - cron: "0 */6 * * *"
 
 permissions:
-  contents: write      # para commit/push
-  pages: write         # para publicar GitHub Pages
+  contents: write
+  pages: write
   id-token: write
 
 concurrency:
@@ -16,8 +16,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run:
+  run-farebot:
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: production
+      FAREBOT_MODE: live
+      LIVE_LOCK: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,55 +32,40 @@ jobs:
           node-version: "20"
 
       - name: Install deps
-        run: npm ci || npm install
+        run: |
+          npm ci || npm install
 
       - name: Install Playwright browsers (with deps)
         run: npx playwright install --with-deps chromium
 
-      # Opcional: mantenimiento. Si no existe, no falla el workflow.
       - name: Full maintenance v1.3.3 (verify + fix + repackage)
-        run: |
-          if npm run | grep -q "maintain:full"; then
-            COMMIT=0 PUSH=0 npm run maintain:full || true
-          else
-            echo "No 'maintain:full' script. Continuando…"
-          fi
+        run: npm run maintain:full
 
       - name: Run FareBot engine (LIVE)
-        env:
-          FAREBOT_MODE: live
         run: node scripts/farebot_v132.js
 
-        # Si tienes notificaciones por bajadas de precio
       - name: Notify price changes
-        run: |
-          if [ -f "scripts/notify_price_drops.js" ]; then
-            node scripts/notify_price_drops.js || true
-          else
-            echo "notify_price_drops.js no encontrado. Saltando…"
-          fi
+        if: ${{ hashFiles('scripts/notify_price_drops.js') != '' }}
+        run: node scripts/notify_price_drops.js
 
       - name: Commit & push data changes (data/ y public/)
-        shell: bash
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data public || true
+          git commit -m "auto: update data (run-farebot)" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
-          git add data/ || true
-          git add public/ || true
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
-          if ! git diff --cached --quiet; then
-            git commit -m "auto: update data (run-farebot)"
-            git push origin "${GITHUB_REF_NAME:-main}"
-          else
-            echo "Sin cambios para commitear."
-          fi
-
-      # Publicar la carpeta /public a GitHub Pages
-      - name: Upload /public as Pages artifact
+      - name: Upload /public and /data as Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./public
+          path: |
+            ./public
+            ./data
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
