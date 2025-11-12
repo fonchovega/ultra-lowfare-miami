@@ -29,7 +29,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Full maintenance v1.3.3 (verify + fix + repackage)
-        run: node scripts/maintenance_v133.js
+        run: node scripts/maintenance/run_full_maintenance_v133.js
 
       - name: Run FareBot engine (LIVE)
         run: node scripts/farebot_v132.js
