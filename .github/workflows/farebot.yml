@@ -1,52 +1,43 @@
-name: run-farebot
+name: FareBot Engine (Ultra-Low Fare)
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "7 */3 * * *"   # ⏰ Ejecutar cada 3 horas al minuto 7
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: run-farebot
-  cancel-in-progress: false
+    - cron: "0 */3 * * *" # cada 3 horas
+  workflow_dispatch:
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 20
 
       - name: Install deps
-        run: |
-          npm ci || npm install
-          npx playwright install --with-deps
+        run: npm install
+
+      - name: Install Playwright browsers (with deps)
+        run: npx playwright install --with-deps
 
       - name: Full maintenance v1.3.3 (verify + fix + repackage)
-        run: |
-          node scripts/maintenance/run_full_maintenance_v133.js || true
+        run: node scripts/maintenance_v133.js
 
       - name: Run FareBot engine (LIVE)
-        env:
-          FAREBOT_MODE: "live"
-        run: |
-          node scripts/farebot_v132.js
+        run: node scripts/farebot_v132.js
 
       - name: Notify price changes
-        if: ${{ always() }}
         run: |
           if [ -f "scripts/notify_price_drops.js" ]; then
-            node scripts/notify_price_drops.js || true
+            node scripts/notify_price_drops.js
           fi
 
       - name: Commit & push data changes (data/ y public/)
@@ -65,11 +56,18 @@ jobs:
           echo "[ls -la]" && ls -la && echo "[tree]" || true
 
       - name: Upload /public and /data as Pages artifact
+        run: |
+          echo "🔍 Verificando carpetas antes de empaquetar..."
+          [ -d "./public" ] && echo "✅ public existe" || (echo "⚠️ public no existe"; mkdir -p ./public)
+          [ -d "./data" ] && echo "✅ data existe" || (echo "⚠️ data no existe"; mkdir -p ./data)
+          echo "🗜️ Empaquetando archivos..."
+          tar -czf site_artifact.tar.gz ./public ./data
+        continue-on-error: false
+
+      - name: Upload artifact to Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: |
-            ./public
-            ./data
+          path: site_artifact.tar.gz
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
