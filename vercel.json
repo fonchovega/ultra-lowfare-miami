@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "name": "ultra-lowfare-miami",
+  "builds": [
+    {
+      "src": "site/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/site/$1"
+    }
+  ]
+}
