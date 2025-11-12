@@ -3,8 +3,8 @@ name: run-farebot
 on:
   workflow_dispatch:
   schedule:
-    # Ejecuta cada 3 horas
-    - cron: "0 */3 * * *"
+    # Ejecuta cada 6 horas
+    - cron: "0 */6 * * *"
 
 permissions:
   contents: write
@@ -64,16 +64,16 @@ jobs:
         run: |
           mkdir -p public
           mkdir -p data
-          echo "Verificando contenido..."
-          ls -la public || echo "⚠️ public vacío"
-          ls -la data || echo "⚠️ data vacío"
+          echo "📂 Verificando contenido de carpetas..."
+          ls -la ./public || echo "⚠️ public vacío"
+          ls -la ./data || echo "⚠️ data vacío"
 
       - name: Upload /public and /data as Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: |
-            public
-            data
+            ./public
+            ./data
 
       - name: Deploy to GitHub Pages
         id: deployment
