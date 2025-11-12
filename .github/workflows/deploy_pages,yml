@@ -1,10 +1,9 @@
-name: deploy-pages
+name: Deploy FrontDesk to GitHub Pages
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - "public/**"
       - "data/**"
@@ -16,12 +15,15 @@ permissions:
   id-token: write
 
 concurrency:
-  group: deploy-pages
+  group: "pages"
   cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout
@@ -30,16 +32,19 @@ jobs:
       - name: Ensure public and data folders exist
         run: |
           mkdir -p public data
-          echo "[ls -la]" && ls -la && echo "[tree]" || true
+          echo "[ls -la] public:" && ls -la public || true
+          echo "[ls -la] data:" && ls -la data || true
 
-      - name: Upload /public and /data as Pages artifact
+      - name: Pack /public and /data into artifact
+        run: |
+          echo "📦 Empaquetando public/ y data/…"
+          tar -czf site_artifact.tar.gz ./public ./data
+
+      - name: Upload artifact to Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: |
-            ./public
-            ./data
+          path: site_artifact.tar.gz
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          timeout: 600000
