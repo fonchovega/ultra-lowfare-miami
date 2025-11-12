@@ -3,8 +3,7 @@ name: run-farebot
 on:
   workflow_dispatch:
   schedule:
-    # Ejecuta cada 6 horas
-    - cron: "0 */6 * * *"
+    - cron: "7 */6 * * *"   # opcional: cada 6h
 
 permissions:
   contents: write
@@ -12,16 +11,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: run-farebot
   cancel-in-progress: false
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
-    env:
-      NODE_ENV: production
-      FAREBOT_MODE: live
-      LIVE_LOCK: "1"
 
     steps:
       - name: Checkout
@@ -35,46 +30,49 @@ jobs:
       - name: Install deps
         run: |
           npm ci || npm install
-
-      - name: Install Playwright browsers (with deps)
-        run: npx playwright install --with-deps chromium
+          npx playwright install --with-deps
 
       - name: Full maintenance v1.3.3 (verify + fix + repackage)
-        run: npm run maintain:full
+        run: |
+          node scripts/maintenance/run_full_maintenance_v133.js || true
 
       - name: Run FareBot engine (LIVE)
-        run: node scripts/farebot_v132.js
+        env:
+          FAREBOT_MODE: "live"
+        run: |
+          node scripts/farebot_v132.js
 
       - name: Notify price changes
-        if: ${{ hashFiles('scripts/notify_price_drops.js') != '' }}
-        run: node scripts/notify_price_drops.js
+        if: ${{ always() }}
+        run: |
+          if [ -f "scripts/notify_price_drops.js" ]; then
+            node scripts/notify_price_drops.js || true
+          fi
 
       - name: Commit & push data changes (data/ y public/)
+        if: ${{ success() }}
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data public || true
-          git commit -m "auto: update data (run-farebot)" || echo "No changes to commit"
-          git push || echo "Nothing to push"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "auto: update data (run-farebot)" || echo "No hay cambios que commitear"
+          git pull --rebase
+          git push || true
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
+      # --- SNIPPET INCLUIDO: asegurar carpetas para Pages artifact ---
       - name: Ensure public and data folders exist
         run: |
-          mkdir -p public
-          mkdir -p data
-          echo "📂 Verificando contenido de carpetas..."
-          ls -la ./public || echo "⚠️ public vacío"
-          ls -la ./data || echo "⚠️ data vacío"
+          mkdir -p public data
+          echo "[ls -la]" && ls -la && echo "[tree]" || true
 
       - name: Upload /public and /data as Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: |
-            ./public
-            ./data
+            public
+            data
 
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
