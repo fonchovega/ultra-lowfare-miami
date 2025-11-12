@@ -1,14 +1,14 @@
 {
   "meta": {
-    "generado": "2025-11-09T13:07:58.656Z",
-    "modo": "mock"
+    "generado": "2025-11-12T15:07:15.071Z",
+    "modo": "live"
   },
   "resultados": [
     {
       "ruta": "LIM → MIA",
-      "fecha": "2025-11-09T13:07:58.655Z",
-      "precio_encontrado": 298,
-      "cumple": "✅ Sí cumple",
+      "fecha": "2025-11-09T15:32:31.353Z",
+      "precio_encontrado": 778,
+      "cumple": "❌ No cumple",
       "limite": 360,
       "fuente": "simulación interna (mock)",
       "detalles": {
@@ -18,8 +18,8 @@
     },
     {
       "ruta": "LIM → FLL",
-      "fecha": "2025-11-09T13:07:58.656Z",
-      "precio_encontrado": 610,
+      "fecha": "2025-11-09T15:32:31.353Z",
+      "precio_encontrado": 717,
       "cumple": "❌ No cumple",
       "limite": 360,
       "fuente": "simulación interna (mock)",
@@ -30,8 +30,8 @@
     },
     {
       "ruta": "LIM → MCO",
-      "fecha": "2025-11-09T13:07:58.656Z",
-      "precio_encontrado": 435,
+      "fecha": "2025-11-09T15:32:31.353Z",
+      "precio_encontrado": 469,
       "cumple": "❌ No cumple",
       "limite": 400,
       "fuente": "simulación interna (mock)",
@@ -39,6 +39,36 @@
         "equipaje": "carry-on only",
         "escalas_max": 1
       }
+    },
+    {
+      "ts": "2025-11-12T15:06:13.782Z",
+      "ruta": "LIM-MIA",
+      "min": null,
+      "max": null,
+      "prom": null,
+      "ultimo": null,
+      "tope": 5300,
+      "fuente": "google_flights"
+    },
+    {
+      "ts": "2025-11-12T15:06:44.555Z",
+      "ruta": "LIM-FLL",
+      "min": null,
+      "max": null,
+      "prom": null,
+      "ultimo": null,
+      "tope": 5300,
+      "fuente": "google_flights"
+    },
+    {
+      "ts": "2025-11-12T15:07:15.070Z",
+      "ruta": "LIM-MCO",
+      "min": null,
+      "max": null,
+      "prom": null,
+      "ultimo": null,
+      "tope": 5400,
+      "fuente": "google_flights"
     }
   ]
 }
