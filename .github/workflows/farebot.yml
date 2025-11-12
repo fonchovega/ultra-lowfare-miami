@@ -1,10 +1,9 @@
-name: run-farebot
+name: FareBot v1.3.3 - Live + FrontDesk
 
 on:
   workflow_dispatch:
   schedule:
-    # Cada 3 horas
-    - cron: "0 */3 * * *"
+    - cron: "0 */3 * * *"  # Ejecuta cada 3 horas (en punto)
 
 permissions:
   contents: write
@@ -20,59 +19,76 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install deps
-        run: npm ci
+        run: npm ci || npm install
 
-      - name: Install Playwright browsers (with deps)
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
-
-      # Mantiene la etapa de mantenimiento estable; fallback a la ruta alternativa si existiera.
-      - name: Full maintenance v1.3.3 (verify + fix + repackage)
-        run: |
-          node scripts/maintenance_v133.js \
-          || node scripts/maintenance/run_full_maintenance_v133.js \
-          || true
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: 0
 
       - name: Run FareBot engine (LIVE)
         run: node scripts/farebot_v132.js
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: 0
 
       - name: Notify price changes
-        run: |
-          if [ -f "scripts/notify_price_drops.js" ]; then
-            node scripts/notify_price_drops.js
-          fi
+        run: node scripts/notify_price_drops.js
 
-      - name: Commit & push data changes (data/ y public/)
-        if: ${{ success() }}
+      - name: Commit if data changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "auto: update data (run-farebot)" || echo "No hay cambios que commitear"
-          git pull --rebase
-          git push || true
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+          git add data/
+          git commit -m "auto: update data [v1.3.3]" || echo "No changes to commit"
+          git pull --rebase origin main || echo "Nothing to pull"
+          git push origin main --force
 
       - name: Ensure public and data folders exist
         run: |
           mkdir -p public data
-          echo "[ls -la]" && ls -la && echo "[tree]" || true
+          echo "📁 Estructura actual:"
+          ls -la || true
 
-      - name: Upload /public and /data as Pages artifact
+      - name: Prepare Pages bundle (public + data)
         run: |
-          echo "🔎 Verificando carpetas antes de empaquetar..."
-          [ -d "./public" ] && echo "✅ public existe" || (echo "⚠️ public no existe"; mkdir -p ./public)
-          [ -d "./data"   ] && echo "✅ data existe"   || (echo "⚠️ data no existe"; mkdir -p ./data)
-          echo "📦 Empaquetando archivos..."
-          mkdir -p ./dist
-          tar -czf ./dist/site_artifact.tar.gz ./public ./data && ls -
+          rm -rf ./site
+          mkdir -p ./site
+          if [ -d "./public" ]; then
+            cp -r ./public ./site/public
+          else
+            mkdir -p ./site/public
+          fi
+          if [ -d "./data" ]; then
+            cp -r ./data ./site/data
+          else
+            mkdir -p ./site/data
+          fi
+          [ -f "./site/data/historico_normalizado.json" ] || echo "[]" > ./site/data/historico_normalizado.json
+          echo "📦 Contenido de ./site listo para Pages:"
+          ls -laR ./site || true
+
+      - name: Upload artifact to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+  deploy:
+    needs: run-farebot
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
