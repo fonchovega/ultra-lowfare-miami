@@ -3,7 +3,7 @@ name: run-farebot
 on:
   workflow_dispatch:
   schedule:
-    - cron: "7 */3 * * *"   # opcional: cada 3 horas
+    - cron: "7 */3 * * *"   # ⏰ Ejecutar cada 3 horas al minuto 7
 
 permissions:
   contents: write
