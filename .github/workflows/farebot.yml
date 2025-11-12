@@ -1,17 +1,23 @@
-name: FareBot Engine (Ultra-Low Fare)
+name: run-farebot
 
 on:
-  schedule:
-    - cron: "0 */3 * * *" # cada 3 horas
   workflow_dispatch:
+  schedule:
+    # Cada 3 horas
+    - cron: "0 */3 * * *"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   run-farebot:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
 
     steps:
       - name: Checkout repo
@@ -23,13 +29,17 @@ jobs:
           node-version: 20
 
       - name: Install deps
-        run: npm install
+        run: npm ci
 
       - name: Install Playwright browsers (with deps)
         run: npx playwright install --with-deps
 
+      # Mantiene la etapa de mantenimiento estable; fallback a la ruta alternativa si existiera.
       - name: Full maintenance v1.3.3 (verify + fix + repackage)
-        run: node scripts/maintenance/run_full_maintenance_v133.js
+        run: |
+          node scripts/maintenance_v133.js \
+          || node scripts/maintenance/run_full_maintenance_v133.js \
+          || true
 
       - name: Run FareBot engine (LIVE)
         run: node scripts/farebot_v132.js
@@ -50,6 +60,9 @@ jobs:
           git pull --rebase
           git push || true
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
       - name: Ensure public and data folders exist
         run: |
           mkdir -p public data
@@ -57,20 +70,9 @@ jobs:
 
       - name: Upload /public and /data as Pages artifact
         run: |
-          echo "🔍 Verificando carpetas antes de empaquetar..."
+          echo "🔎 Verificando carpetas antes de empaquetar..."
           [ -d "./public" ] && echo "✅ public existe" || (echo "⚠️ public no existe"; mkdir -p ./public)
-          [ -d "./data" ] && echo "✅ data existe" || (echo "⚠️ data no existe"; mkdir -p ./data)
-          echo "🗜️ Empaquetando archivos..."
+          [ -d "./data"   ] && echo "✅ data existe"   || (echo "⚠️ data no existe"; mkdir -p ./data)
+          echo "📦 Empaquetando archivos..."
           mkdir -p ./dist
-          tar -czf ./dist/site_artifact.tar.gz ./public ./data && ls -lh ./dist
-        continue-on-error: false
-
-      - name: Upload artifact to Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
-
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
-        with:
-          timeout: 600000
+          tar -czf ./dist/site_artifact.tar.gz ./public ./data && ls -
