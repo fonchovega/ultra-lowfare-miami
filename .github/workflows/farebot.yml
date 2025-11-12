@@ -61,13 +61,14 @@ jobs:
           [ -d "./public" ] && echo "✅ public existe" || (echo "⚠️ public no existe"; mkdir -p ./public)
           [ -d "./data" ] && echo "✅ data existe" || (echo "⚠️ data no existe"; mkdir -p ./data)
           echo "🗜️ Empaquetando archivos..."
-          tar -czf ./site_artifact.tar.gz ./public ./data && ls -lh ./site_artifact.tar.gz
+          mkdir -p ./dist
+          tar -czf ./dist/site_artifact.tar.gz ./public ./data && ls -lh ./dist
         continue-on-error: false
 
       - name: Upload artifact to Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./site_artifact.tar.gz
+          path: ./dist
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
