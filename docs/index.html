@@ -1,58 +1,106 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Ultra-Low Fare · FrontWeb v1.3.3</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="./styles.css">
+  <meta charset="UTF-8">
+  <title>Ultra-Low Fare · Dashboard Histórico</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard histórico de tarifas LIM ⇄ MIA / FLL / MCO para Ultra-Low Fare.">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="topbar">
-    <h1>Ultra-Low Fare · Dashboard</h1>
-    <div class="meta">
-      <span id="meta-generado">Cargando…</span>
-      <button id="btn-reload" title="Recargar datos">Recargar</button>
+  <header class="ulf-header">
+    <div class="ulf-header-main">
+      <h1>Ultra-Low Fare · Dashboard Histórico</h1>
+      <p class="ulf-subtitle">Monitor de tarifas LIM ⇄ MIA / FLL / MCO · v1.3.3</p>
+    </div>
+    <div class="ulf-header-meta">
+      <span class="ulf-pill" id="pill-mode">Modo: Live</span>
+      <span class="ulf-pill ulf-pill-soft" id="pill-source">Sin datos aún</span>
     </div>
   </header>
 
-  <main class="container">
-    <section class="kpis" id="kpis">
-      <div class="kpi"><div class="kpi-title">Entradas</div><div class="kpi-value" id="kpi-rows">—</div></div>
-      <div class="kpi"><div class="kpi-title">Rutas</div><div class="kpi-value" id="kpi-rutas">—</div></div>
-      <div class="kpi"><div class="kpi-title">Precio mínimo</div><div class="kpi-value" id="kpi-min">—</div></div>
-      <div class="kpi"><div class="kpi-title">Precio promedio</div><div class="kpi-value" id="kpi-avg">—</div></div>
-    </section>
+  <main class="ulf-main">
+    <!-- Panel de estado general -->
+    <section class="ulf-panel">
+      <h2>Estado de la base histórica</h2>
+      <div class="ulf-card-grid ulf-card-grid-3" id="status-panel">
+        <article class="ulf-card">
+          <h3>Total de registros</h3>
+          <p class="ulf-metric" id="stat-total-registros">–</p>
+          <p class="ulf-helper-text">Entradas en data/historico*.json</p>
+        </article>
 
-    <section>
-      <h2>Resumen por ruta</h2>
-      <table id="tabla-resumen">
-        <thead>
-          <tr>
-            <th>Ruta</th>
-            <th>Mín</th>
-            <th>Prom</th>
-            <th>Máx</th>
-            <th>Último</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
+        <article class="ulf-card">
+          <h3>Última actualización</h3>
+          <p class="ulf-metric" id="stat-ultima-fecha">–</p>
+          <p class="ulf-helper-text" id="stat-ultima-zona">Zona horaria: –</p>
+        </article>
 
-    <section>
-      <h2>Serie temporal</h2>
-      <div class="controls">
-        <label>Ruta: <select id="sel-ruta"></select></label>
+        <article class="ulf-card">
+          <h3>Rutas monitoreadas</h3>
+          <p class="ulf-metric" id="stat-rutas">–</p>
+          <p class="ulf-helper-text">Según meta.rutas del último registro</p>
+        </article>
       </div>
-      <canvas id="chart" width="900" height="300" aria-label="Serie por ruta"></canvas>
-      <div class="hint">Selecciona una ruta para graficar precios en el tiempo.</div>
+    </section>
+
+    <!-- Panel de resumen del último barrido -->
+    <section class="ulf-panel">
+      <div class="ulf-panel-header">
+        <h2>Último barrido de tarifas</h2>
+        <span class="ulf-badge" id="badge-ultima-ejecucion">Sin ejecutar</span>
+      </div>
+      <div class="ulf-card-grid" id="last-run-summary">
+        <!-- Aquí se insertan tarjetas por ruta vía app.js -->
+      </div>
+      <p class="ulf-helper-text" id="last-run-note">
+        Se lee el último elemento de historico (último barrido almacenado).
+      </p>
+    </section>
+
+    <!-- Tabla de histórico rápido -->
+    <section class="ulf-panel">
+      <div class="ulf-panel-header">
+        <h2>Histórico (vista rápida)</h2>
+        <div class="ulf-panel-actions">
+          <label class="ulf-label-small">
+            Mostrar filas:
+            <select id="rows-select">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="ulf-table-wrapper">
+        <table class="ulf-table" id="history-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Ruta</th>
+              <th>Precio (USD)</th>
+              <th>Umbral (USD)</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Filas generadas vía app.js -->
+          </tbody>
+        </table>
+      </div>
+      <p class="ulf-helper-text">
+        Se muestra una vista resumida de las últimas simulaciones, empezando por las más recientes.
+      </p>
     </section>
   </main>
 
-  <footer class="footer">
-    <small>FrontWeb v1.3.3 · Lee data/historico_normalizado.json</small>
+  <footer class="ulf-footer">
+    <span>Ultra-Low Fare · v1.3.3</span>
+    <span id="footer-data-source">Fuente: sin datos</span>
   </footer>
 
-  <script type="module" src="./app_frontweb_v133.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
