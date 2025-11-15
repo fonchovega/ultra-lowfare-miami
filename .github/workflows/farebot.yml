@@ -3,7 +3,7 @@ name: FareBot v1.3.3 - Live + FrontDesk
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *"  # Ejecuta cada 3 horas (en punto)
+    - cron: "0 */3 * * *"   # Ejecuta cada 3 horas
 
 permissions:
   contents: write
@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # -----------------------------
+      # CHECKOUT + NODE + DEPS
+      # -----------------------------
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -36,6 +39,9 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: 0
 
+      # -----------------------------
+      # FAREBOT ENGINE
+      # -----------------------------
       - name: Run FareBot engine (LIVE)
         run: node scripts/farebot_v132.js
         env:
@@ -44,6 +50,9 @@ jobs:
       - name: Notify price changes
         run: node scripts/notify_price_drops.js
 
+      # -----------------------------
+      # GIT COMMIT IF NEEDED
+      # -----------------------------
       - name: Commit if data changed
         run: |
           git config user.name "github-actions[bot]"
@@ -51,43 +60,64 @@ jobs:
           git add data/
           git commit -m "auto: update data [v1.3.3]" || echo "No changes to commit"
           git pull --rebase origin main || echo "Nothing to pull"
-          git push origin main --force
+          git push origin main || echo "No push needed"
 
+      # -----------------------------
+      # ENSURE PUBLIC + DATA EXIST
+      # -----------------------------
       - name: Ensure public and data folders exist
         run: |
           mkdir -p public data
           echo "📁 Estructura actual:"
           ls -la || true
 
+      # -----------------------------
+      # BUILD SITE FOR GITHUB PAGES
+      # IMPORTANT: no .tar.gz — solo carpeta
+      # -----------------------------
       - name: Prepare Pages bundle (public + data)
         run: |
+          echo "🧺 Preparando carpeta ./site/ para Pages..."
           rm -rf ./site
           mkdir -p ./site
-          if [ -d "./public" ]; then
-            cp -r ./public ./site/public
-          else
-            mkdir -p ./site/public
-          fi
-          if [ -d "./data" ]; then
-            cp -r ./data ./site/data
-          else
-            mkdir -p ./site/data
-          fi
-          [ -f "./site/data/historico_normalizado.json" ] || echo "[]" > ./site/data/historico_normalizado.json
-          echo "📦 Contenido de ./site listo para Pages:"
-          ls -laR ./site || true
 
+          echo "📂 Copiando PUBLIC/"
+          if [ -d "./public" ]; then
+            cp -r ./public/* ./site/
+          fi
+
+          echo "📂 Copiando DATA/"
+          mkdir -p ./site/data
+          cp -r ./data/* ./site/data/ || true
+
+          # Aseguramos que exista el archivo requerido por frontend
+          if [ ! -f "./site/data/historico_normalizado.json" ]; then
+            echo "[]"> ./site/data/historico_normalizado.json
+          fi
+
+          echo "📦 Contenido final de ./site:"
+          ls -la ./site
+          echo "📦 Contenido final de ./site/data:"
+          ls -la ./site/data
+
+      # -----------------------------
+      # UPLOAD BRAND-NEW SITE/
+      # -----------------------------
       - name: Upload artifact to Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./site
 
+  # =============================================================
+  # DEPLOY JOB
+  # =============================================================
   deploy:
     needs: run-farebot
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
