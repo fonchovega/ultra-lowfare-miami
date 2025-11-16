@@ -3,7 +3,7 @@ name: FareBot v1.3.4 - Live + FrontDesk
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *" # cada 3 horas
+    - cron: "0 */3 * * *"  # Ejecuta cada 3 horas en punto
 
 permissions:
   contents: write
@@ -41,31 +41,68 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: 0
 
-      - name: Write historico.json (v133 full)
-        run: node scripts/writer_historico_v133_full.js
+      - name: Notify price changes
+        run: node scripts/notify_price_drops.js
+
+      # ---------- NUEVA CAPA v1.3.4 (writer + healthcheck + normalizer) ----------
+
+      - name: Write historico.json (v134 full)
+        run: node scripts/writer_historico_v134_full.js
+
+      - name: Healthcheck historico (v134)
+        run: node scripts/helpers/healthcheck_v134.js
 
       - name: Normalize historico (v134)
-        run: node scripts/normalizador_historico_v134.js
+        run: node scripts/normalizer_v134.js
 
-      - name: Commit changes
+      # ---------- COMMIT DE DATA ----------
+
+      - name: Commit & push data changes (data/)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git commit -m "auto: update historico & normalizado [v1.3.4]" || echo "No changes to commit"
-          git pull --rebase origin main || echo "No remote changes"
-          git push origin main --force
+          git commit -m "auto: update data [v1.3.4]" || echo "No hay cambios que commitear"
+          git pull --rebase origin main || echo "Nada que actualizar desde origin/main"
+          git push origin main || echo "No se pudo hacer push (posible carrera de commits)"
+
+      # ---------- PREPARAR BUNDLE PARA PAGES ----------
+
+      - name: Ensure public and data folders exist
+        run: |
+          mkdir -p public data
+          echo "📁 Estructura actual del repo:"
+          ls -la || true
 
       - name: Prepare Pages bundle (public + data)
         run: |
+          echo "📦 Preparando carpeta ./site/ para Pages..."
           rm -rf ./site
           mkdir -p ./site
-          cp -r ./public ./site/public 2>/dev/null || mkdir -p ./site/public
-          cp -r ./data ./site/data 2>/dev/null || mkdir -p ./site/data
-          echo "Contenido final de ./site:"
-          ls -la ./site
-          echo "Contenido de ./site/data:"
-          ls -la ./site/data
+
+          echo "➡ Copiando PUBLIC/…"
+          if [ -d "./public" ]; then
+            cp -r ./public ./site/public
+          else
+            mkdir -p ./site/public
+          fi
+
+          echo "➡ Copiando DATA/…"
+          if [ -d "./data" ]; then
+            cp -r ./data ./site/data
+          else
+            mkdir -p ./site/data
+          fi
+
+          # Garantizar que exista historico_normalizado.json para el front
+          if [ ! -f "./site/data/historico_normalizado.json" ]; then
+            echo "[]"> ./site/data/historico_normalizado.json
+          fi
+
+          echo "📂 Contenido final de ./site:"
+          ls -la ./site || true
+          echo "📂 Contenido de ./site/data:"
+          ls -la ./site/data || true
 
       - name: Upload artifact to Pages
         uses: actions/upload-pages-artifact@v3
@@ -78,6 +115,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
