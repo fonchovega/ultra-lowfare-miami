@@ -1,307 +1,244 @@
-// ============================================
-// Ultra-Low Fare · FrontDesk mínimo (v1.3.3)
-// Lee data/historico*.json y muestra:
-//   - Estado general de la base
-//   - Resumen del último barrido
-//   - Tabla rápida de histórico
-// ============================================
+// FrontDesk v1.3.4
+// Lee historico_normalizado.json (si existe) o historico.json
+// y pinta métricas básicas en el dashboard.
 
-var ulfData = [];
-var ulfLastSample = null;
-
-function setTextById(id, text) {
+function setText(id, text) {
   var el = document.getElementById(id);
   if (el) {
     el.textContent = text;
   }
 }
 
-function setHtmlById(id, html) {
-  var el = document.getElementById(id);
-  if (el) {
-    el.innerHTML = html;
-  }
-}
-
-// Intenta cargar el histórico desde varias rutas posibles
-function loadHistorico() {
-  var urls = [
-    '../data/historico_fixed.json',
-    '../data/historico.json',
-    'data/historico_fixed.json',
-    'data/historico.json'
-  ];
-
-  var index = 0;
-
-  function tryNext() {
-    if (index >= urls.length) {
-      // No se pudo cargar nada
-      setTextById('pill-source', 'Sin datos disponibles');
-      setTextById('footer-data-source', 'Fuente: sin datos');
-      setTextById('badge-ultima-ejecucion', 'Sin datos');
-      return;
-    }
-
-    var url = urls[index];
-    index += 1;
-
-    fetch(url)
-      .then(function (res) {
-        if (!res.ok) {
-          throw new Error('Respuesta no OK');
-        }
-        return res.json();
-      })
-      .then(function (json) {
-        if (!Array.isArray(json)) {
-          throw new Error('El JSON no es un array');
-        }
-        ulfData = json;
-        processHistorico(url);
-      })
-      .catch(function () {
-        // Probar siguiente ruta
-        tryNext();
-      });
-  }
-
-  tryNext();
-}
-
-// Procesa la data cargada
-function processHistorico(sourceUrl) {
-  setTextById('pill-source', 'Fuente: ' + sourceUrl);
-  setTextById('footer-data-source', 'Fuente: ' + sourceUrl);
-
-  var total = ulfData.length;
-  if (total === 0) {
-    setTextById('stat-total-registros', '0');
-    setTextById('badge-ultima-ejecucion', 'Sin registros');
+function setStatus(status, mode) {
+  var el = document.getElementById("statusBadge");
+  if (!el) {
     return;
   }
 
-  ulfLastSample = ulfData[total - 1];
+  el.classList.remove("ok");
+  el.classList.remove("warn");
+  el.classList.remove("err");
 
-  // Estado general
-  setTextById('stat-total-registros', String(total));
-
-  var meta = ulfLastSample.meta || {};
-  var fecha = meta.generado || meta.fecha || 'N/D';
-  var zona = meta.zona_horaria || meta.timezone || 'N/D';
-
-  setTextById('stat-ultima-fecha', fecha);
-  setTextById('stat-ultima-zona', 'Zona horaria: ' + zona);
-
-  var rutas = meta.rutas;
-  if (Array.isArray(rutas) && rutas.length > 0) {
-    setTextById('stat-rutas', rutas.join(' · '));
+  if (mode === "ok") {
+    el.classList.add("ok");
+  } else if (mode === "err") {
+    el.classList.add("err");
   } else {
-    setTextById('stat-rutas', 'No definido en meta.rutas');
+    el.classList.add("warn");
   }
 
-  setTextById('badge-ultima-ejecucion', 'Último barrido: ' + fecha);
-
-  renderLastRunSummary();
-  renderHistoryTable();
+  el.textContent = status;
 }
 
-// Normaliza un item de resumen a un formato común
-function mapResumenItem(item) {
-  if (!item || typeof item !== 'object') {
-    return {
-      ruta: 'N/D',
-      precio: null,
-      umbral: null,
-      statusFlag: null,
-      statusText: 'N/D'
-    };
-  }
-
-  var ruta = item.ruta || item.destino || item.route || 'N/D';
-
-  var precio = null;
-  if (typeof item.precio === 'number') {
-    precio = item.precio;
-  } else if (typeof item.precio_mas_bajo_usd === 'number') {
-    precio = item.precio_mas_bajo_usd;
-  } else if (typeof item.precio_encontrado === 'number') {
-    precio = item.precio_encontrado;
-  }
-
-  var umbral = null;
-  if (typeof item.umbral === 'number') {
-    umbral = item.umbral;
-  } else if (typeof item.umbral_usd === 'number') {
-    umbral = item.umbral_usd;
-  } else if (typeof item.limite === 'number') {
-    umbral = item.limite;
-  }
-
-  var rawEstado = item.cumple || item.resultado || item.estado || '';
-  var estadoStr = String(rawEstado || '').trim();
-  var lower = estadoStr.toLowerCase();
-
-  var flag = null;
-  var texto = estadoStr || 'N/D';
-
-  if (lower.indexOf('cumple') !== -1 && lower.indexOf('no') === -1 && lower.indexOf('❌') === -1) {
-    flag = true;
-    if (texto === 'true' || texto === '') {
-      texto = 'Cumple';
-    }
-  } else if (lower === '' || lower === 'null' || lower === 'undefined') {
-    flag = null;
-    texto = 'N/D';
-  } else {
-    flag = false;
-    if (texto === 'false' || texto === '') {
-      texto = 'No cumple';
-    }
-  }
-
-  return {
-    ruta: ruta,
-    precio: precio,
-    umbral: umbral,
-    statusFlag: flag,
-    statusText: texto
-  };
-}
-
-// Renderiza tarjetas del último barrido
-function renderLastRunSummary() {
-  var contenedor = document.getElementById('last-run-summary');
-  if (!contenedor) {
+function showError(msg) {
+  var box = document.getElementById("errorBox");
+  if (!box) {
     return;
   }
-
-  var resumen = (ulfLastSample && ulfLastSample.resumen) ? ulfLastSample.resumen : [];
-  if (!Array.isArray(resumen) || resumen.length === 0) {
-    contenedor.innerHTML = '<p class="ulf-helper-text">El último registro no tiene campo "resumen".</p>';
-    return;
-  }
-
-  var html = '';
-  for (var i = 0; i < resumen.length; i++) {
-    var mapped = mapResumenItem(resumen[i]);
-    var precioTxt = mapped.precio != null ? mapped.precio.toFixed(0) : 'N/D';
-    var umbralTxt = mapped.umbral != null ? mapped.umbral.toFixed(0) : 'N/D';
-
-    var chipClass = 'ulf-chip ulf-chip-nd';
-    if (mapped.statusFlag === true) {
-      chipClass = 'ulf-chip ulf-chip-ok';
-    } else if (mapped.statusFlag === false) {
-      chipClass = 'ulf-chip ulf-chip-bad';
-    }
-
-    html +=
-      '<article class="ulf-card">' +
-        '<h3>' + mapped.ruta + '</h3>' +
-        '<p class="ulf-metric">US$ ' + precioTxt + '</p>' +
-        '<p class="ulf-helper-text">Umbral: US$ ' + umbralTxt + '</p>' +
-        '<p class="ulf-helper-text">' +
-          '<span class="' + chipClass + '">' + mapped.statusText + '</span>' +
-        '</p>' +
-      '</article>';
-  }
-
-  contenedor.innerHTML = html;
+  box.style.display = "block";
+  box.textContent = msg;
 }
 
-// Construye filas de histórico (últimos N registros)
-function buildHistoryRows(limit) {
-  var rows = [];
-  if (!Array.isArray(ulfData) || ulfData.length === 0) {
-    return rows;
+function hideError() {
+  var box = document.getElementById("errorBox");
+  if (!box) {
+    return;
   }
+  box.style.display = "none";
+  box.textContent = "";
+}
 
-  for (var i = ulfData.length - 1; i >= 0; i--) {
-    var sample = ulfData[i];
-    var meta = sample.meta || {};
-    var fecha = meta.generado || meta.fecha || '';
-    var resumen = Array.isArray(sample.resumen) ? sample.resumen : [];
+function ensureArray(json) {
+  if (!json) {
+    return [];
+  }
+  if (Array.isArray(json)) {
+    return json;
+  }
+  if (json.data && Array.isArray(json.data)) {
+    return json.data;
+  }
+  return [];
+}
 
-    for (var j = 0; j < resumen.length; j++) {
-      var mapped = mapResumenItem(resumen[j]);
-      rows.push({
-        fecha: fecha || 'N/D',
-        ruta: mapped.ruta,
-        precio: mapped.precio,
-        umbral: mapped.umbral,
-        statusFlag: mapped.statusFlag,
-        statusText: mapped.statusText
-      });
+function attachSource(arr, source) {
+  try {
+    arr.__source = source;
+  } catch (e) {
+    // ignorar si no se puede adjuntar
+  }
+  return arr;
+}
 
-      if (rows.length >= limit) {
-        return rows;
+function getSourceLabel(arr) {
+  if (arr && arr.__source) {
+    return "Origen: " + arr.__source;
+  }
+  return "Origen: desconocido";
+}
+
+function safeFetchJson(url) {
+  return fetch(url + "?_ts=" + Date.now())
+    .then(function (resp) {
+      if (!resp.ok) {
+        return null;
       }
-    }
-  }
-
-  return rows;
+      return resp.json();
+    })
+    .then(function (json) {
+      if (!json) {
+        return null;
+      }
+      var arr = ensureArray(json);
+      if (!arr || !arr.length) {
+        return null;
+      }
+      return attachSource(arr, url);
+    })
+    .catch(function () {
+      return null;
+    });
 }
 
-// Renderiza tabla de histórico
-function renderHistoryTable() {
-  var tbody = document.querySelector('#history-table tbody');
+function tryLoadData() {
+  // 1) Intentar historico_normalizado
+  return safeFetchJson("./data/historico_normalizado.json").then(function (normalized) {
+    if (normalized && normalized.length) {
+      return normalized;
+    }
+    // 2) Fallback a historico.json
+    return safeFetchJson("./data/historico.json").then(function (raw) {
+      if (raw && raw.length) {
+        return raw;
+      }
+      return [];
+    });
+  });
+}
+
+function buildRoutesTable(lastSnapshot) {
+  var tbody = document.getElementById("routesTableBody");
   if (!tbody) {
     return;
   }
 
-  var select = document.getElementById('rows-select');
-  var limit = 25;
-  if (select) {
-    var v = parseInt(select.value, 10);
-    if (!isNaN(v) && v > 0) {
-      limit = v;
-    }
-  }
+  tbody.innerHTML = "";
 
-  var rows = buildHistoryRows(limit);
-  if (rows.length === 0) {
-    tbody.innerHTML =
-      '<tr>' +
-        '<td colspan="5">No hay filas para mostrar (revisar campo "resumen" en data/historico*.json).</td>' +
-      '</tr>';
+  if (!lastSnapshot || !lastSnapshot.resumen || !lastSnapshot.resumen.length) {
+    var trEmpty = document.createElement("tr");
+    var tdEmpty = document.createElement("td");
+    tdEmpty.colSpan = 6;
+    tdEmpty.textContent = "No hay resumen disponible para el último snapshot.";
+    trEmpty.appendChild(tdEmpty);
+    tbody.appendChild(trEmpty);
     return;
   }
 
-  var html = '';
-  for (var i = 0; i < rows.length; i++) {
-    var r = rows[i];
+  lastSnapshot.resumen.forEach(function (item) {
+    var tr = document.createElement("tr");
 
-    var precioTxt = r.precio != null ? r.precio.toFixed(0) : 'N/D';
-    var umbralTxt = r.umbral != null ? r.umbral.toFixed(0) : 'N/D';
+    var ruta = item.ruta || "-";
+    var salida = item.salida || "-";
+    var retorno = item.retorno || "-";
 
-    var chipClass = 'ulf-chip ulf-chip-nd';
-    if (r.statusFlag === true) {
-      chipClass = 'ulf-chip ulf-chip-ok';
-    } else if (r.statusFlag === false) {
-      chipClass = 'ulf-chip ulf-chip-bad';
+    var umbral = "-";
+    if (typeof item.umbral !== "undefined" && item.umbral !== null) {
+      umbral = item.umbral;
+    } else if (typeof item.umbral_usd !== "undefined" && item.umbral_usd !== null) {
+      umbral = item.umbral_usd;
     }
 
-    html +=
-      '<tr>' +
-        '<td>' + r.fecha + '</td>' +
-        '<td>' + r.ruta + '</td>' +
-        '<td>' + precioTxt + '</td>' +
-        '<td>' + umbralTxt + '</td>' +
-        '<td><span class="' + chipClass + '">' + r.statusText + '</span></td>' +
-      '</tr>';
-  }
+    var precio = "-";
+    if (typeof item.precio !== "undefined" && item.precio !== null) {
+      precio = item.precio;
+    } else if (
+      typeof item.precio_mas_bajo_usd !== "undefined" &&
+      item.precio_mas_bajo_usd !== null
+    ) {
+      precio = item.precio_mas_bajo_usd;
+    }
 
-  tbody.innerHTML = html;
+    var estado = item.cumple || item.resultado || "-";
+
+    var tdRuta = document.createElement("td");
+    tdRuta.textContent = ruta;
+
+    var tdSalida = document.createElement("td");
+    tdSalida.textContent = salida;
+
+    var tdRetorno = document.createElement("td");
+    tdRetorno.textContent = retorno;
+
+    var tdUmbral = document.createElement("td");
+    tdUmbral.textContent = umbral;
+
+    var tdPrecio = document.createElement("td");
+    tdPrecio.textContent = precio;
+
+    var tdEstado = document.createElement("td");
+    var spanEstado = document.createElement("span");
+    spanEstado.className = "pill";
+
+    var estadoUpper = (estado || "-").toString().toUpperCase();
+
+    spanEstado.textContent = estado;
+
+    if (estadoUpper === "CUMPLE" || estadoUpper === "OK" || estadoUpper === "✔") {
+      spanEstado.style.borderColor = "#16a34a";
+      spanEstado.style.color = "#bbf7d0";
+    } else if (estadoUpper.indexOf("NO CUMPLE") !== -1 || estadoUpper === "❌") {
+      spanEstado.style.borderColor = "#dc2626";
+      spanEstado.style.color = "#fecaca";
+    } else {
+      spanEstado.style.borderColor = "#4b5563";
+      spanEstado.style.color = "#e5e7eb";
+    }
+
+    tdEstado.appendChild(spanEstado);
+
+    tr.appendChild(tdRuta);
+    tr.appendChild(tdSalida);
+    tr.appendChild(tdRetorno);
+    tr.appendChild(tdUmbral);
+    tr.appendChild(tdPrecio);
+    tr.appendChild(tdEstado);
+
+    tbody.appendChild(tr);
+  });
 }
 
-// Inicialización
-window.addEventListener('DOMContentLoaded', function () {
-  var select = document.getElementById('rows-select');
-  if (select) {
-    select.addEventListener('change', function () {
-      renderHistoryTable();
-    });
-  }
+function initDashboard() {
+  hideError();
+  setStatus("Cargando…", "warn");
+  setText("totalSnapshots", "—");
+  setText("lastUpdated", "—");
+  setText("dataSourceLabel", "Origen de datos: —");
 
-  loadHistorico();
+  tryLoadData()
+    .then(function (data) {
+      if (!data || !data.length) {
+        setStatus("SIN DATOS", "err");
+        showError("No se encontraron datos ni en historico_normalizado.json ni en historico.json.");
+        return;
+      }
+
+      setStatus("OK", "ok");
+      setText("totalSnapshots", String(data.length));
+      setText("dataSourceLabel", getSourceLabel(data));
+
+      var last = data[data.length - 1];
+      var lastMeta = last && last.meta ? last.meta : null;
+      var generado = lastMeta && lastMeta.generado ? lastMeta.generado : "N/D";
+
+      setText("lastUpdated", generado);
+      buildRoutesTable(last);
+    })
+    .catch(function () {
+      setStatus("ERROR", "err");
+      showError("Error inesperado al procesar los datos del histórico.");
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  initDashboard();
 });
