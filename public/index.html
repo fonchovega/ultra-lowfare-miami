@@ -2,543 +2,241 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Ultra-Low Fare · FrontDesk v1.3.3</title>
+  <title>Ultra-Low Fare · FrontDesk v1.3.4</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    * {
-      box-sizing: border-box;
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
       padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    body {
       background: #0f172a;
       color: #e5e7eb;
-      padding: 16px;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
     }
 
     header {
-      margin-bottom: 20px;
+      padding: 16px 24px;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
     header h1 {
-      font-size: 1.8rem;
-      margin-bottom: 4px;
+      font-size: 18px;
+      margin: 0;
     }
 
-    header p {
-      font-size: 0.9rem;
+    header small {
+      font-size: 12px;
       color: #9ca3af;
     }
 
-    .pill {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: #111827;
-      border: 1px solid #1f2933;
-      font-size: 0.75rem;
-      color: #9ca3af;
-      margin-top: 4px;
+    main {
+      padding: 16px;
+      max-width: 960px;
+      margin: 0 auto;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .card {
       background: #020617;
-      border-radius: 10px;
-      border: 1px solid #1f2933;
+      border-radius: 8px;
       padding: 12px 14px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      border: 1px solid #1f2937;
     }
 
     .card h2 {
-      font-size: 0.9rem;
+      font-size: 14px;
+      margin: 0 0 4px 0;
       color: #9ca3af;
-      margin-bottom: 6px;
     }
 
-    .card .value {
-      font-size: 1.3rem;
+    .card-value {
+      font-size: 22px;
       font-weight: 600;
-      color: #f9fafb;
     }
 
-    .card small {
-      display: block;
-      margin-top: 4px;
-      font-size: 0.75rem;
-      color: #6b7280;
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid #4b5563;
     }
 
-    .status-ok {
-      color: #22c55e;
+    .badge.ok {
+      color: #bbf7d0;
+      border-color: #16a34a;
+      background: rgba(22, 163, 74, 0.1);
     }
 
-    .status-warn {
-      color: #eab308;
+    .badge.warn {
+      color: #fed7aa;
+      border-color: #ea580c;
+      background: rgba(234, 88, 12, 0.1);
     }
 
-    .status-bad {
-      color: #ef4444;
+    .badge.err {
+      color: #fecaca;
+      border-color: #dc2626;
+      background: rgba(220, 38, 38, 0.1);
     }
 
-    .table-wrapper {
-      margin-top: 8px;
-      background: #020617;
-      border-radius: 10px;
-      border: 1px solid #1f2933;
-      padding: 12px;
-      overflow-x: auto;
+    .subtitle {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .error-box {
+      display: none;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: rgba(220, 38, 38, 0.1);
+      border: 1px solid #dc2626;
+      color: #fecaca;
+      font-size: 13px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.8rem;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    thead {
+      background: #020617;
     }
 
     th, td {
       padding: 6px 8px;
-      border-bottom: 1px solid #111827;
+      border-bottom: 1px solid #1f2937;
       text-align: left;
       white-space: nowrap;
     }
 
     th {
+      font-size: 12px;
       color: #9ca3af;
       font-weight: 500;
-      background: #020617;
-      position: sticky;
-      top: 0;
     }
 
-    tr:nth-child(even) td {
-      background: #020617;
+    tbody tr:nth-child(odd) {
+      background: rgba(15, 23, 42, 0.5);
     }
 
-    tr:nth-child(odd) td {
-      background: #020314;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
+    .pill {
+      display: inline-flex;
+      padding: 2px 6px;
       border-radius: 999px;
-      font-size: 0.7rem;
-    }
-
-    .badge-ok {
-      background: rgba(34, 197, 94, 0.15);
-      color: #22c55e;
-    }
-
-    .badge-bad {
-      background: rgba(239, 68, 68, 0.15);
-      color: #ef4444;
-    }
-
-    .badge-neutral {
-      background: rgba(148, 163, 184, 0.15);
-      color: #e5e7eb;
+      font-size: 11px;
+      border: 1px solid #374151;
     }
 
     footer {
-      margin-top: 16px;
-      font-size: 0.75rem;
+      margin-top: 24px;
+      font-size: 11px;
       color: #6b7280;
       text-align: right;
     }
 
-    .error {
-      margin-top: 10px;
-      color: #f97316;
-      font-size: 0.8rem;
+    a {
+      color: #60a5fa;
+      text-decoration: none;
     }
 
-    .meta-line {
-      font-size: 0.8rem;
-      color: #9ca3af;
-      margin-top: 4px;
+    a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+      header, main {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      th:nth-child(3),
+      th:nth-child(4),
+      td:nth-child(3),
+      td:nth-child(4) {
+        display: none;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Ultra-Low Fare · FrontDesk</h1>
-      <p>Monitor en vivo de la base histórica generada por FareBot.</p>
-      <div class="pill">v1.3.3 · LIM ⇄ MIA / FLL / MCO</div>
-    </header>
+  <header>
+    <h1>Ultra-Low Fare · FrontDesk <span style="font-weight:400;">v1.3.4</span></h1>
+    <small>Proyecto LIM ⇄ MIA / FLL / MCO · by Víctor Vega</small>
+  </header>
+
+  <main>
+    <div id="errorBox" class="error-box"></div>
 
     <div class="grid">
       <div class="card">
-        <h2>Registros en histórico</h2>
-        <div id="total-registros" class="value">—</div>
-        <small>Número total de snapshots guardados en data/historico*.json</small>
+        <h2>Estado del sistema</h2>
+        <div class="card-value">
+          <span id="statusBadge" class="badge warn">Cargando…</span>
+        </div>
+        <div class="subtitle" id="dataSourceLabel">Origen de datos: —</div>
       </div>
 
       <div class="card">
-        <h2>Última generación</h2>
-        <div id="ultima-generacion" class="value">—</div>
-        <small id="ultima-generacion-detalle" class="meta-line">Esperando datos…</small>
+        <h2>Total de snapshots</h2>
+        <div id="totalSnapshots" class="card-value">—</div>
+        <div class="subtitle">Entradas en histórico (normalizado o bruto).</div>
       </div>
 
       <div class="card">
-        <h2>Fuente de datos activa</h2>
-        <div id="fuente-datos" class="value">—</div>
-        <small>Prioridad: historico_normalizado.json → historico.json</small>
-      </div>
-
-      <div class="card">
-        <h2>Estado general</h2>
-        <div id="estado-general" class="value status-warn">Revisando…</div>
-        <small id="estado-general-detalle" class="meta-line">Validando estructura básica de la base.</small>
+        <h2>Última actualización</h2>
+        <div id="lastUpdated" class="card-value">—</div>
+        <div class="subtitle">Valor tomado de meta.generado del último registro.</div>
       </div>
     </div>
 
-    <div class="table-wrapper">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <div>
-          <strong>Último resumen disponible</strong>
-          <div id="meta-ruta" class="meta-line"></div>
-        </div>
-        <button id="btn-refrescar" style="background:#1f2937; border:1px solid #374151; color:#e5e7eb; padding:5px 10px; border-radius:6px; font-size:0.75rem; cursor:pointer;">
-          Refrescar
-        </button>
+    <div class="card" style="margin-top: 8px;">
+      <h2>Resumen de último snapshot</h2>
+      <div class="subtitle">
+        Rutas y umbrales según el último registro encontrado en el histórico.
       </div>
-      <div id="tabla-resumen-container">
-        <div class="meta-line">Cargando datos…</div>
-      </div>
-      <div id="mensaje-error" class="error"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Ruta</th>
+            <th>Salida</th>
+            <th>Retorno</th>
+            <th>Umbral (USD)</th>
+            <th>Precio (USD)</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="routesTableBody">
+          <tr>
+            <td colspan="6">Esperando datos…</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <footer>
-      Datos generados por workflows de GitHub Actions · FareBot Live
+      FrontDesk v1.3.4 · datos desde <code>/data/historico_normalizado.json</code> o
+      <code>/data/historico.json</code>
     </footer>
-  </div>
+  </main>
 
-  <script>
-    (function () {
-      var dataGlobal = null;
-      var ultimaFuente = null;
-
-      function setText(id, text) {
-        var el = document.getElementById(id);
-        if (el) {
-          el.textContent = text;
-        }
-      }
-
-      function formatearFecha(fechaIso) {
-        if (!fechaIso || typeof fechaIso !== "string") {
-          return "—";
-        }
-        // Intento directo
-        var d = new Date(fechaIso);
-        if (!isNaN(d.getTime())) {
-          return d.toLocaleString("es-PE", { hour12: false });
-        }
-        // Intento extra: si viene "2025-10-18 00:00 CST"
-        var limpio = fechaIso.replace("CST", "").trim().replace(" ", "T");
-        var d2 = new Date(limpio);
-        if (!isNaN(d2.getTime())) {
-          return d2.toLocaleString("es-PE", { hour12: false });
-        }
-        return fechaIso;
-      }
-
-      function clasificarEstadoGeneral(total, ultimoResumenOk) {
-        var elEstado = document.getElementById("estado-general");
-        var elDetalle = document.getElementById("estado-general-detalle");
-        if (!elEstado || !elDetalle) {
-          return;
-        }
-
-        if (total === 0) {
-          elEstado.textContent = "Sin datos";
-          elEstado.className = "value status-bad";
-          elDetalle.textContent = "No se encontraron registros en la base histórica.";
-          return;
-        }
-
-        if (ultimoResumenOk) {
-          elEstado.textContent = "OK";
-          elEstado.className = "value status-ok";
-          elDetalle.textContent = "Histórico con estructura reconocida y último resumen legible.";
-        } else {
-          elEstado.textContent = "Parcial";
-          elEstado.className = "value status-warn";
-          elDetalle.textContent = "Se encontró histórico, pero el último resumen no tiene formato estándar.";
-        }
-      }
-
-      function crearBadgeCumple(valor) {
-        if (!valor) {
-          var spanNeutral = document.createElement("span");
-          spanNeutral.className = "badge badge-neutral";
-          spanNeutral.textContent = "n/a";
-          return spanNeutral;
-        }
-        var v = String(valor).toLowerCase();
-        var span = document.createElement("span");
-        if (v.indexOf("cumple") !== -1 || v.indexOf("ok") !== -1 || v.indexOf("✔") !== -1) {
-          span.className = "badge badge-ok";
-        } else if (v.indexOf("no") !== -1 || v.indexOf("❌") !== -1) {
-          span.className = "badge badge-bad";
-        } else {
-          span.className = "badge badge-neutral";
-        }
-        span.textContent = valor;
-        return span;
-      }
-
-      function renderTablaResumen(ultimoRegistro) {
-        var cont = document.getElementById("tabla-resumen-container");
-        if (!cont) {
-          return;
-        }
-        cont.innerHTML = "";
-
-        if (!ultimoRegistro || !ultimoRegistro.resumen || !(ultimoRegistro.resumen instanceof Array) || ultimoRegistro.resumen.length === 0) {
-          var msg = document.createElement("div");
-          msg.className = "meta-line";
-          msg.textContent = "No se encontró un resumen legible en el último registro.";
-          cont.appendChild(msg);
-          return false;
-        }
-
-        var resumen = ultimoRegistro.resumen;
-        var sample = resumen[0];
-        var keys = [];
-
-        for (var k in sample) {
-          if (Object.prototype.hasOwnProperty.call(sample, k)) {
-            keys.push(k);
-          }
-        }
-
-        if (keys.length === 0) {
-          var msg2 = document.createElement("div");
-          msg2.className = "meta-line";
-          msg2.textContent = "El último resumen no tiene campos visibles.";
-          cont.appendChild(msg2);
-          return false;
-        }
-
-        var table = document.createElement("table");
-        var thead = document.createElement("thead");
-        var trHead = document.createElement("tr");
-
-        for (var i = 0; i < keys.length; i++) {
-          var th = document.createElement("th");
-          th.textContent = keys[i];
-          trHead.appendChild(th);
-        }
-        thead.appendChild(trHead);
-        table.appendChild(thead);
-
-        var tbody = document.createElement("tbody");
-
-        var maxFilas = resumen.length;
-        if (maxFilas > 20) {
-          maxFilas = 20;
-        }
-
-        for (var r = 0; r < maxFilas; r++) {
-          var rowData = resumen[r];
-          var tr = document.createElement("tr");
-
-          for (var j = 0; j < keys.length; j++) {
-            var key = keys[j];
-            var td = document.createElement("td");
-            var val = rowData.hasOwnProperty(key) ? rowData[key] : "";
-
-            if (key.toLowerCase() === "cumple" || key.toLowerCase().indexOf("resultado") !== -1) {
-              td.appendChild(crearBadgeCumple(val));
-            } else {
-              td.textContent = val;
-            }
-
-            tr.appendChild(td);
-          }
-          tbody.appendChild(tr);
-        }
-
-        table.appendChild(tbody);
-        cont.appendChild(table);
-
-        return true;
-      }
-
-      function mostrarMetaUltimoRegistro(ultimoRegistro) {
-        var metaRuta = document.getElementById("meta-ruta");
-        if (!metaRuta) {
-          return;
-        }
-
-        if (!ultimoRegistro || !ultimoRegistro.meta) {
-          metaRuta.textContent = "Sin metadatos en el último registro.";
-          return;
-        }
-
-        var meta = ultimoRegistro.meta;
-        var partes = [];
-
-        if (meta.titulo) {
-          partes.push(meta.titulo);
-        }
-        if (meta.origen) {
-          partes.push("Origen: " + meta.origen);
-        }
-        if (meta.rutas && meta.rutas instanceof Array && meta.rutas.length > 0) {
-          partes.push("Rutas: " + meta.rutas.join(" · "));
-        }
-        if (meta.generado) {
-          partes.push("Generado: " + formatearFecha(meta.generado));
-        }
-
-        if (partes.length === 0) {
-          metaRuta.textContent = "Metadatos mínimos no disponibles.";
-        } else {
-          metaRuta.textContent = partes.join(" · ");
-        }
-      }
-
-      function procesarDatos(data, fuente) {
-        dataGlobal = null;
-        ultimaFuente = fuente;
-
-        if (!data) {
-          setText("total-registros", "0");
-          setText("fuente-datos", "Ninguna");
-          clasificarEstadoGeneral(0, false);
-          return;
-        }
-
-        var arr = null;
-        if (data instanceof Array) {
-          arr = data;
-        } else if (data.data && data.data instanceof Array) {
-          arr = data.data;
-        } else {
-          // Intento genérico: si tiene longitud
-          if (typeof data.length === "number") {
-            arr = data;
-          }
-        }
-
-        if (!arr) {
-          setText("total-registros", "0");
-          setText("fuente-datos", fuente + " (formato no soportado)");
-          clasificarEstadoGeneral(0, false);
-          return;
-        }
-
-        dataGlobal = arr;
-        setText("total-registros", String(arr.length));
-        setText("fuente-datos", fuente);
-
-        if (arr.length === 0) {
-          setText("ultima-generacion", "—");
-          setText("ultima-generacion-detalle", "No hay registros en la base.");
-          clasificarEstadoGeneral(0, false);
-          return;
-        }
-
-        var ultimo = arr[arr.length - 1];
-        var meta = ultimo.meta || {};
-        var generado = meta.generado || meta.fecha || null;
-
-        setText("ultima-generacion", generado ? formatearFecha(generado) : "—");
-
-        var detalleTxt = "Último índice: " + String(arr.length - 1);
-        if (meta.zona_horaria) {
-          detalleTxt = detalleTxt + " · Zona horaria: " + meta.zona_horaria;
-        }
-        setText("ultima-generacion-detalle", detalleTxt);
-
-        var okResumen = renderTablaResumen(ultimo);
-        mostrarMetaUltimoRegistro(ultimo);
-        clasificarEstadoGeneral(arr.length, okResumen);
-      }
-
-      function mostrarError(mensaje) {
-        var el = document.getElementById("mensaje-error");
-        if (el) {
-          el.textContent = mensaje;
-        }
-      }
-
-      function limpiarError() {
-        var el = document.getElementById("mensaje-error");
-        if (el) {
-          el.textContent = "";
-        }
-      }
-
-      function cargarDatos() {
-        limpiarError();
-        setText("tabla-resumen-container", "");
-        var cont = document.getElementById("tabla-resumen-container");
-        if (cont) {
-          var msg = document.createElement("div");
-          msg.className = "meta-line";
-          msg.textContent = "Cargando datos…";
-          cont.appendChild(msg);
-        }
-
-        // 1) Intentar historico_normalizado.json
-        fetch("data/historico_normalizado.json", { cache: "no-store" })
-          .then(function (res) {
-            if (!res.ok) {
-              throw new Error("No se encontró historico_normalizado.json");
-            }
-            return res.json();
-          })
-          .then(function (json) {
-            procesarDatos(json, "historico_normalizado.json");
-          })
-          .catch(function () {
-            // 2) Fallback a historico.json
-            fetch("data/historico.json", { cache: "no-store" })
-              .then(function (res2) {
-                if (!res2.ok) {
-                  throw new Error("No se encontró historico.json");
-                }
-                return res2.json();
-              })
-              .then(function (json2) {
-                procesarDatos(json2, "historico.json");
-              })
-              .catch(function (err2) {
-                procesarDatos(null, "sin fuente");
-                mostrarError("No se pudo cargar data/historico*.json: " + err2.message);
-              });
-          });
-      }
-
-      document.addEventListener("DOMContentLoaded", function () {
-        var btn = document.getElementById("btn-refrescar");
-        if (btn) {
-          btn.addEventListener("click", function () {
-            cargarDatos();
-          });
-        }
-        cargarDatos();
-      });
-    })();
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
