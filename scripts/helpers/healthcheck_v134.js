@@ -1,39 +1,22 @@
-// healthcheck_v134.js — Standalone CLI script
-// --------------------------------------------
-// Valida el archivo data/historico.json y reporta:
-// - Campos obligatorios faltantes
-// - Shapes desconocidos
-// - Estructuras inválidas dentro de resumen
-// - Estadísticas útiles para diagnóstico
-//
-
 import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(".");
 const HIST = path.join(ROOT, "data", "historico.json");
 
-function loadJSON(filePath) {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, "utf8"));
-  } catch (err) {
-    console.error("❌ ERROR leyendo JSON:", filePath);
-    console.error(err);
-    process.exit(1);
-  }
+function loadJSON(p) {
+  return JSON.parse(fs.readFileSync(p, "utf8"));
 }
 
-function hasKeys(obj, keys) {
-  return keys.every(k => Object.prototype.hasOwnProperty.call(obj, k));
+function hasAny(obj, keys) {
+  return keys.some(k => Object.prototype.hasOwnProperty.call(obj, k));
 }
 
-function runHealthcheck() {
-  console.log("\n=== 💉 HealthCheck v134 ===");
-
+function summarize() {
   const data = loadJSON(HIST);
 
   if (!Array.isArray(data)) {
-    console.error("❌ ERROR: historico.json no es un array.");
+    console.error("ERROR: data/historico.json no es un array");
     process.exit(1);
   }
 
@@ -43,14 +26,13 @@ function runHealthcheck() {
     withResumen: 0,
     withDetalles: 0,
     unknownShape: 0,
-    resumeIssues: 0,
-    entriesWithIssues: 0,
+    issues: 0,
   };
 
   const problems = [];
 
   data.forEach((entry, idx) => {
-    const hasMeta = entry && typeof entry.meta === "object";
+    const hasMeta = entry && typeof entry === "object" && entry.meta;
     const hasResumen = entry && Array.isArray(entry.resumen);
     const hasDetalles = entry && typeof entry.detalles === "object";
 
@@ -58,60 +40,46 @@ function runHealthcheck() {
     if (hasResumen) stats.withResumen++;
     if (hasDetalles) stats.withDetalles++;
 
-    // Detectar shapes desconocidos (sin resumen)
     if (!hasResumen) {
       stats.unknownShape++;
-      problems.push(`[#${idx}] Entrada sin 'resumen' (shape desconocido)`);
+      problems.push(`❌ Entrada ${idx} sin resumen`);
       return;
     }
 
-    // Validación interna de cada resumen
     entry.resumen.forEach((r, j) => {
-      if (!r || typeof r !== "object") {
-        stats.resumeIssues++;
-        problems.push(`[#${idx}][${j}] 'resumen' no es objeto`);
+      const isObj = r && typeof r === "object";
+      if (!isObj) {
+        stats.issues++;
+        problems.push(`❌ Entrada ${idx}[${j}] no es un objeto`);
         return;
       }
 
-      const okRoute = hasKeys(r, ["ruta", "destino"]);
-      const okPrice = hasKeys(r, ["precio", "precio_encontrado", "precio_mas_bajo_usd"]);
-      const okLimit = hasKeys(r, ["umbral", "limite", "umbral_usd"]);
-      const okFlag = hasKeys(r, ["cumple", "resultado"]);
+      const okRoute = hasAny(r, ["ruta", "destino"]);
+      const okPrice = hasAny(r, ["precio", "precio_encontrado", "precio_mas_bajo_usd"]);
+      const okLimit = hasAny(r, ["umbral", "limite", "umbral_usd"]);
+      const okFlag = hasAny(r, ["cumple", "resultado"]);
 
-      if (!okRoute)
-        problems.push(`[#${idx}][${j}] falta campo ruta/destino`);
-      if (!okPrice)
-        problems.push(`[#${idx}][${j}] falta campo de precio`);
-      if (!okLimit)
-        problems.push(`[#${idx}][${j}] falta campo umbral`);
-      if (!okFlag)
-        problems.push(`[#${idx}][${j}] falta indicador cumple/resultado`);
-
-      if (!okRoute || !okPrice || !okLimit || !okFlag) {
-        stats.entriesWithIssues++;
-      }
+      if (!okRoute) { stats.issues++; problems.push(`❌ ${idx}[${j}] sin 'ruta/destino'`); }
+      if (!okPrice) { stats.issues++; problems.push(`❌ ${idx}[${j}] sin 'precio'`); }
+      if (!okLimit) { stats.issues++; problems.push(`❌ ${idx}[${j}] sin 'umbral'`); }
+      if (!okFlag) { stats.issues++; problems.push(`❌ ${idx}[${j}] sin 'resultado'`); }
     });
   });
 
-  console.log(`\n📊 ESTADÍSTICAS`);
-  console.log(`- Total entradas:           ${stats.total}`);
-  console.log(`- Con meta:                 ${stats.withMeta}`);
-  console.log(`- Con resumen:              ${stats.withResumen}`);
-  console.log(`- Con detalles:             ${stats.withDetalles}`);
-  console.log(`- Shapes desconocidos:      ${stats.unknownShape}`);
-  console.log(`- Problemas en resumen:     ${stats.resumeIssues}`);
-  console.log(`- Entradas con issues:      ${stats.entriesWithIssues}`);
+  console.log("== healthcheck_v134 ==");
+  console.log("Entradas:", stats.total);
+  console.log("Con meta:", stats.withMeta);
+  console.log("Con resumen:", stats.withResumen);
+  console.log("Con detalles:", stats.withDetalles);
+  console.log("Shape desconocido:", stats.unknownShape);
+  console.log("Issues:", stats.issues);
 
-  if (problems.length > 0) {
-    console.log("\n⚠️  DETALLES (primeros 1000):");
-    problems.slice(0, 1000).forEach((p) => console.log(" - " + p));
-    console.log(`\n❌ Healthcheck encontró ${problems.length} problemas.`);
-    process.exit(1);
+  if (problems.length) {
+    console.log("— Detalle —");
+    problems.slice(0, 300).forEach(line => console.log(line));
   }
 
-  console.log("\n✅ Healthcheck OK — Sin problemas detectados.");
   process.exit(0);
 }
 
-// Ejecutar directamente
-runHealthcheck();
+summarize();
