@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generado": "2025-11-16T03:38:44.719Z",
+    "generado": "2025-11-16T03:46:10.916Z",
     "modo": "live"
   },
   "resultados": [
@@ -41,7 +41,7 @@
       }
     },
     {
-      "ts": "2025-11-16T03:37:43.375Z",
+      "ts": "2025-11-16T03:45:09.761Z",
       "ruta": "LIM-MIA",
       "min": null,
       "max": null,
@@ -51,7 +51,7 @@
       "fuente": "google_flights"
     },
     {
-      "ts": "2025-11-16T03:38:14.128Z",
+      "ts": "2025-11-16T03:45:40.337Z",
       "ruta": "LIM-FLL",
       "min": null,
       "max": null,
@@ -61,7 +61,7 @@
       "fuente": "google_flights"
     },
     {
-      "ts": "2025-11-16T03:38:44.718Z",
+      "ts": "2025-11-16T03:46:10.915Z",
       "ruta": "LIM-MCO",
       "min": null,
       "max": null,
