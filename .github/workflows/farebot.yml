@@ -3,7 +3,7 @@ name: FareBot v1.3.4 - Live + FrontDesk
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *"  # Ejecuta cada 3 horas en punto
+    - cron: "0 */3 * * *"  # cada 3 horas
 
 permissions:
   contents: write
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: "pages"
   cancel-in-progress: false
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
 
       - name: Install deps
         run: npm ci || npm install
@@ -42,9 +42,7 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH: 0
 
       - name: Notify price changes
-        run: node scripts/notify_price_drops.js
-
-      # ---------- NUEVA CAPA v1.3.4 (writer + healthcheck + normalizer) ----------
+        run: node scripts/notify_price_drops.js || echo "no notifications"
 
       - name: Write historico.json (v134 full)
         run: node scripts/writer_historico_v134_full.js
@@ -53,70 +51,35 @@ jobs:
         run: node scripts/helpers/healthcheck_v134.js
 
       - name: Normalize historico (v134)
-        run: node scripts/normalizer_v134.js
-
-      # ---------- COMMIT DE DATA ----------
+        run: node scripts/normalize_historico_v134.js
 
       - name: Commit & push data changes (data/)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git commit -m "auto: update data [v1.3.4]" || echo "No hay cambios que commitear"
-          git pull --rebase origin main || echo "Nada que actualizar desde origin/main"
-          git push origin main || echo "No se pudo hacer push (posible carrera de commits)"
-
-      # ---------- PREPARAR BUNDLE PARA PAGES ----------
-
-      - name: Ensure public and data folders exist
-        run: |
-          mkdir -p public data
-          echo "📁 Estructura actual del repo:"
-          ls -la || true
+          git commit -m "auto: update data [v1.3.4]" || echo "No changes to commit"
+          git pull --rebase origin main || echo "Nothing to pull"
+          git push origin main || echo "Nothing to push"
 
       - name: Prepare Pages bundle (public + data)
         run: |
-          echo "📦 Preparando carpeta ./site/ para Pages..."
+          echo "🧹 Preparando ./site para GitHub Pages..."
           rm -rf ./site
           mkdir -p ./site
-
-          echo "➡ Copiando PUBLIC/…"
+          # Copiar frontend a la raíz del sitio
           if [ -d "./public" ]; then
-            cp -r ./public ./site/public
-          else
-            mkdir -p ./site/public
+            cp -R ./public/* ./site/
           fi
-
-          echo "➡ Copiando DATA/…"
+          # Copiar data
           if [ -d "./data" ]; then
-            cp -r ./data ./site/data
-          else
-            mkdir -p ./site/data
+            cp -R ./data ./site/data
           fi
-
-          # Garantizar que exista historico_normalizado.json para el front
+          # Asegurar historico_normalizado.json
           if [ ! -f "./site/data/historico_normalizado.json" ]; then
-            echo "[]"> ./site/data/historico_normalizado.json
+            if [ -f "./data/historico_normalizado.json" ]; then
+              cp ./data/historico_normalizado.json ./site/data/historico_normalizado.json
+            else
+              echo "[]" > ./site/data/historico_normalizado.json
+            fi
           fi
-
-          echo "📂 Contenido final de ./site:"
-          ls -la ./site || true
-          echo "📂 Contenido de ./site/data:"
-          ls -la ./site/data || true
-
-      - name: Upload artifact to Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./site
-
-  deploy:
-    needs: run-farebot
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
