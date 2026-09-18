@@ -1,0 +1,36 @@
+{
+  "generado": "2026-09-18T02:04:29.716Z",
+  "modo": "live",
+  "rutas": [
+    {
+      "ts": "2026-09-18T02:05:00.611Z",
+      "ruta": "LIM-MIA",
+      "min": null,
+      "max": null,
+      "prom": null,
+      "ultimo": null,
+      "tope": 5300,
+      "fuente": "google_flights"
+    },
+    {
+      "ts": "2026-09-18T02:05:31.284Z",
+      "ruta": "LIM-FLL",
+      "min": null,
+      "max": null,
+      "prom": null,
+      "ultimo": null,
+      "tope": 5300,
+      "fuente": "google_flights"
+    },
+    {
+      "ts": "2026-09-18T02:06:01.892Z",
+      "ruta": "LIM-MCO",
+      "min": null,
+      "max": null,
+      "prom": null,
+      "ultimo": null,
+      "tope": 5400,
+      "fuente": "google_flights"
+    }
+  ]
+}
